@@ -1,0 +1,65 @@
+name: Deploy Production with PNPM
+
+on:
+  push:
+    branches: [ "main" ] # Trigger hanya saat push ke main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # 1. Load Environment (Agar pnpm & node terbaca)
+            export NVM_DIR=~/.nvm
+            source ~/.nvm/nvm.sh
+            
+            # 2. Masuk ke folder project
+            # GANTI '/var/www/my-project' dengan path folder aslimu di VPS
+            cd /var/www/vectyz
+            
+            # 3. Tarik kode terbaru
+            echo "📥 Pulling latest code..."
+            git pull origin main
+            
+            # --- BACKEND ---
+            echo "🚀 Building Backend..."
+            cd backend
+            # Install dependency (termasuk devDependencies utk build)
+            pnpm install --frozen-lockfile
+            # Build TypeScript
+            pnpm build
+            cd ..
+            
+            # --- CLIENT WEB ---
+            echo "🚀 Building Client Web..."
+            # GANTI 'client-web' sesuai nama folder frontend client kamu
+            cd client-web
+            pnpm install --frozen-lockfile
+            pnpm build
+            cd ..
+            
+            # --- ADMIN DASHBOARD ---
+            echo "🚀 Building Admin Dashboard..."
+            # GANTI 'admin-dashboard' sesuai nama folder admin kamu
+            cd admin-dashboard
+            pnpm install --frozen-lockfile
+            pnpm build
+            cd ..
+            
+            # --- RELOAD PM2 ---
+            echo "🔄 Reloading PM2..."
+            # Update env memastikan variabel baru terbaca
+            pm2 reload ecosystem.config.js --update-env
+            pm2 save
+            
+            echo "✅ Deployment Finished Successfully!"
