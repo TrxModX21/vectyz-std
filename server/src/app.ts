@@ -13,7 +13,12 @@ import router from "./routes";
 const BASE_PATH = config.BASE_PATH;
 const app = express();
 
-const allowedOrigins = ["http://localhost:3000", "http://localhost:3001"];
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://v2.vectyz.com",
+  "https://v2admin.vectyz.com",
+];
 // const allowedOrigins = ["*"];
 
 app.use(
@@ -21,7 +26,7 @@ app.use(
     origin: allowedOrigins, // asal frontend
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true, // wajib untuk cookies
-  }),
+  })
 );
 app.set("trust proxy", 1); // important for cookie
 
