@@ -2,8 +2,9 @@ module.exports = {
   apps: [
     {
       name: "server-api",
-      script: "./server/dist/server.js",
+      script: "./dist/server.js",
       cwd: "./server",
+      env_file: "./server/.env",
       env: {
         NODE_ENV: "production",
         PORT: 3021,
