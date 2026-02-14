@@ -3,6 +3,7 @@ module.exports = {
     {
       name: "server-api",
       script: "./server/dist/server.js",
+      cwd: "./server",
       env: {
         NODE_ENV: "production",
         PORT: 3021,
