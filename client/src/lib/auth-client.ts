@@ -2,7 +2,7 @@ import { createAuthClient } from "better-auth/react";
 import { adminClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
-  baseURL: "http://localhost:3021", // URL Backend Express Anda
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL, // URL Backend Express Anda
   plugins: [adminClient()],
 });
 
