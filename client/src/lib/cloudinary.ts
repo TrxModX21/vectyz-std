@@ -39,7 +39,7 @@ export const uploadSingleFile = async (
 
   // 2. Prepare Form Data
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", file as any);
   formData.append("api_key", apiKey);
   formData.append("timestamp", timestamp.toString());
   formData.append("signature", signature);

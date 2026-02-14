@@ -10,6 +10,12 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "prisma"
+    ]
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.985.0",
     "@aws-sdk/s3-request-presigner": "^3.985.0",

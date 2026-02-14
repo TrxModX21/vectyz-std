@@ -30,7 +30,7 @@ const ImagePicker = ({
     if (typeof value === "string") {
       setPreview(value);
     } else if (value instanceof File) {
-      const objectUrl = URL.createObjectURL(value);
+      const objectUrl = URL.createObjectURL(value as any);
       setPreview(objectUrl);
       return () => URL.revokeObjectURL(objectUrl);
     } else {

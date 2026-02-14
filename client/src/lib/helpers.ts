@@ -12,7 +12,7 @@ export const uploadToCloudinary = async (
   });
 
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", file as any);
   formData.append("api_key", signData.apiKey);
   formData.append("timestamp", signData.timestamp.toString());
   formData.append("signature", signData.signature);

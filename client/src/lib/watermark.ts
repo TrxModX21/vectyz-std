@@ -1,7 +1,7 @@
 export const addWatermark = async (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(file as any);
     reader.onload = (event) => {
       const img = new Image();
       img.src = event.target?.result as string;
