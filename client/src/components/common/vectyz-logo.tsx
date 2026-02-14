@@ -16,8 +16,8 @@ const VectyzLogo = ({ width = 160, height = 160, className }: PropsType) => {
       rel="noopener noreferrer"
     >
       <Image
-        src="/vectyz.svg"
-        alt="Vercel logomark"
+        src="/logo.png"
+        alt="Vectyz logomark"
         width={width}
         height={height}
         className="h-full w-auto"

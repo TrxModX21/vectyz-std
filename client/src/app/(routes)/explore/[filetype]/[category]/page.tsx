@@ -1,5 +1,6 @@
 "use client";
 
+import FadeIn from "@/components/common/fade-in";
 import ItemCard from "@/components/explore/item-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,7 +113,7 @@ const DUMMY_ITEMS = [
     image:
       "https://images.unsplash.com/photo-1527553198031-1807d9b56363?q=80&w=800",
   },
-   {
+  {
     id: 9,
     title: "Decorated Room",
     author: "Home Style",
@@ -207,21 +208,35 @@ const ExploreCategoryPage = () => {
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center overflow-x-auto no-scrollbar pb-2 md:pb-0">
         {/* Mobile View Filters */}
         <div className="flex md:hidden items-center gap-2 w-full">
-           <Button variant="outline" size="sm" className="rounded-full gap-1 flex-1">
-            <LayoutGrid className="h-4 w-4" /> Vectors <ChevronDown className="h-3 w-3" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full gap-1 flex-1"
+          >
+            <LayoutGrid className="h-4 w-4" /> Vectors{" "}
+            <ChevronDown className="h-3 w-3" />
           </Button>
-          <Button variant="secondary" size="sm" className="rounded-full gap-1 flex-1">
-             <SlidersHorizontal className="h-4 w-4" /> Filters
+          <Button
+            variant="secondary"
+            size="sm"
+            className="rounded-full gap-1 flex-1"
+          >
+            <SlidersHorizontal className="h-4 w-4" /> Filters
           </Button>
-           <Button variant="ghost" size="icon" className="rounded-full shrink-0">
+          <Button variant="ghost" size="icon" className="rounded-full shrink-0">
             <Settings className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Desktop View Filters */}
         <div className="hidden md:flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" className="rounded-full gap-1 bg-white">
-             <LayoutGrid className="h-4 w-4" /> Vectors <ChevronDown className="h-3 w-3 opacity-50" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full gap-1 bg-white"
+          >
+            <LayoutGrid className="h-4 w-4" /> Vectors{" "}
+            <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
           <Separator orientation="vertical" className="h-6 mx-1" />
           {FILTER_CHIPS.map((chip) => (
@@ -233,7 +248,9 @@ const ExploreCategoryPage = () => {
             >
               {chip.icon && <chip.icon className="h-4 w-4 mr-1" />}
               {chip.label}
-              {chip.hasDropdown && <ChevronDown className="h-3 w-3 opacity-50" />}
+              {chip.hasDropdown && (
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              )}
             </Button>
           ))}
         </div>
@@ -243,25 +260,29 @@ const ExploreCategoryPage = () => {
       <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
         {DUMMY_ITEMS.map((item) => (
           <div key={item.id} className="break-inside-avoid">
-             {/* 
+            {/* 
                 We use aspect-ratio trick or just natural height. 
                 ItemCard uses next/image with width/height, so it should preserve ratio.
              */}
-            <ItemCard 
-               item={{
-                   ...item,
-                   // Passing explicit width/height to ItemCard to render correct aspect ratio
-                   width: item.width,
-                   height: item.height
-               }} 
-            />
+            <FadeIn>
+              <ItemCard
+                item={{
+                  ...item,
+                  // Passing explicit width/height to ItemCard to render correct aspect ratio
+                  width: item.width,
+                  height: item.height,
+                }}
+              />
+            </FadeIn>
           </div>
         ))}
       </div>
-       
-       <div className="flex justify-center pt-8 pb-4">
-             <Button variant="outline" className="rounded-full px-8">Load more</Button>
-       </div>
+
+      <div className="flex justify-center pt-8 pb-4">
+        <Button variant="outline" className="rounded-full px-8">
+          Load more
+        </Button>
+      </div>
     </div>
   );
 };

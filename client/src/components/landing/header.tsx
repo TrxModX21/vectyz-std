@@ -110,8 +110,8 @@ const Header = () => {
                     <div className="flex items-center gap-3 p-2">
                       <Avatar className="size-10">
                         <AvatarImage
-                          src={session.user.image || ""}
-                          alt="shadcn"
+                          src={session.user.image as string}
+                          alt="profile image"
                         />
                         <AvatarFallback className="bg-v-green">
                           {session.user.name.slice(0)[0]}

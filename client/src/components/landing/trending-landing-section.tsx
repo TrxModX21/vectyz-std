@@ -160,7 +160,7 @@ const TrendingLandingSection = () => {
 
 const TrendingLandingSkeleton = () => {
   return (
-    <div className="relative rounded-xl overflow-hidden bg-gray-200 flex-auto h-[240px] md:h-[280px] min-w-[150px]">
+    <div className="relative rounded-xl overflow-hidden bg-gray-200 flex-auto h-[240px] md:h-[280px] min-w-[300px]">
       <Skeleton className="h-full w-full" />
       <div className="absolute inset-x-0 bottom-0 p-3 md:p-4">
         <Skeleton className="h-4 w-3/4 mb-2 bg-gray-300" />
