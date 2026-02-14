@@ -1,0 +1,468 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// AFTER EDIT OR CHANGE
+// TO MIGRATE RUN THIS:
+// npx prisma migrate dev --name add_user_social_models
+
+// TO GENERATE RUN THIS:
+// npx prisma generate
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String       @id
+  name           String
+  email          String
+  username       String?      @unique
+  emailVerified  Boolean      @default(false)
+  image          String?
+  role           String       @default("user")
+  banned         Boolean?
+  banReason      String?
+  banExpires     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  auditLogs      AuditLog[]
+  profile        UserProfile?
+  uploadedStocks Stock[]      @relation("Uploader")
+  reviewedStocks Stock[]      @relation("Reviewer")
+  collections    Collection[]
+  likes          Like[]
+  stockViews     StockView[]
+
+  totalFollowers Int      @default(0)
+  totalFollowing Int      @default(0)
+  followers      Follow[] @relation("UserFollowers")
+  following      Follow[] @relation("UserFollowing")
+
+  // -- BUSINESS MODEL FIELDS --
+  creditBalance Int @default(0) // Saldo Credit User (1 Credit = Rp 1.000)
+
+  // Subscription Info
+  isPremium Boolean @default(false)
+  planId    String? // Relasi ke tabel Plan (jika langganan)
+  plan      Plan?   @relation(fields: [planId], references: [id])
+
+  // Quota Management
+  premiumQuota           Int       @default(0) // Sisa kuota download premium bulan ini
+  premiumQuotaResetDate  DateTime? // Tanggal reset kuota berikutnya
+  dailyFreeDownloadCount Int       @default(0) // Counter download free hari ini (Reset tiap 00:00)
+  lastDownloadDate       DateTime? // Untuk reset daily counter
+
+  // Device Management
+  currentDeviceId String? // Session ID / Device ID login saat ini
+
+  // Relations
+  transactions Transaction[]
+  downloads    DownloadHistory[]
+  payouts      Payout[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  image     String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stocks    Stock[]
+
+  @@map("category")
+}
+
+model Color {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  color     String // Hex code e.g., #FFFFFF
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("color")
+}
+
+model FileType {
+  id                     String   @id @default(cuid())
+  name                   String
+  slug                   String   @unique
+  icon                   String?
+  image                  String?
+  collectionImage        String?  @map("collection_image")
+  video                  String?
+  status                 String   @default("active")
+  supportedFileExtension String   @map("supported_file_extension")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  stocks                 Stock[]
+
+  @@map("file_type")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("audit_log")
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mobile      String?
+  dialCode    String?  @map("dial_code")
+  countryCode String?  @map("country_code")
+  countryName String?  @map("country_name")
+  city        String?
+  state       String?
+  zip         String?
+  address     String?  @db.Text
+  kycData     String?  @map("kyc_data") @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_profile")
+}
+
+model Transaction {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  type   TransactionType // TOPUP_CREDIT, SUBSCRIPTION, BUY_ASSET, WITHDRAWAL
+  status PaymentStatus   @default(PENDING) // PENDING, PAID, FAILED, REFUNDED
+
+  // Detail Pembayaran
+  amount       Int // Total nominal uang asli (Rupiah || USD || etc) yang dibayar ke Payment Gateway
+  creditAmount Int? // Jumlah credit yang bertambah/berkurang (jika transaksi credit)
+
+  // Provider Info (Midtrans/Xendit/Stripe)
+  paymentMethod String? // "gopay", "credit_card", "balance"
+  externalId    String? // ID dari Payment Gateway
+  snapToken     String? // Token pembayaran (Midtrans SNAP)
+
+  // Relasi Produk (Opsional)
+  planId String?
+  plan   Plan?   @relation(fields: [planId], references: [id])
+
+  stockId   String?
+  stock     Stock?   @relation(fields: [stockId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Stock {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("Uploader", fields: [userId], references: [id])
+  reviewerId  String?
+  reviewer    User?    @relation("Reviewer", fields: [reviewerId], references: [id])
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  fileTypeId  String
+  fileType    FileType @relation(fields: [fileTypeId], references: [id])
+  title       String
+  slug        String   @unique
+  description String?  @db.Text
+  keywords    String[]
+  colors      String[]
+  isPremium   Boolean  @default(false)
+
+  // TAMBAHAN BARU:
+  // Jika true: User langganan BISA download (masuk kuota).
+  // Jika false: User langganan TIDAK BISA download (harus beli putus/Direct Purchase).
+  isSubscriptionAccessible Boolean @default(true)
+
+  price             Decimal           @default(0) @db.Decimal(28, 8)
+  status            StockStatus       @default(PENDING)
+  rejectionReason   String?           @db.Text
+  totalDownloads    Int               @default(0)
+  totalViews        Int               @default(0)
+  totalLikes        Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  files             StockFile[]
+  collectionItems   CollectionItem[]
+  likes             Like[]
+  views             StockView[]
+  transactions      Transaction[]
+  downloadHistories DownloadHistory[]
+
+  @@map("stock")
+}
+
+model StockFile {
+  id        String      @id @default(cuid())
+  stockId   String
+  stock     Stock       @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  purpose   FilePurpose
+  url       String
+  publicId  String
+  format    String
+  bytes     Int
+  width     Int?
+  height    Int?
+  createdAt DateTime    @default(now())
+
+  @@map("stock_file")
+}
+
+model Collection {
+  id          String           @id @default(cuid())
+  name        String
+  description String?          @db.Text
+  slug        String           @unique
+  isPrivate   Boolean          @default(true)
+  isFeatured  Boolean          @default(false)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       CollectionItem[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("collection")
+}
+
+model CollectionItem {
+  id String @id @default(cuid())
+
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  stockId String
+  stock   Stock  @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([collectionId, stockId])
+  @@map("collection_item")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stockId   String
+  stock     Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, stockId])
+  @@index([userId])
+  @@index([stockId])
+  @@map("like")
+}
+
+model StockView {
+  id        String   @id @default(cuid())
+  stockId   String
+  stock     Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now())
+
+  @@index([stockId, ipAddress, createdAt])
+  @@index([userId])
+  @@map("stock_view")
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follow")
+}
+
+// -- MASTER DATA: TIER LANGGANAN --
+model Plan {
+  id          String  @id @default(cuid())
+  name        String // "Ngecer", "Creator", "Professional", "Agency"
+  slug        String  @unique // "ngecer-48h", "creator-monthly"
+  price       Int // Harga dalam Rupiah (Rp 25.000, dst)
+  currency    String  @default("IDR")
+  isBestValue Boolean @default(false)
+
+  // Konfigurasi Fitur
+  durationDays   Int // 2 untuk Ngecer, 30 untuk Bulanan
+  premiumQuota   Int // 5, 20, 100, 350
+  dailyFreeLimit Int @default(9999) // Unlimited (-1 atau 9999)
+
+  // Licensing & Access
+  licenseType   LicenseType @default(STANDARD) // STANDARD / EXTENDED
+  maxDevices    Int         @default(1) // 1, 2, 5
+  downloadSpeed String      @default("STANDARD") // "STANDARD", "HIGH"
+
+  // Relations
+  users        User[]
+  transactions Transaction[] // Relasi langganan
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+// -- RIWAYAT DOWNLOAD (INTI REVENUE SHARE) --
+model DownloadHistory {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  stockId String
+  stock   Stock  @relation(fields: [stockId], references: [id])
+
+  // Snapshot User Saat Download (Penting untuk hitungan Pool)
+  isUserPremium Boolean // Status user saat download
+  userPlanId    String? // Plan user saat download
+
+  // Snapshot Stock Saat Download
+  isStockPremium Boolean // Apakah stok ini premium?
+
+  // Validasi Unik Harian (Anti-Spam)
+  downloadDate DateTime @default(now())
+
+  // Flag Revenue
+  isCountedForPool Boolean @default(false) // Apakah download ini sudah dihitung dalam pembagian revenue bulan ini?
+
+  @@index([userId, stockId, downloadDate]) // Index biar query cek duplicate cepat
+}
+
+// -- PAYOUT REQUEST (PENCAIRAN DANA KREATOR) --
+model Payout {
+  id     String @id @default(cuid())
+  userId String // Kreator
+  user   User   @relation(fields: [userId], references: [id])
+
+  amountCredit   Int // Jumlah credit yang dicairkan
+  exchangeRate   Int @default(1000) // 1 Credit = Rp 1000 (Snapshot rate saat request)
+  totalAmountIdr Int // Total Rupiah yang akan ditransfer (sebelum admin fee)
+
+  status PayoutStatus @default(REQUESTED) // REQUESTED, PROCESSED, COMPLETED, REJECTED
+
+  bankName      String
+  accountNumber String
+  accountHolder String
+
+  adminNote String? // Catatan admin jika reject/transfer info
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// -- ENUMS (Tambahkan di bawah file) --
+enum LicenseType {
+  STANDARD
+  EXTENDED
+}
+
+enum TransactionType {
+  TOPUP_CREDIT // User beli credit
+  SUBSCRIPTION // User bayar langganan
+  BUY_ASSET // User beli aset putus (Direct/Credit)
+  WITHDRAWAL // Kreator tarik dana
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PayoutStatus {
+  REQUESTED
+  PROCESSED
+  COMPLETED
+  REJECTED
+}
+
+enum StockStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum FilePurpose {
+  ORIGINAL
+  PREVIEW
+  THUMBNAIL
+}
