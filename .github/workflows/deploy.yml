@@ -36,6 +36,8 @@ jobs:
             cd backend
             # Install dependency (termasuk devDependencies utk build)
             pnpm install --frozen-lockfile
+            # Generate database
+            npx prisma generate
             # Build TypeScript
             pnpm build
             cd ..
