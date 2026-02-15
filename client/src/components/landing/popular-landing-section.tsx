@@ -110,7 +110,7 @@ const PopularLandingSection = () => {
                             <div className="w-6 h-6 rounded-full bg-gray-300 overflow-hidden relative border border-white/50">
                               {/* Simulated Avatar */}
                               <Image
-                                src={item.user.image || "/placeholder-user.jpg"}
+                                src={item.user.image || "/placeholder.jpg"}
                                 fill
                                 alt="avatar"
                               />
