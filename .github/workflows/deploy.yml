@@ -33,7 +33,7 @@ jobs:
             
             # --- BACKEND ---
             echo "🚀 Building Backend..."
-            cd backend
+            cd server
             # Install dependency (termasuk devDependencies utk build)
             pnpm install --frozen-lockfile
             # Generate database
@@ -45,7 +45,7 @@ jobs:
             # --- CLIENT WEB ---
             echo "🚀 Building Client Web..."
             # GANTI 'client-web' sesuai nama folder frontend client kamu
-            cd client-web
+            cd client
             pnpm install --frozen-lockfile
             pnpm build
             cd ..
@@ -53,7 +53,7 @@ jobs:
             # --- ADMIN DASHBOARD ---
             echo "🚀 Building Admin Dashboard..."
             # GANTI 'admin-dashboard' sesuai nama folder admin kamu
-            cd admin-dashboard
+            cd admin
             pnpm install --frozen-lockfile
             pnpm build
             cd ..
