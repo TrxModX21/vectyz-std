@@ -10,12 +10,12 @@ const blurDataURL =
 
 interface ItemCardProps {
   item: {
-    id: number;
+    id: number | string;
     title: string;
     image: string;
     isPremium?: boolean;
     author?: string;
-    likes?: number;
+    likes?: number | any[];
     width?: number; // Optional width for aspect ratio calculation if needed
     height?: number; // Optional height
   };
@@ -103,7 +103,13 @@ const ItemCard = ({ item, className }: ItemCardProps) => {
 
             <div className="flex items-center gap-1 text-white/90">
               <Heart className="w-3 h-3 fill-white" />
-              <span className="text-xs font-semibold">{item.likes}</span>
+              <span className="text-xs font-semibold">
+                {typeof item.likes === "number"
+                  ? item.likes
+                  : Array.isArray(item.likes)
+                  ? item.likes.length
+                  : 0}
+              </span>
             </div>
           </div>
         </div>

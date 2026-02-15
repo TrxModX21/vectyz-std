@@ -14,8 +14,8 @@ export const allCategoryService = async () => {
 };
 
 export const createCategoryService = async (body: any) => {
-  const { name, image, status } = body;
-  
+  const { name, image, status, icon } = body;
+
   // Create slug from name
   const slug = generateSlugFromName(name);
 
@@ -33,6 +33,7 @@ export const createCategoryService = async (body: any) => {
       name,
       slug,
       image,
+      icon,
       status,
     },
   });
@@ -41,7 +42,7 @@ export const createCategoryService = async (body: any) => {
 };
 
 export const updateCategoryService = async (id: string, body: any) => {
-  const { name, image, status } = body;
+  const { name, image, icon, status } = body;
 
   const category = await prisma.category.findUnique({
     where: { id },
@@ -83,6 +84,7 @@ export const updateCategoryService = async (id: string, body: any) => {
     where: { id },
     data: {
       name,
+      icon,
       slug,
       image,
       status,

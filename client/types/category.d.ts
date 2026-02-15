@@ -10,6 +10,7 @@ interface Category {
   name: string;
   slug: string;
   image?: string;
+  icon?: string;
   status: string;
   createdAt: string;
   updatedAt: string;

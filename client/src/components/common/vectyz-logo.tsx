@@ -6,9 +6,15 @@ type PropsType = {
   width?: number;
   height?: number;
   className?: string;
+  src?: string;
 };
 
-const VectyzLogo = ({ width = 160, height = 160, className }: PropsType) => {
+const VectyzLogo = ({
+  src = "/logo.png",
+  width = 160,
+  height = 160,
+  className,
+}: PropsType) => {
   return (
     <Link
       className={cn("h-10 flex items-center justify-center", className)}
@@ -16,8 +22,8 @@ const VectyzLogo = ({ width = 160, height = 160, className }: PropsType) => {
       rel="noopener noreferrer"
     >
       <Image
-        src="/vectyz.svg"
-        alt="Vercel logomark"
+        src={src}
+        alt="Vectyz logomark"
         width={width}
         height={height}
         className="h-full w-auto"

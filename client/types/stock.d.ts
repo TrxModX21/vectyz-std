@@ -4,6 +4,15 @@ interface PopularFreeVectorResponse {
   stocks: Stock[];
 }
 
+interface GetAllStockResponse {
+  message: string;
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+  timestamp: string;
+  stocks: Stock[];
+}
+
 interface Stock {
   id: string;
   userId: string;
@@ -29,13 +38,22 @@ interface Stock {
   category: Category;
   fileType: FileType;
   files: File[];
+  likes: any[];
 }
 
 interface User {
   id: string;
   name: string;
-  image: any;
   email: string;
+  username: string;
+  image: any;
+  totalFollowers: number;
+  totalFollowing: number;
+  _count: Count;
+}
+
+interface Count {
+  uploadedStocks: number;
 }
 
 interface Category {
@@ -59,4 +77,19 @@ interface File {
   bytes: number;
   width?: number;
   height?: number;
+}
+
+interface GetStocksParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  color?: string;
+  categoryId?: string;
+  fileTypeId?: string;
+  status?: "PENDING" | "APPROVED" | "REJECTED";
+  isPremium?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: "createdAt" | "price" | "totalDownloads";
+  sortOrder?: "asc" | "desc";
 }

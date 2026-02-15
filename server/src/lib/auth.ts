@@ -13,8 +13,14 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  baseURL: "http://localhost:3021",
   appName: "Vectyz",
-  trustedOrigins: ["http://localhost:3000", "http://localhost:3001"],
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://v2.vectyz.com",
+    "https://v2admin.vectyz.com",
+  ],
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url, token }, request) => {
@@ -59,6 +65,12 @@ export const auth = betterAuth({
           userId: user.id,
         },
       });
+    },
+  },
+  socialProviders: {
+    google: {
+      clientId: config.GOOGLE_CLIENT_ID as string,
+      clientSecret: config.GOOGLE_CLIENT_SECRET as string,
     },
   },
   user: {

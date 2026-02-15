@@ -26,9 +26,13 @@ import {
   Search,
   Settings,
   Ticket,
+  X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useGetColors } from "@/hooks/use-colors";
+import { useGetFileTypes } from "@/hooks/use-file-type";
 
 const Header = () => {
   const {
@@ -39,6 +43,51 @@ const Header = () => {
   } = authClient.useSession();
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filters State
+  const [selectedLicense, setSelectedLicense] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedFileType, setSelectedFileType] = useState<string | null>(null);
+
+  // Data Hooks
+  const { data: colorResponse } = useGetColors();
+  const { data: fileTypesData } = useGetFileTypes({ limit: 100 });
+
+  const colors = colorResponse?.colors || [];
+
+  // Sync with URL on mount / update
+  useEffect(() => {
+    setSearchQuery(searchParams.get("search") || "");
+    setSelectedLicense(searchParams.get("license"));
+    setSelectedColor(searchParams.get("color"));
+    setSelectedFileType(searchParams.get("fileType"));
+  }, [searchParams]);
+
+  const updateUrl = (key: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    // If searching or filtering, ensure we are on the search page
+    if (!window.location.pathname.startsWith("/explore/search")) {
+      router.push(`/explore/search?${params.toString()}`);
+    } else {
+      router.replace(`/explore/search?${params.toString()}`);
+    }
+  };
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      updateUrl("search", searchQuery);
+    }
+  };
 
   return (
     <>
@@ -65,38 +114,148 @@ const Header = () => {
               type="text"
               placeholder="Search asset here"
               className="w-full rounded-full pl-6 pr-10 h-10 border-muted-foreground/20 bg-muted/20 focus-visible:ring-offset-0 focus-visible:ring-blue-600"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearch}
             />
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            {searchQuery ? (
+              <X
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground cursor-pointer hover:text-foreground"
+                onClick={() => {
+                  setSearchQuery("");
+                  updateUrl("search", null);
+                }}
+              />
+            ) : (
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            )}
           </div>
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 lg:gap-3">
             {/* Filters */}
             <div className="hidden lg:flex items-center gap-2 mr-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-muted/30 gap-1 rounded-md text-muted-foreground font-normal hover:text-foreground"
-              >
-                <span className="opacity-70">License</span>{" "}
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-muted/30 gap-1 rounded-md text-muted-foreground font-normal hover:text-foreground"
-              >
-                <span className="opacity-70">Color</span>{" "}
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-muted/30 gap-1 rounded-md text-muted-foreground font-normal hover:text-foreground"
-              >
-                <span className="opacity-70">File type</span>{" "}
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
+              {/* License Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`gap-1 rounded-md font-normal hover:text-foreground ${
+                      selectedLicense
+                        ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                        : "bg-muted/30 text-muted-foreground"
+                    }`}
+                  >
+                    <span className="opacity-70">
+                      {selectedLicense === "true"
+                        ? "Premium"
+                        : selectedLicense === "false"
+                          ? "Free"
+                          : "License"}
+                    </span>{" "}
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => updateUrl("isPremium", null)}
+                  >
+                    All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => updateUrl("isPremium", "false")}
+                  >
+                    Free
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => updateUrl("isPremium", "true")}
+                  >
+                    Premium
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Color Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`gap-1 rounded-md font-normal hover:text-foreground ${
+                      selectedColor
+                        ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                        : "bg-muted/30 text-muted-foreground"
+                    }`}
+                  >
+                    <span className="opacity-70">
+                      {colors?.find((c) => c.slug === selectedColor)?.name ||
+                        "Color"}
+                    </span>{" "}
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="h-64 overflow-y-auto"
+                >
+                  <DropdownMenuItem onClick={() => updateUrl("color", null)}>
+                    All Colors
+                  </DropdownMenuItem>
+                  {colors?.map((color) => (
+                    <DropdownMenuItem
+                      key={color.id}
+                      onClick={() => updateUrl("color", color.slug)}
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full mr-2 border"
+                        style={{ backgroundColor: color.color }}
+                      />
+                      {color.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* File Type Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`gap-1 rounded-md font-normal hover:text-foreground ${
+                      selectedFileType
+                        ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                        : "bg-muted/30 text-muted-foreground"
+                    }`}
+                  >
+                    <span className="opacity-70">
+                      {fileTypesData?.fileTypes?.find(
+                        (f) => f.slug === selectedFileType,
+                      )?.name || "File type"}
+                    </span>{" "}
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="h-64 overflow-y-auto"
+                >
+                  <DropdownMenuItem
+                    onClick={() => updateUrl("fileTypeId", null)}
+                  >
+                    All Types
+                  </DropdownMenuItem>
+                  {fileTypesData?.fileTypes?.map((type) => (
+                    <DropdownMenuItem
+                      key={type.id}
+                      onClick={() => updateUrl("fileTypeId", type.slug)}
+                    >
+                      {type.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {session ? (

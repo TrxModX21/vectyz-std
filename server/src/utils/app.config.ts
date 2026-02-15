@@ -20,8 +20,16 @@ const appConfig = () => ({
   R2_ENDPOINT: getEnv("R2_ENDPOINT"),
   R2_BUCKET_NAME: getEnv("R2_BUCKET_NAME"),
   R2_PUBLIC_URL: getEnv("R2_PUBLIC_URL"),
-  MIDTRANS_SERVER_KEY: getEnv("MIDTRANS_SERVER_KEY", "SB-Mid-server-xxxxxxxxxxxx"),
-  MIDTRANS_CLIENT_KEY: getEnv("MIDTRANS_CLIENT_KEY", "SB-Mid-client-xxxxxxxxxxxx"),
+  MIDTRANS_SERVER_KEY: getEnv(
+    "MIDTRANS_SERVER_KEY",
+    "SB-Mid-server-xxxxxxxxxxxx",
+  ),
+  MIDTRANS_CLIENT_KEY: getEnv(
+    "MIDTRANS_CLIENT_KEY",
+    "SB-Mid-client-xxxxxxxxxxxx",
+  ),
+  GOOGLE_CLIENT_ID: getEnv("GOOGLE_CLIENT_ID", ""),
+  GOOGLE_CLIENT_SECRET: getEnv("GOOGLE_CLIENT_SECRET", ""),
   MIDTRANS_IS_PRODUCTION: getEnv("MIDTRANS_IS_PRODUCTION", false),
   EXCHANGE_RATE: {
     USD: 16000,

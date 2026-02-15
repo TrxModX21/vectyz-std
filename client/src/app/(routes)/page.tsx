@@ -6,18 +6,29 @@ import TrendingLandingSection from "@/components/landing/trending-landing-sectio
 import WhyChooseUsSection from "@/components/landing/why-choose-us-section";
 import LandingCTASection from "@/components/landing/landing-cta-section";
 import Footer from "../../components/common/footer";
+import FadeIn from "@/components/common/fade-in";
 
 const HomePage = () => {
   return (
     <section>
       <Header />
-      <HeroSection />
-      <SectionSeparator />
-      <PopularLandingSection />
-      <SectionSeparator />
-      <TrendingLandingSection />
-      <WhyChooseUsSection />
-      <LandingCTASection />
+      <FadeIn>
+        <HeroSection />
+      </FadeIn>
+      <FadeIn>
+        <SectionSeparator />
+        <PopularLandingSection />
+      </FadeIn>
+      <FadeIn>
+        <SectionSeparator />
+        <TrendingLandingSection />
+      </FadeIn>
+      <FadeIn>
+        <WhyChooseUsSection />
+      </FadeIn>
+      <FadeIn>
+        <LandingCTASection />
+      </FadeIn>
       <Footer />
     </section>
   );

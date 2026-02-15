@@ -53,7 +53,7 @@ const DesktopDialog = ({ open, onOpenChange, stock, onStockSelect }: Props) => {
   const { data: relatedStocks } = useGetRelatedStock(stock?.id ?? "", 10);
   const related = relatedStocks?.stocks || [];
 
-  if (!stock) return null;
+  if (!stock || !stock.user) return null;
 
   const previewFile = stock.files.find((f) => f.purpose === "PREVIEW");
 
@@ -347,7 +347,7 @@ const DesktopDialog = ({ open, onOpenChange, stock, onStockSelect }: Props) => {
                   </Button>
                 </div>
 
-                <div className="w-full h-full border-2 border-zinc-800 border-dashed flex items-center justify-center">
+                {/* <div className="w-full h-full border-2 border-zinc-800 border-dashed flex items-center justify-center">
                   <div
                     className="cm-product-widget"
                     data-pid="7522108"
@@ -361,7 +361,7 @@ const DesktopDialog = ({ open, onOpenChange, stock, onStockSelect }: Props) => {
                       Creative Market
                     </a>
                   </span>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
