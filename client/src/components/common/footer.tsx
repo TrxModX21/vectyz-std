@@ -5,13 +5,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Facebook,
-  Instagram,
-  Linkedin,
-  Youtube,
-  Twitter,
-} from "lucide-react";
+import { Facebook, Instagram, Linkedin, Youtube, Twitter } from "lucide-react";
+import VectyzLogo from "./vectyz-logo";
 
 // Inline SVGs for missing Lucide icons (brand specific)
 const PinterestIcon = ({ className }: { className?: string }) => (
@@ -48,10 +43,15 @@ const RedditIcon = ({ className }: { className?: string }) => (
 );
 
 const XIcon = ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-        <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/>
-    </svg>
-)
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+  </svg>
+);
 
 const Footer = () => {
   const footerData = {
@@ -102,13 +102,11 @@ const Footer = () => {
       <div className="container mx-auto px-4 lg:px-6">
         {/* Top Logo */}
         <div className="mb-8 pl-0">
-          <Link href="/" className="inline-block">
-             <div className="flex items-center gap-2">
-                 <svg height="30" viewBox="0 0 88 17" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-8 w-auto text-white fill-current">
-                     <path d="M11.516 0L8.064 12.088L4.62 0H0L5.94 16.5H10.164L16.14 0H11.516ZM26.46 16.764C30.684 16.764 33.72 13.884 33.72 9.876V9.48C33.72 5.568 30.84 2.688 26.616 2.688C22.416 2.688 19.464 5.616 19.464 9.624V10.02C19.464 13.932 22.344 16.764 26.46 16.764ZM26.616 13.62C24.48 13.62 23.088 12.18 23.088 9.948V9.528C23.088 7.344 24.504 5.832 26.46 5.832C28.596 5.832 29.988 7.272 29.988 9.504V9.924C29.988 12.108 28.572 13.62 26.616 13.62ZM52.926 7.336C52.182 7.144 51.534 7.048 50.886 7.048C48.262 7.048 46.51 8.8 46.51 11.584V16.5H42.886V3.024H46.366V6.16C47.302 4.144 49.006 2.808 51.27 2.808C51.654 2.808 52.062 2.856 52.422 2.928L52.926 7.336ZM69.9482 13.62H59.5082C59.6282 14.892 60.7562 15.9 62.1962 15.9C63.2282 15.9 64.0922 15.468 64.6442 14.652L67.6682 15.996C66.5642 17.82 64.6202 19.14 62.1242 19.14C58.3802 19.14 55.7642 16.212 55.7642 12.444V12.036C55.7642 8.196 58.5962 5.244 62.3882 5.244C66.1802 5.244 68.8922 8.004 68.8922 12.108V13.62H69.9482ZM62.3642 8.148C60.8522 8.148 59.7002 9.18 59.5082 10.668H65.2922C65.1722 9.252 64.0442 8.148 62.3642 8.148ZM17.436 12.28L21.492 1.344H17.652L15.396 8.352L13.116 1.344H9.108L13.26 12.352L11.724 16.5H15.684L17.436 12.28ZM39.696 11.608V12.592C39.696 14.896 38.304 16.336 36.192 16.336C34.08 16.336 32.688 14.896 32.688 12.592V3.024H29.064V12.928C29.064 16.96 31.812 19.384 35.808 19.384C39.096 19.384 41.52 17.488 42.48 15.376L42.816 16.5H45.888V3.024H42.264V11.608H39.696ZM82.2599 3.024H77.6759L73.9639 12.28L70.2279 3.024H66.2199L71.8519 16.5L69.8599 21.684H73.7959L82.2599 3.024ZM88.0294 13.62H79.8694V16.5H92.2534V13.62H83.9854L91.8934 5.928V3.024H79.8694V5.904H87.7774L88.0294 13.62Z" />
-                 </svg>
-             </div>
-          </Link>
+          <div className="inline-block">
+            <div className="flex items-center gap-2">
+              <VectyzLogo src="/logo_dark.png" className="h-14" />
+            </div>
+          </div>
         </div>
 
         {/* Desktop Grid Layout */}
@@ -133,7 +131,7 @@ const Footer = () => {
           {/* Get Started */}
           <div className="space-y-4">
             <h3 className="text-xl font-bold">{footerData.getStarted.title}</h3>
-             <ul className="space-y-2">
+            <ul className="space-y-2">
               {footerData.getStarted.links.map((link) => (
                 <li key={link}>
                   <Link
@@ -149,8 +147,8 @@ const Footer = () => {
 
           {/* Company */}
           <div className="space-y-4">
-             <h3 className="text-xl font-bold">{footerData.company.title}</h3>
-             <ul className="space-y-2">
+            <h3 className="text-xl font-bold">{footerData.company.title}</h3>
+            <ul className="space-y-2">
               {footerData.company.links.map((link) => (
                 <li key={link}>
                   <Link
@@ -164,121 +162,179 @@ const Footer = () => {
             </ul>
           </div>
 
-           {/* Get in touch */}
-           <div className="space-y-6">
-             <h3 className="text-xl font-bold mb-4">Get in touch</h3>
-             <div className="grid grid-cols-4 gap-4 max-w-[200px]">
-                <Link href="#" className="hover:opacity-80"><Facebook className="w-6 h-6" /></Link>
-                <Link href="#" className="hover:opacity-80"><XIcon className="w-6 h-6" /></Link>
-                <Link href="#" className="hover:opacity-80"><PinterestIcon className="w-6 h-6" /></Link>
-                <Link href="#" className="hover:opacity-80"><Instagram className="w-6 h-6" /></Link>
-                <Link href="#" className="hover:opacity-80"><Youtube className="w-6 h-6" /></Link>
-                <Link href="#" className="hover:opacity-80"><Linkedin className="w-6 h-6" /></Link>
-                <Link href="#" className="hover:opacity-80"><DiscordIcon className="w-6 h-6" /></Link>
-                <Link href="#" className="hover:opacity-80"><RedditIcon className="w-6 h-6" /></Link>
-             </div>
+          {/* Get in touch */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold mb-4">Get in touch</h3>
+            <div className="grid grid-cols-4 gap-4 max-w-[200px]">
+              <Link href="#" className="hover:opacity-80">
+                <Facebook className="w-6 h-6" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <XIcon className="w-6 h-6" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <PinterestIcon className="w-6 h-6" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <Instagram className="w-6 h-6" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <Youtube className="w-6 h-6" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <Linkedin className="w-6 h-6" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <DiscordIcon className="w-6 h-6" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <RedditIcon className="w-6 h-6" />
+              </Link>
+            </div>
 
-             <div className="mt-8">
-                 <button className="flex items-center justify-between w-full max-w-[150px] px-4 py-2 border border-white/30 rounded-md text-sm font-medium hover:bg-white/10 transition-colors">
-                     English
-                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="ml-2">
-                         <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                     </svg>
-                 </button>
-             </div>
-           </div>
+            <div className="mt-8">
+              <button className="flex items-center justify-between w-full max-w-[150px] px-4 py-2 border border-white/30 rounded-md text-sm font-medium hover:bg-white/10 transition-colors">
+                English
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="ml-2"
+                >
+                  <path
+                    d="M2 4L6 8L10 4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Mobile Accordion Layout */}
         <div className="md:hidden space-y-4 mb-12">
-            <Accordion type="single" collapsible className="w-full border-none">
-                {/* Product Accordion */}
-                <AccordionItem value="item-1" className="border-b border-white/20">
-                    <AccordionTrigger className="text-xl font-bold hover:no-underline py-4 text-white">
-                        {footerData.products.title}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <ul className="space-y-3 pb-4">
-                             {footerData.products.links.map((link) => (
-                                <li key={link}>
-                                <Link
-                                    href="#"
-                                    className="text-sm font-medium hover:text-white/80 transition-colors pl-1 block"
-                                >
-                                    {link}
-                                </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </AccordionContent>
-                </AccordionItem>
+          <Accordion type="single" collapsible className="w-full border-none">
+            {/* Product Accordion */}
+            <AccordionItem value="item-1" className="border-b border-white/20">
+              <AccordionTrigger className="text-xl font-bold hover:no-underline py-4 text-white">
+                {footerData.products.title}
+              </AccordionTrigger>
+              <AccordionContent>
+                <ul className="space-y-3 pb-4">
+                  {footerData.products.links.map((link) => (
+                    <li key={link}>
+                      <Link
+                        href="#"
+                        className="text-sm font-medium hover:text-white/80 transition-colors pl-1 block"
+                      >
+                        {link}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
 
-                 {/* Get Started Accordion */}
-                 <AccordionItem value="item-2" className="border-b border-white/20">
-                    <AccordionTrigger className="text-xl font-bold hover:no-underline py-4 text-white">
-                        {footerData.getStarted.title}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <ul className="space-y-3 pb-4">
-                             {footerData.getStarted.links.map((link) => (
-                                <li key={link}>
-                                <Link
-                                    href="#"
-                                    className="text-sm font-medium hover:text-white/80 transition-colors pl-1 block"
-                                >
-                                    {link}
-                                </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </AccordionContent>
-                </AccordionItem>
+            {/* Get Started Accordion */}
+            <AccordionItem value="item-2" className="border-b border-white/20">
+              <AccordionTrigger className="text-xl font-bold hover:no-underline py-4 text-white">
+                {footerData.getStarted.title}
+              </AccordionTrigger>
+              <AccordionContent>
+                <ul className="space-y-3 pb-4">
+                  {footerData.getStarted.links.map((link) => (
+                    <li key={link}>
+                      <Link
+                        href="#"
+                        className="text-sm font-medium hover:text-white/80 transition-colors pl-1 block"
+                      >
+                        {link}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
 
-                {/* Company Accordion */}
-                <AccordionItem value="item-3" className="border-b border-white/20">
-                    <AccordionTrigger className="text-xl font-bold hover:no-underline py-4 text-white">
-                        {footerData.company.title}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <ul className="space-y-3 pb-4">
-                             {footerData.company.links.map((link) => (
-                                <li key={link}>
-                                <Link
-                                    href="#"
-                                    className="text-sm font-medium hover:text-white/80 transition-colors pl-1 block"
-                                >
-                                    {link}
-                                </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
-             
-             {/* Mobile Get in touch */}
-             <div className="pt-6 relative flex flex-col items-center">
-                 <h3 className="text-base font-bold mb-6">Get in touch</h3>
-                  <div className="flex flex-wrap justify-center gap-6 max-w-[80%] mx-auto mb-8">
-                    <Link href="#" className="hover:opacity-80"><Facebook className="w-7 h-7" /></Link>
-                    <Link href="#" className="hover:opacity-80"><XIcon className="w-7 h-7" /></Link>
-                    <Link href="#" className="hover:opacity-80"><PinterestIcon className="w-7 h-7" /></Link>
-                    <Link href="#" className="hover:opacity-80"><Instagram className="w-7 h-7" /></Link>
-                    <Link href="#" className="hover:opacity-80"><Youtube className="w-7 h-7" /></Link>
-                    <Link href="#" className="hover:opacity-80"><Linkedin className="w-7 h-7" /></Link>
-                    <Link href="#" className="hover:opacity-80"><DiscordIcon className="w-7 h-7" /></Link>
-                    <Link href="#" className="hover:opacity-80"><RedditIcon className="w-7 h-7" /></Link>
-                 </div>
+            {/* Company Accordion */}
+            <AccordionItem value="item-3" className="border-b border-white/20">
+              <AccordionTrigger className="text-xl font-bold hover:no-underline py-4 text-white">
+                {footerData.company.title}
+              </AccordionTrigger>
+              <AccordionContent>
+                <ul className="space-y-3 pb-4">
+                  {footerData.company.links.map((link) => (
+                    <li key={link}>
+                      <Link
+                        href="#"
+                        className="text-sm font-medium hover:text-white/80 transition-colors pl-1 block"
+                      >
+                        {link}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
-                 <div className="w-full flex justify-center pb-8 border-b border-white/10">
-                     <button className="flex items-center justify-between min-w-[150px] px-4 py-2 border border-white/30 rounded-md text-sm font-medium hover:bg-white/10 transition-colors">
-                         English
-                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="ml-2">
-                             <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                         </svg>
-                     </button>
-                 </div>
-             </div>
+          {/* Mobile Get in touch */}
+          <div className="pt-6 relative flex flex-col items-center">
+            <h3 className="text-base font-bold mb-6">Get in touch</h3>
+            <div className="flex flex-wrap justify-center gap-6 max-w-[80%] mx-auto mb-8">
+              <Link href="#" className="hover:opacity-80">
+                <Facebook className="w-7 h-7" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <XIcon className="w-7 h-7" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <PinterestIcon className="w-7 h-7" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <Instagram className="w-7 h-7" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <Youtube className="w-7 h-7" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <Linkedin className="w-7 h-7" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <DiscordIcon className="w-7 h-7" />
+              </Link>
+              <Link href="#" className="hover:opacity-80">
+                <RedditIcon className="w-7 h-7" />
+              </Link>
+            </div>
+
+            <div className="w-full flex justify-center pb-8 border-b border-white/10">
+              <button className="flex items-center justify-between min-w-[150px] px-4 py-2 border border-white/30 rounded-md text-sm font-medium hover:bg-white/10 transition-colors">
+                English
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="ml-2"
+                >
+                  <path
+                    d="M2 4L6 8L10 4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Footer Bottom */}

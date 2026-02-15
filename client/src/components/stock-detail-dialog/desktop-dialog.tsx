@@ -53,7 +53,7 @@ const DesktopDialog = ({ open, onOpenChange, stock, onStockSelect }: Props) => {
   const { data: relatedStocks } = useGetRelatedStock(stock?.id ?? "", 10);
   const related = relatedStocks?.stocks || [];
 
-  if (!stock) return null;
+  if (!stock || !stock.user) return null;
 
   const previewFile = stock.files.find((f) => f.purpose === "PREVIEW");
 

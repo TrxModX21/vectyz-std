@@ -1,5 +1,10 @@
 import { api } from "@/lib/axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const useGetPopularFreeVector = () => {
@@ -56,6 +61,26 @@ export const useGetRelatedStock = (id: string, limit?: number) => {
       return res.data;
     },
     enabled: !!id,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+export const useGetAllStocks = (params: GetStocksParams) => {
+  return useInfiniteQuery<GetAllStockResponse>({
+    queryKey: ["stocks", params],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get("/stocks", {
+        params: { ...params, page: pageParam },
+      });
+      return res.data;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.currentPage < lastPage.totalPages) {
+        return lastPage.currentPage + 1;
+      }
+      return undefined;
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
