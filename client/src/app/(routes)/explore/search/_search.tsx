@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ChevronDown,
-  LayoutGrid,
-  Settings,
-  SlidersHorizontal,
-  Loader2,
-} from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +8,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import FadeIn from "@/components/common/fade-in";
 import ItemCard from "@/components/explore/item-card";
 import { useSearchParams, useRouter } from "next/navigation";

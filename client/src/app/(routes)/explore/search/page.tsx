@@ -3,7 +3,7 @@ import SearchPages from "./_search";
 
 const SearchPage = () => {
   return (
-    <Suspense fallback={<></>}>
+    <Suspense fallback={<>...</>}>
       <SearchPages />
     </Suspense>
   );
