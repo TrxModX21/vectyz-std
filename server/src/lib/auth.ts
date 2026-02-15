@@ -13,7 +13,10 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  baseURL: "http://localhost:3021",
+  baseURL:
+    config.NODE_ENV === "development"
+      ? "http://localhost:3021"
+      : "https://v2api.vectyz.com",
   appName: "Vectyz",
   trustedOrigins: [
     "http://localhost:3000",
