@@ -64,3 +64,12 @@ export const useBuyAssetCredit = () => {
     },
   });
 };
+
+export const useCreateSubscription = () => {
+  return useMutation({
+    mutationFn: async (payload: any) => {
+      const { data } = await api.post("/transactions/subscribe", payload);
+      return data;
+    },
+  });
+};

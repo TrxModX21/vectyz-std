@@ -22,7 +22,7 @@ const CategoryCarousel = () => {
   const categories = data?.categories || [];
 
   return (
-    <div className="max-w-6xl mx-auto px-4">
+    <div className="max-w-[80%] lg:max-w-6xl mx-auto px-4">
       <Carousel>
         <CarouselContent>
           {categories.map((item) => (

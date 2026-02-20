@@ -40,7 +40,7 @@ export const createTopupController = asyncHandler(
 export const createSubscriptionController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = res.locals.user?.id;
-    const { planId } = req.body;
+    const { planId, billingCycle, billingAddress, phone } = req.body;
 
     if (!userId) {
       throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
@@ -50,7 +50,20 @@ export const createSubscriptionController = asyncHandler(
       throw new AppError("Plan ID is required", HTTPSTATUS.BAD_REQUEST);
     }
 
-    const result = await createSubscriptionTransaction(userId, planId);
+    if (billingCycle && !["MONTHLY", "YEARLY", "ONE_TIME"].includes(billingCycle)) {
+      throw new AppError(
+        "Invalid billing cycle. Must be MONTHLY, YEARLY or ONE_TIME",
+        HTTPSTATUS.BAD_REQUEST,
+      );
+    }
+
+    const result = await createSubscriptionTransaction(
+      userId,
+      planId,
+      billingCycle || "MONTHLY",
+      billingAddress,
+      phone,
+    );
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Subscription transaction created",

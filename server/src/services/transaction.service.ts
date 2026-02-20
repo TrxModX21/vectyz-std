@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { createSnapTransaction } from "../lib/midtrans";
+import { createSnapTransaction, verifySignatureKey } from "../lib/midtrans";
 import { NotFoundException, BadRequestException } from "../utils/app-error";
 import { TransactionType, PaymentStatus } from "../generated/prisma/client";
 
@@ -61,6 +61,17 @@ export const createTopupTransaction = async (
 export const createSubscriptionTransaction = async (
   userId: string,
   planId: string,
+  billingCycle: "MONTHLY" | "YEARLY" | "ONE_TIME",
+  billingAddress?: {
+    first_name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    postal_code?: string;
+    country_code?: string;
+  },
+  phone?: string,
 ) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   const plan = await prisma.plan.findUnique({ where: { id: planId } });
@@ -68,31 +79,55 @@ export const createSubscriptionTransaction = async (
   if (!user) throw new NotFoundException("User not found");
   if (!plan) throw new NotFoundException("Plan not found");
 
+  // Determine Price & Period based on Cycle
+  let amount = plan.price;
+  let periodDays = 30; // Default Monthly
+  let itemName = `${plan.name} Subscription (Monthly)`;
+
+  if (billingCycle === "YEARLY") {
+    if (plan.priceInYear) {
+      amount = plan.priceInYear;
+    } else {
+      // Fallback if priceInYear not set: 12 * price (or handle error)
+      amount = plan.price * 12;
+    }
+    periodDays = 365;
+    itemName = `${plan.name} Subscription (Yearly)`;
+  } else if (billingCycle === "ONE_TIME") {
+    amount = plan.price;
+    periodDays = plan.durationDays; // Use plan duration (e.g. 2 days)
+    itemName = `${plan.name} (One Time Pass)`;
+  }
+
   // Create Transaction Record
   const transaction = await prisma.transaction.create({
     data: {
       userId,
       type: TransactionType.SUBSCRIPTION,
-      amount: plan.price,
+      amount: amount,
       planId: plan.id,
       status: PaymentStatus.PENDING,
+      billingCycle: billingCycle,
+      periodDays: periodDays,
     },
   });
 
   // Get Snap Token
   const snap = await createSnapTransaction({
     order_id: transaction.id,
-    gross_amount: plan.price,
+    gross_amount: amount,
     customer_details: {
-      first_name: user.name,
-      email: user.email,
+      first_name: billingAddress?.first_name || user.name,
+      email: billingAddress?.email || user.email,
+      phone: phone || billingAddress?.phone || "",
+      billing_address: billingAddress,
     },
     item_details: [
       {
         id: plan.id,
-        price: plan.price,
+        price: amount,
         quantity: 1,
-        name: `${plan.name} Subscription`,
+        name: itemName,
       },
     ],
   });
@@ -180,7 +215,7 @@ export const processDirectPurchaseWithCredit = async (
     const priceInRupiah = Number(stock.price);
     const priceInCredit = Math.ceil(priceInRupiah / 1000);
 
-    if (user.creditBalance < priceInCredit) {
+    if (user.creditBalance.lt(priceInCredit)) {
       throw new BadRequestException("Insufficient credit balance");
     }
 
@@ -217,15 +252,17 @@ export const processDirectPurchaseWithCredit = async (
   });
 };
 
-// 4. HANDLE PAYMENT NOTIFICATION (Webhook)
+// 5. HANDLE PAYMENT NOTIFICATION (Webhook)
 export const handlePaymentNotification = async (notificationBody: any) => {
-  // const status = await verifyPaymentNotification(notificationBody);
-  // Loop dependency issue if we import verify from lib/midtrans directly here?
-  // Actually verifyPaymentNotification is in lib/midtrans, so it is fine.
-  // But wait, we need to import it.
-
-  // Let's implement logic assuming verification is done in controller or here.
-  // Ideally service handles business logic.
+  // 1. Verify Signature Key (Security Check)
+  // Import dynamically to avoid circular dependency issues if any, or just use the imported one.
+  // We need to add import { verifySignatureKey } from "../lib/midtrans"; at the top later.
+  // For now, assuming it's available or we use requirement.
+  const isValidSignature = verifySignatureKey(notificationBody);
+  
+  if (!isValidSignature) {
+    throw new BadRequestException("Invalid Signature Key");
+  }
 
   const orderId = notificationBody.order_id;
   const transactionStatus = notificationBody.transaction_status;
@@ -303,19 +340,64 @@ export const handlePaymentNotification = async (notificationBody: any) => {
         const plan = transaction.plan;
         if (plan) {
           const now = new Date();
-          // Reset Premium Quota Date
-          // Calculate Next Reset (1 Month later)
-          const nextReset = new Date(now);
-          nextReset.setMonth(now.getMonth() + 1);
+          
+          // --- EXPIRY & QUOTA LOGIC ---
+          const activeDays = transaction.periodDays || 30; // Fallback 30
+          
+          // Calculate Expiry Date (Extend if active, Reset if expired)
+          let subscriptionExpiresAt = new Date(now);
+          if (user.subscriptionExpiresAt && user.subscriptionExpiresAt > now) {
+             // User masih aktif, tambahkan durasi ke tanggal expired lama
+             subscriptionExpiresAt = new Date(user.subscriptionExpiresAt);
+             subscriptionExpiresAt.setDate(subscriptionExpiresAt.getDate() + activeDays);
+          } else {
+             // User sudah mati atau baru, set dari sekarang
+             subscriptionExpiresAt.setDate(now.getDate() + activeDays);
+          }
+
+          // 2. Calculate Next Quota Reset (Always Monthly for Quota)
+          // Even for Yearly plan, quota resets every month
+          const nextQuotaReset = new Date(now);
+          nextQuotaReset.setMonth(now.getMonth() + 1);
 
           await tx.user.update({
             where: { id: user.id },
             data: {
               isPremium: true,
               planId: plan.id,
+              billingCycle: transaction.billingCycle || "MONTHLY",
+              
+              subscriptionExpiresAt: subscriptionExpiresAt,
               premiumQuota: plan.premiumQuota,
-              premiumQuotaResetDate: nextReset,
-              // Optional: Reset daily limit if needed, or keep standard
+              premiumQuotaResetDate: nextQuotaReset,
+            },
+          });
+
+          // --- MONTHLY POOL DISTRIBUTION ---
+          // 50% Premium Pool, 10% Free Pool
+          const amount = Number(transaction.amount); // Ensure number
+          const premiumShare = amount * 0.5;
+          const freeShare = amount * 0.1;
+          
+          const currentMonth = now.getMonth() + 1; // 1-12
+          const currentYear = now.getFullYear();
+
+          await tx.monthlyPool.upsert({
+            where: {
+              month_year: {
+                month: currentMonth,
+                year: currentYear,
+              },
+            },
+            update: {
+              premiumPoolAmount: { increment: premiumShare },
+              freePoolAmount: { increment: freeShare },
+            },
+            create: {
+              month: currentMonth,
+              year: currentYear,
+              premiumPoolAmount: premiumShare,
+              freePoolAmount: freeShare,
             },
           });
         }
@@ -354,7 +436,7 @@ export const handlePaymentNotification = async (notificationBody: any) => {
   return { message: "Transaction updated", status: newStatus };
 };
 
-// 5. FIND ALL TRANSACTIONS (Admin)
+// 6. FIND ALL TRANSACTIONS (Admin)
 export const findAllTransactions = async (query: any) => {
   const { page = 1, limit = 10, status, type, paymentMethod, search } = query;
   const skip = (Number(page) - 1) * Number(limit);
@@ -383,10 +465,14 @@ export const findAllTransactions = async (query: any) => {
     prisma.transaction.count({ where }),
   ]);
 
-  return { transactions, totalCount, totalPages: Math.ceil(totalCount / Number(limit)) };
+  return {
+    transactions,
+    totalCount,
+    totalPages: Math.ceil(totalCount / Number(limit)),
+  };
 };
 
-// 6. FIND USER TRANSACTIONS
+// 7. FIND USER TRANSACTIONS
 export const findUserTransactions = async (userId: string, query: any) => {
   const { page = 1, limit = 10, status, type } = query;
   const skip = (Number(page) - 1) * Number(limit);
@@ -405,10 +491,14 @@ export const findUserTransactions = async (userId: string, query: any) => {
     prisma.transaction.count({ where }),
   ]);
 
-  return { transactions, totalCount, totalPages: Math.ceil(totalCount / Number(limit)) };
+  return {
+    transactions,
+    totalCount,
+    totalPages: Math.ceil(totalCount / Number(limit)),
+  };
 };
 
-// 7. FIND ONE TRANSACTION
+// 8. FIND ONE TRANSACTION
 export const findOneTransaction = async (transactionId: string) => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },

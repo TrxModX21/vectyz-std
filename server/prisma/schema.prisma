@@ -49,12 +49,14 @@ model User {
   following      Follow[] @relation("UserFollowing")
 
   // -- BUSINESS MODEL FIELDS --
-  creditBalance Int @default(0) // Saldo Credit User (1 Credit = Rp 1.000)
+  creditBalance Decimal @default(0) // Saldo Credit User (1 Credit = Rp 1.000)
 
   // Subscription Info
-  isPremium Boolean @default(false)
-  planId    String? // Relasi ke tabel Plan (jika langganan)
-  plan      Plan?   @relation(fields: [planId], references: [id])
+  isPremium             Boolean       @default(false)
+  planId                String? // Relasi ke tabel Plan (jika langganan)
+  plan                  Plan?         @relation(fields: [planId], references: [id])
+  subscriptionExpiresAt DateTime? // (Auto-downgrade jadi free setelah tanggal ini)
+  billingCycle          BillingCycle? // Billing cycle aktif (Bulanan/Tahunan
 
   // Quota Management
   premiumQuota           Int       @default(0) // Sisa kuota download premium bulan ini
@@ -208,7 +210,7 @@ model Transaction {
 
   // Detail Pembayaran
   amount       Int // Total nominal uang asli (Rupiah || USD || etc) yang dibayar ke Payment Gateway
-  creditAmount Int? // Jumlah credit yang bertambah/berkurang (jika transaksi credit)
+  creditAmount Decimal? // Jumlah credit yang bertambah/berkurang (jika transaksi credit)
 
   // Provider Info (Midtrans/Xendit/Stripe)
   paymentMethod String? // "gopay", "credit_card", "balance"
@@ -218,6 +220,10 @@ model Transaction {
   // Relasi Produk (Opsional)
   planId String?
   plan   Plan?   @relation(fields: [planId], references: [id])
+
+  // Tambahan untuk Subscription history
+  billingCycle BillingCycle?
+  periodDays   Int? // Durasi yang dibeli (misal: 30 atau 365)
 
   stockId   String?
   stock     Stock?   @relation(fields: [stockId], references: [id])
@@ -357,17 +363,21 @@ model Follow {
 
 // -- MASTER DATA: TIER LANGGANAN --
 model Plan {
-  id          String  @id @default(cuid())
-  name        String // "Ngecer", "Creator", "Professional", "Agency"
-  slug        String  @unique // "ngecer-48h", "creator-monthly"
-  price       Int // Harga dalam Rupiah (Rp 25.000, dst)
-  currency    String  @default("IDR")
-  isBestValue Boolean @default(false)
+  id           String  @id @default(cuid())
+  name         String // "Ngecer", "Creator", "Professional", "Agency"
+  slug         String  @unique // "ngecer-48h", "creator-monthly"
+  price        Int // Harga dalam Rupiah (Rp 25.000, dst)
+  priceInYear  Int? // Harga subs dalam setahun
+  saveWithYear String? // Text hemat
+  currency     String  @default("IDR")
+  isBestValue  Boolean @default(false)
 
   // Konfigurasi Fitur
-  durationDays   Int // 2 untuk Ngecer, 30 untuk Bulanan
-  premiumQuota   Int // 5, 20, 100, 350
-  dailyFreeLimit Int @default(9999) // Unlimited (-1 atau 9999)
+  durationDays    Int // 2 untuk Ngecer, 30 untuk Bulanan
+  premiumQuota    Int // 5, 20, 100, 350
+  dailyFreeLimit  Int      @default(9999) // Unlimited (-1 atau 9999)
+  features        String[] @default([]) // Daftar poin fitur (ex: ["Akses 2 Hari", "5 Premium Download", "Unlimited Free Download"])
+  isSupportYearly Boolean  @default(false)
 
   // Licensing & Access
   licenseType   LicenseType @default(STANDARD) // STANDARD / EXTENDED
@@ -413,8 +423,8 @@ model Payout {
   userId String // Kreator
   user   User   @relation(fields: [userId], references: [id])
 
-  amountCredit   Int // Jumlah credit yang dicairkan
-  exchangeRate   Int @default(1000) // 1 Credit = Rp 1000 (Snapshot rate saat request)
+  amountCredit   Decimal // Jumlah credit yang dicairkan
+  exchangeRate   Int     @default(1000) // 1 Credit = Rp 1000 (Snapshot rate saat request)
   totalAmountIdr Int // Total Rupiah yang akan ditransfer (sebelum admin fee)
 
   status PayoutStatus @default(REQUESTED) // REQUESTED, PROCESSED, COMPLETED, REJECTED
@@ -429,6 +439,25 @@ model Payout {
   updatedAt DateTime @updatedAt
 }
 
+model MonthlyPool {
+  id    String @id @default(cuid())
+  month Int
+  year  Int
+
+  // Kantong Dana
+  premiumPoolAmount Decimal @default(0) @db.Decimal(28, 8) // 50% dari Subs
+  freePoolAmount    Decimal @default(0) @db.Decimal(28, 8) // 10% dari Subs
+
+  // Total Download (Global) oleh User Premium
+  totalPremiumDownloads Int @default(0) // Download pada aset Premium
+  totalFreeDownloads    Int @default(0) // Download pada aset Free oleh user Premium
+
+  isDistributed Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@unique([month, year])
+}
+
 // -- ENUMS (Tambahkan di bawah file) --
 enum LicenseType {
   STANDARD
@@ -440,6 +469,8 @@ enum TransactionType {
   SUBSCRIPTION // User bayar langganan
   BUY_ASSET // User beli aset putus (Direct/Credit)
   WITHDRAWAL // Kreator tarik dana
+  EARNING_ASSET // Hasil jual putus
+  POOL_EARNING    // Hasil bagi hasil bulanan (Premium & Free)
 }
 
 enum PaymentStatus {
@@ -466,4 +497,10 @@ enum FilePurpose {
   ORIGINAL
   PREVIEW
   THUMBNAIL
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+  ONE_TIME
 }

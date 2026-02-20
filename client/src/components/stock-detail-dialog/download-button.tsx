@@ -22,7 +22,8 @@ interface DownloadButtonProps {
 }
 
 const DownloadButton = ({ stock }: DownloadButtonProps) => {
-  const { data: user, isLoading } = useAuth();
+  const { data: userProfileResponse, isLoading } = useAuth();
+  const user = userProfileResponse?.user;
   const { data: access, isLoading: checkingAccess } = useCheckAccess(
     stock.id,
     !!user,

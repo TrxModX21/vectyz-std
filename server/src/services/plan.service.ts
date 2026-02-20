@@ -27,6 +27,8 @@ export const getPlanDetailService = async (id: string) => {
 export const createPlanService = async (data: {
   name: string;
   price: number;
+  priceInYear?: number;
+  saveWithYear?: string;
   currency?: string;
   durationDays: number;
   premiumQuota: number;
@@ -35,6 +37,8 @@ export const createPlanService = async (data: {
   maxDevices?: number;
   downloadSpeed?: string;
   isBestValue?: boolean;
+  features?: string[];
+  isSupportYearly?: boolean;
 }) => {
   const slug = generateStockSlug(data.name);
 
@@ -51,6 +55,8 @@ export const updatePlanService = async (
   data: Partial<{
     name: string;
     price: number;
+    priceInYear?: number;
+    saveWithYear?: string;
     currency: string;
     durationDays: number;
     premiumQuota: number;
@@ -59,6 +65,8 @@ export const updatePlanService = async (
     maxDevices: number;
     downloadSpeed: string;
     isBestValue: boolean;
+    features: string[];
+    isSupportYearly?: boolean;
   }>,
 ) => {
   const plan = await prisma.plan.findUnique({
