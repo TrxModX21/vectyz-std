@@ -11,8 +11,8 @@ async function main() {
 
   const plans = [
     {
-      name: "Ngecer (48-Hour Pass)",
-      slug: "ngecer-48h",
+      name: "On-Demand (48-Hour Pass)",
+      slug: "on-demand-48h",
       price: 25000,
       currency: "IDR",
       durationDays: 2,
@@ -22,6 +22,14 @@ async function main() {
       maxDevices: 1,
       downloadSpeed: "STANDARD",
       isBestValue: false,
+      features: [
+        "5 Premium Downloads (Max)",
+        "Unlimited Free Stock Access",
+        "Standard Commercial License",
+        "No Attribution Required",
+        "Standard Speed (~1 MBps)",
+        "1 Active Device",
+      ],
     },
     {
       name: "Creator (Monthly)",
@@ -35,6 +43,15 @@ async function main() {
       maxDevices: 1,
       downloadSpeed: "STANDARD",
       isBestValue: false,
+      features: [
+        "20 Premium Downloads / month",
+        "Unlimited Free Stock Access",
+        "Standard Commercial License",
+        "No Attribution Required",
+        "Ad-Free Experience",
+        "Standard Download Speed",
+        "1 Active Device",
+      ],
     },
     {
       name: "Professional (Monthly)",
@@ -48,6 +65,15 @@ async function main() {
       maxDevices: 2,
       downloadSpeed: "HIGH",
       isBestValue: true, // Best Value
+      features: [
+        "100 Premium Downloads / month",
+        "Unlimited Free Stock Access",
+        "Standard Commercial License",
+        "No Attribution Required",
+        "Priority High-Speed Server",
+        "Priority Email Support (< 24h)",
+        "2 Concurrent Devices (Laptop & PC)",
+      ],
     },
     {
       name: "Agency (Monthly)",
@@ -61,6 +87,15 @@ async function main() {
       maxDevices: 5,
       downloadSpeed: "HIGH",
       isBestValue: false,
+      features: [
+        "350 Premium Downloads / month",
+        "Unlimited Free Stock Access",
+        "Extended Commercial License",
+        "No Attribution Required",
+        "Priority High-Speed Server",
+        "VIP Support (Live Chat & WhatsApp)",
+        "Team Seat: 5 Concurrent Devices",
+      ],
     },
   ];
 

@@ -1,5 +1,6 @@
 import midtransClient from "midtrans-client";
 import { config } from "../utils/app.config";
+import * as crypto from "crypto";
 
 // --- INIT SNAP (Untuk Transaksi Frontend) ---
 // @ts-ignore
@@ -29,6 +30,15 @@ export const createSnapTransaction = async (params: {
     first_name: string;
     email: string;
     phone?: string;
+    billing_address?: {
+      first_name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      city?: string;
+      postal_code?: string;
+      country_code?: string;
+    };
   };
   item_details?: {
     id: string;
@@ -67,26 +77,30 @@ export const createSnapTransaction = async (params: {
 export const verifyPaymentNotification = async (notificationBody: any) => {
   try {
     // @ts-ignore
-    const statusResponse = await coreApi.transaction.notification(notificationBody);
-    
+    const statusResponse = await (coreApi as any).transaction.notification(
+      notificationBody,
+    );
+
     const orderId = statusResponse.order_id;
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
 
-    console.log(`Transaction Check: ${orderId} -> ${transactionStatus} (${fraudStatus})`);
+    console.log(
+      `Transaction Check: ${orderId} -> ${transactionStatus} (${fraudStatus})`,
+    );
 
     let isPaid = false;
     let isCancelled = false;
 
     if (transactionStatus == "capture") {
       if (fraudStatus == "challenge") {
-         // Pembayaran kartu kredit yang mencurigakan, bisa ditolak/pending
-         isPaid = false;
+        // Pembayaran kartu kredit yang mencurigakan, bisa ditolak/pending
+        isPaid = false;
       } else if (fraudStatus == "accept") {
-         isPaid = true;
+        isPaid = true;
       }
     } else if (
-      transactionStatus == "settlement" || 
+      transactionStatus == "settlement" ||
       transactionStatus == "capture" // Kadang instant capture dianggap paid
     ) {
       isPaid = true;
@@ -104,11 +118,32 @@ export const verifyPaymentNotification = async (notificationBody: any) => {
       fraudStatus,
       isPaid,
       isCancelled,
-      rawResponse: statusResponse
+      rawResponse: statusResponse,
     };
-
   } catch (error) {
-     console.error("Midtrans Notification Error:", error);
-     throw error;
+    console.error("Midtrans Notification Error:", error);
+    throw error;
   }
+};
+
+/**
+ * Verifikasi Signature Key Midtrans secara Manual (SHA512)
+ * Rumus: SHA512(order_id + status_code + gross_amount + ServerKey)
+ */
+export const verifySignatureKey = (notificationBody: any): boolean => {
+  const { order_id, status_code, gross_amount, signature_key } =
+    notificationBody;
+
+  if (!order_id || !status_code || !gross_amount || !signature_key) {
+    return false;
+  }
+
+  const serverKey = config.MIDTRANS_SERVER_KEY;
+  const input = `${order_id}${status_code}${gross_amount}${serverKey}`;
+
+  // Dynamic import crypto if needed, or better use valid node import if environment supports it.
+  // const crypto = require("crypto");
+  const signature = crypto.createHash("sha512").update(input).digest("hex");
+
+  return signature === signature_key;
 };

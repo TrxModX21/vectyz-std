@@ -18,7 +18,7 @@ const HeroTextPricing = ({
         Access the world&apos;s best collection of high-quality vectors, illustrations, and design resources. Choose the perfect plan to streamline your workflow and bring your ideas to life.
       </p>
 
-      <div className="flex justify-center mt-8">
+      {/* <div className="flex justify-center mt-8">
         <div className="bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg flex items-center">
           <button
             onClick={() => setBillingCycle("monthly")}
@@ -43,7 +43,7 @@ const HeroTextPricing = ({
             Yearly
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
