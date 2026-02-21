@@ -7,7 +7,7 @@ const authRoutes = [
   "/auth/reset-password",
 ];
 
-const protectedRoutes = ["/vectyzen/dashboard"];
+const protectedRoutes = ["/vectyzen"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -22,11 +22,14 @@ export async function proxy(request: NextRequest) {
   // Helper to verify session
   const verifySession = async () => {
     try {
-      const res = await fetch("http://localhost:3021/api/auth/get-session", {
-        headers: {
-          cookie: request.headers.get("cookie") || "",
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/get-session`,
+        {
+          headers: {
+            cookie: request.headers.get("cookie") || "",
+          },
         },
-      });
+      );
       if (!res.ok) return null;
       const data = await res.json();
       return data; // Request returns session object or null
