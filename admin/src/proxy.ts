@@ -11,8 +11,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionCookie = request.cookies.get("better-auth.session_token");
+  const sessionCookieName =
+    process.env.NODE_ENV === "production"
+      ? "__Secure-better-auth.session_token"
+      : "better-auth.session_token";
+  const domainConfig =
+    process.env.NODE_ENV === "production" ? ".vectyz.com" : undefined;
 
+  const sessionCookie =
+    request.cookies.get(sessionCookieName) ||
+    request.cookies.get("better-auth.session_token"); // Fallback
+    
   // Helper to verify session
   const verifySession = async () => {
     try {
@@ -45,7 +54,19 @@ export async function proxy(request: NextRequest) {
     if (!session) {
       // Invalid session -> Redirect to login AND Clear Cookie loops
       const response = NextResponse.redirect(new URL("/", request.url));
-      response.cookies.delete("better-auth.session_token");
+      response.cookies.delete({
+        name: sessionCookieName,
+        domain: domainConfig,
+        path: "/",
+      });
+      // (Opsional/Best Practice) Sapu bersih juga versi lokal jaga-jaga status env bocor
+      if (process.env.NODE_ENV === "production") {
+        response.cookies.delete({
+          name: "better-auth.session_token",
+          domain: domainConfig,
+          path: "/",
+        });
+      }
       return response;
     }
 
@@ -63,7 +84,19 @@ export async function proxy(request: NextRequest) {
     } else {
       // Invalid cookie -> Clear it and let them view the login page
       const response = NextResponse.next();
-      response.cookies.delete("better-auth.session_token");
+      response.cookies.delete({
+        name: sessionCookieName,
+        domain: domainConfig,
+        path: "/",
+      });
+      // (Opsional/Best Practice) Sapu bersih juga versi lokal jaga-jaga status env bocor
+      if (process.env.NODE_ENV === "production") {
+        response.cookies.delete({
+          name: "better-auth.session_token",
+          domain: domainConfig,
+          path: "/",
+        });
+      }
       return response;
     }
   }

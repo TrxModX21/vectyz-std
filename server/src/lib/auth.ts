@@ -112,9 +112,10 @@ export const auth = betterAuth({
   advanced: {
     disableOriginCheck: config.NODE_ENV !== "production", // Fix issue Issue 403 MISSING_OR_NULL_ORIGIN
     defaultCookieAttributes: {
-      sameSite: "none",
-      secure: true,
-      partitioned: true,
+      domain: config.NODE_ENV === "production" ? ".vectyz.com" : undefined,
+      sameSite: "lax",
+      secure: config.NODE_ENV === "production",
+      // hapus partitioned: true
     },
   },
   session: {
