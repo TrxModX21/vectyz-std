@@ -5,7 +5,7 @@ const publicRoutes = ["/", "/forgot-password", "/reset-password"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Allow API routes to pass through (Better Auth handles its own auth)
   if (pathname.startsWith("/api")) {
     return NextResponse.next();
@@ -16,11 +16,14 @@ export async function proxy(request: NextRequest) {
   // Helper to verify session
   const verifySession = async () => {
     try {
-      const res = await fetch("http://localhost:3021/api/auth/get-session", {
-        headers: {
-          cookie: request.headers.get("cookie") || "",
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/get-session`,
+        {
+          headers: {
+            cookie: request.headers.get("cookie") || "",
+          },
         },
-      });
+      );
       if (!res.ok) return null;
       const data = await res.json();
       return data; // Request returns session object or null
