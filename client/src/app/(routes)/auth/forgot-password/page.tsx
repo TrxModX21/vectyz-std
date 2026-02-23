@@ -1,11 +1,51 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import VectyzLogo from "@/components/common/vectyz-logo";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader } from "lucide-react";
 import Link from "next/link";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { useForm } from "react-hook-form";
+import {
+  ForgotPasswordSchema,
+  forgotPasswordSchema,
+} from "@/validators/auth.validation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 const ForgotPasswordPage = () => {
+  const [isPending, setIsPending] = useState(false);
+
+  const form = useForm<ForgotPasswordSchema>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  const onSubmit = async (values: ForgotPasswordSchema) => {
+    setIsPending(true);
+    await authClient.requestPasswordReset(
+      {
+        email: values.email,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      },
+      {
+        onSuccess: () => {
+          toast.success("If an account exists, a reset link has been sent.");
+          setIsPending(false);
+        },
+        onError: (ctx) => {
+          toast.error(ctx.error.message);
+          setIsPending(false);
+        },
+      },
+    );
+  };
+
   return (
     <div className="w-full md:w-[65%] flex flex-col items-center justify-center p-8 lg:p-12 relative bg-white">
       {/* Mobile Logo */}
@@ -24,27 +64,35 @@ const ForgotPasswordPage = () => {
           </p>
         </div>
 
-        <form className="space-y-4">
-          <div className="space-y-2">
-            <Label
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+          {/* Email */}
+          <Field className="space-y-2">
+            <FieldLabel
               htmlFor="email"
               className="text-gray-500 text-xs font-normal ml-1"
             >
               Email address
-            </Label>
+            </FieldLabel>
             <Input
               id="email"
-              type="email"
               className="rounded-full h-11 border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600"
+              type="email"
+              placeholder="m@example.com"
+              {...form.register("email")}
             />
-          </div>
+            {form.formState.errors.email && (
+              <p className="text-sm text-destructive mt-1">
+                {form.formState.errors.email.message}
+              </p>
+            )}
+          </Field>
 
           <Button
             type="submit"
-            disabled={false}
+            disabled={isPending}
             className="w-full h-11 rounded-full bg-[#0047AB] hover:bg-blue-600 text-white font-semibold shadow-md"
           >
-            {/* {isPending && <Loader className="animate-spin mr-2" />} */}
+            {isPending && <Loader className="animate-spin mr-2" />}
             Send Reset Link
             <ArrowRight className="ml-2 size-4" />
           </Button>
