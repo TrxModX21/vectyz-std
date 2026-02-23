@@ -115,7 +115,7 @@ export const auth = betterAuth({
       domain: config.NODE_ENV === "production" ? ".vectyz.com" : undefined,
       sameSite: "lax",
       secure: config.NODE_ENV === "production",
-      // hapus partitioned: true
+      // partitioned: true
     },
   },
   session: {
