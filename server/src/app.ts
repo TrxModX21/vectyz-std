@@ -18,6 +18,8 @@ const allowedOrigins = [
   "http://localhost:3001",
   "https://v2.vectyz.com",
   "https://v2admin.vectyz.com",
+  "https://vectolio.com",
+  "https://tcenter.vectolio.com",
 ];
 // const allowedOrigins = ["*"];
 
@@ -26,7 +28,7 @@ app.use(
     origin: allowedOrigins, // asal frontend
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true, // wajib untuk cookies
-  })
+  }),
 );
 app.set("trust proxy", 1); // important for cookie
 
