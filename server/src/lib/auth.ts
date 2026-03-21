@@ -8,6 +8,7 @@ import {
   passwordResetTemplate,
   securityAlertTemplate,
 } from "../mailers/templates/template";
+import { generateUsername } from "../utils/helper";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -16,13 +17,15 @@ export const auth = betterAuth({
   baseURL:
     config.NODE_ENV === "development"
       ? "http://localhost:3021"
-      : "https://v2api.vectyz.com",
-  appName: "Vectyz",
+      : "https://api.vectolio.com",
+  appName: "Vectolio",
   trustedOrigins: [
     "http://localhost:3000",
     "http://localhost:3001",
     "https://v2.vectyz.com",
     "https://v2admin.vectyz.com",
+    "https://vectolio.com",
+    "https://tcenter.vectolio.com",
   ],
   emailAndPassword: {
     enabled: true,
@@ -74,6 +77,27 @@ export const auth = betterAuth({
     google: {
       clientId: config.GOOGLE_CLIENT_ID as string,
       clientSecret: config.GOOGLE_CLIENT_SECRET as string,
+      mapProfileToUser: async (profile) => {
+        // Ambil nama dari sebelum @ pada email atau set dummy jika tidak ada
+        const baseUsername = profile.email
+          ? profile.email
+              .split("@")[0]
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, "")
+          : "vectyzen";
+
+        const username = generateUsername(baseUsername);
+
+        return {
+          email: profile.email,
+          name:
+            profile.name ||
+            `${profile.given_name || ""} ${profile.family_name || ""}`.trim(),
+          image: profile.picture,
+          emailVerified: profile.email_verified === true,
+          username: username, // Assign generated username ke database
+        };
+      },
     },
   },
   user: {
