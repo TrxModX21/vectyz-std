@@ -37,14 +37,6 @@ export const useBuyAssetDirect = () => {
       });
       return data;
     },
-    onSuccess: (data) => {
-      window.location.href = data.data.redirectUrl;
-    },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to initiate purchase",
-      );
-    },
   });
 };
 
@@ -69,6 +61,28 @@ export const useCreateSubscription = () => {
   return useMutation({
     mutationFn: async (payload: any) => {
       const { data } = await api.post("/transactions/subscribe", payload);
+      return data;
+    },
+  });
+};
+
+export const useCreateDonationGateway = () => {
+  return useMutation({
+    mutationFn: async (payload: {
+      targetUserId: string;
+      stockId: string;
+      amount: number;
+    }) => {
+      const { data } = await api.post("/transactions/donate/gateway", payload);
+      return data;
+    },
+  });
+};
+
+export const useTopupCredit = () => {
+  return useMutation({
+    mutationFn: async (amount: number) => {
+      const { data } = await api.post("/transactions/topup", { amount });
       return data;
     },
   });

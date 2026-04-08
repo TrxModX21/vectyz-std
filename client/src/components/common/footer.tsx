@@ -104,7 +104,7 @@ const Footer = () => {
         <div className="mb-8 pl-0">
           <div className="inline-block">
             <div className="flex items-center gap-2">
-              <VectyzLogo src="/logo_dark.png" className="h-14" />
+              <VectyzLogo src="/logo-white.png" className="h-14" />
             </div>
           </div>
         </div>

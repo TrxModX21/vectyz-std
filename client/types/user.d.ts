@@ -8,28 +8,29 @@ interface User {
   id: string;
   name: string;
   email: string;
-  username: any;
+  username: string;
   emailVerified: boolean;
-  image: any;
+  image: string;
   role: string;
   banned: boolean;
-  banReason: any;
-  banExpires: any;
+  banReason: string;
+  banExpires: string;
   createdAt: string;
   updatedAt: string;
   totalFollowers: number;
   totalFollowing: number;
   creditBalance: string;
   isPremium: boolean;
-  planId: any;
-  subscriptionExpiresAt: any;
-  billingCycle: any;
+  planId: string;
+  subscriptionExpiresAt: string;
+  billingCycle: string;
   premiumQuota: number;
   premiumQuotaResetDate: string;
   dailyFreeDownloadCount: number;
-  lastDownloadDate: any;
-  currentDeviceId: any;
+  lastDownloadDate: string;
+  currentDeviceId: string;
   profile: Profile;
+  isAnonymous: boolean;
   _count: Count;
 }
 

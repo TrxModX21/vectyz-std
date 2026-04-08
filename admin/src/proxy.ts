@@ -16,12 +16,12 @@ export async function proxy(request: NextRequest) {
       ? "__Secure-better-auth.session_token"
       : "better-auth.session_token";
   const domainConfig =
-    process.env.NODE_ENV === "production" ? ".vectyz.com" : undefined;
+    process.env.NODE_ENV === "production" ? ".vectolio.com" : undefined;
 
   const sessionCookie =
     request.cookies.get(sessionCookieName) ||
     request.cookies.get("better-auth.session_token"); // Fallback
-    
+
   // Helper to verify session
   const verifySession = async () => {
     try {

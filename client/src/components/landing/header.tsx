@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import VectyzLogo from "@/components/common/vectyz-logo";
-import { authClient } from "@/lib/auth-client";
 import {
   Bell,
   ChevronDown,
@@ -23,8 +22,10 @@ import {
   Languages,
   LogOut,
   Moon,
+  Plus,
   Settings,
   Ticket,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -33,6 +34,8 @@ import MobileNav from "../common/mobile-nav";
 import HeaderNavigationMenu from "../common/nav-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImpersonateMode from "../impersonate-mode";
+import TopUpDialog from "../common/top-up-dialog";
+import { useAuth } from "@/hooks/use-auth";
 
 const Header = () => {
   const [mounted, setMounted] = useState(false);
@@ -40,18 +43,14 @@ const Header = () => {
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-  const {
-    data: session,
-    isPending: sessionLoading, //loading state
-    error, //error object
-    refetch, //refetch the session
-  } = authClient.useSession();
+  const { data: userProfileResponse, isLoading } = useAuth();
+  const user = userProfileResponse?.user;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted || sessionLoading) return <HeaderSkeleton />;
+  if (!mounted || isLoading) return <HeaderSkeleton />;
 
   return (
     <>
@@ -79,141 +78,153 @@ const Header = () => {
               >
                 <Bell className="size-8 text-blue-900" />
               </Button>
-              <Link href="/pricing">
+
+              <Link href="/pricing" className="hidden md:block">
                 <Button size={isLargeDevice ? "default" : "sm"}>Plans</Button>
               </Link>
 
-              {session ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+              {user ? (
+                <>
+                  <TopUpDialog>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full"
+                      variant="outline"
+                      className="hidden md:flex h-9 gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary"
                     >
-                      <Avatar className="size-10">
-                        <AvatarImage
-                          src={session.user.image || ""}
-                          alt="shadcn"
-                        />
-                        <AvatarFallback className="bg-v-green">
-                          {session.user.name.slice(0)[0]}
-                        </AvatarFallback>
-                      </Avatar>
+                      <Zap className="h-4 w-4 text-primary fill-primary/20" />
+                      <span className="font-semibold">
+                        {user?.creditBalance || 0}
+                      </span>
+                      <Plus className="h-3 w-3 ml-1 opacity-50" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    className="w-72 p-2"
-                    sideOffset={10}
-                    align="end"
-                  >
-                    <div className="flex items-center gap-3 p-2">
-                      <Avatar className="size-10">
-                        <AvatarImage
-                          src={session.user.image as string}
-                          alt="profile image"
-                        />
-                        <AvatarFallback className="bg-v-green">
-                          {session.user.name.slice(0)[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col space-y-0.5">
-                        <p className="text-sm font-bold leading-none">
-                          {session.user.name}
-                        </p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                          {session.user.email}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="p-2 flex flex-col gap-2">
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-                        Get a plan
-                      </Button>
-                      <Link href="/vectyzen">
-                        <Button
-                          variant="outline"
-                          className="w-full bg-transparent border-input hover:bg-accent hover:text-accent-foreground"
-                        >
-                          Dashboard
-                        </Button>
-                      </Link>
-                    </div>
-
-                    <DropdownMenuSeparator />
-
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <CreditCard className="mr-2 size-4" />
-                        Plan & billing
-                        <span className="ml-auto text-xs bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">
-                          Free
-                        </span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Settings className="mr-2 size-4" />
-                        Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Globe className="mr-2 size-4" />
-                        Creator profile
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Folder className="mr-2 size-4" />
-                        My collections
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-
-                    <DropdownMenuGroup className="mt-2">
-                      <div className="flex items-center justify-between px-2 py-1.5 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Languages className="size-4" />
-                          Language
-                        </div>
-                        <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
-                          English
-                          <ChevronDown className="size-3" />
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between px-2 py-1.5 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Moon className="size-4" />
-                          Theme
-                        </div>
-                        <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
-                          Dark
-                          <ChevronDown className="size-3" />
-                        </div>
-                      </div>
-                    </DropdownMenuGroup>
-
-                    <DropdownMenuSeparator />
-
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Ticket className="mr-2 size-4" />
-                        Use AI code
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <HelpCircle className="mr-2 size-4" />
-                        Help center
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-
-                    <DropdownMenuSeparator />
-
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onSelect={() => setLogoutDialogOpen(true)}
+                  </TopUpDialog>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full"
                       >
-                        <LogOut className="mr-2 size-4" />
-                        Log out
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                        <Avatar className="size-10">
+                          <AvatarImage src={user.image || ""} alt="shadcn" />
+                          <AvatarFallback className="bg-v-green">
+                            {user.name.slice(0)[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      className="w-72 p-2"
+                      sideOffset={10}
+                      align="end"
+                    >
+                      <div className="flex items-center gap-3 p-2">
+                        <Avatar className="size-10">
+                          <AvatarImage
+                            src={user.image as string}
+                            alt="profile image"
+                          />
+                          <AvatarFallback className="bg-v-green">
+                            {user.name.slice(0)[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col space-y-0.5">
+                          <p className="text-sm font-bold leading-none">
+                            {user.name}
+                          </p>
+                          <p className="text-xs leading-none text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-2 flex flex-col gap-2">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                          Get a plan
+                        </Button>
+                        <Link href="/vectyzen">
+                          <Button
+                            variant="outline"
+                            className="w-full bg-transparent border-input hover:bg-accent hover:text-accent-foreground"
+                          >
+                            Dashboard
+                          </Button>
+                        </Link>
+                      </div>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem className="cursor-pointer">
+                          <CreditCard className="mr-2 size-4" />
+                          Plan & billing
+                          <span className="ml-auto text-xs bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">
+                            Free
+                          </span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Settings className="mr-2 size-4" />
+                          Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Globe className="mr-2 size-4" />
+                          Creator profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Folder className="mr-2 size-4" />
+                          My collections
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+
+                      <DropdownMenuGroup className="mt-2">
+                        <div className="flex items-center justify-between px-2 py-1.5 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Languages className="size-4" />
+                            Language
+                          </div>
+                          <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
+                            English
+                            <ChevronDown className="size-3" />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between px-2 py-1.5 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Moon className="size-4" />
+                            Theme
+                          </div>
+                          <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
+                            Dark
+                            <ChevronDown className="size-3" />
+                          </div>
+                        </div>
+                      </DropdownMenuGroup>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Ticket className="mr-2 size-4" />
+                          Use AI code
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer">
+                          <HelpCircle className="mr-2 size-4" />
+                          Help center
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onSelect={() => setLogoutDialogOpen(true)}
+                        >
+                          <LogOut className="mr-2 size-4" />
+                          Log out
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
               ) : (
                 <>
                   <Link href="/auth/sign-up">

@@ -11,6 +11,7 @@ import {
 import {
   createCollectionService,
   fetchAllCollectionService,
+  getMyCollectionsService,
   getCollectionDetailService,
   updateCollectionService,
   deleteCollectionService,
@@ -34,6 +35,28 @@ export const fetchCollectionListController = asyncHandler(
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Collection fetched successfully",
+      timestamp: new Date().toISOString(),
+      totalCount,
+      totalPages,
+      currentPage,
+      collections,
+    });
+  },
+);
+
+export const getMyCollectionsController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const query = fetchAllCollectionSchema.parse(req.query);
+    const user = res.locals.user;
+
+    const { collections, currentPage, totalCount, totalPages } =
+      await getMyCollectionsService({
+        ...query,
+        userId: user.id,
+      });
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "My collections fetched successfully",
       timestamp: new Date().toISOString(),
       totalCount,
       totalPages,

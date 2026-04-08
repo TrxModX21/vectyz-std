@@ -4,6 +4,12 @@ interface PopularFreeVectorResponse {
   stocks: Stock[];
 }
 
+interface StockDetailResponse {
+  message: string;
+  timestamp: string;
+  stock: Stock;
+}
+
 interface GetAllStockResponse {
   message: string;
   totalCount: number;
@@ -34,11 +40,19 @@ interface Stock {
   totalLikes: number;
   createdAt: string;
   updatedAt: string;
+  isLiked?: boolean;
   user: User;
   category: Category;
   fileType: FileType;
   files: File[];
-  likes: any[];
+  likes: {
+    user: {
+      id: string;
+      name: string;
+      username: string;
+      image: any;
+    };
+  }[];
 }
 
 interface User {

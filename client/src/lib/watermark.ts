@@ -21,7 +21,7 @@ export const addWatermark = async (file: File): Promise<File> => {
         ctx.drawImage(img, 0, 0);
 
         // Watermark Configuration
-        const text = "Vectyz";
+        const text = "Vectolio";
         const fontSize = Math.max(24, Math.floor(img.width / 20)); // Responsive font size
         const font = `bold ${fontSize}px sans-serif`;
         const textColor = "rgba(255, 255, 255, 0.5)";

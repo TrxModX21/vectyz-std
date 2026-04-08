@@ -6,6 +6,7 @@ import {
   createSubscriptionController,
   buyAssetDirectController,
   buyAssetWithCreditController,
+  createDonationGatewayController,
   paymentNotificationController,
   getAllTransactionsController,
   getUserTransactionsController,
@@ -20,6 +21,7 @@ transactionRoutes.post("/topup", requireAuth, createTopupController);
 transactionRoutes.post("/subscribe", requireAuth, createSubscriptionController);
 transactionRoutes.post("/buy-asset/gateway", requireAuth, buyAssetDirectController);
 transactionRoutes.post("/buy-asset/credit", requireAuth, buyAssetWithCreditController);
+transactionRoutes.post("/donate/gateway", requireAuth, createDonationGatewayController);
 
 // Webhook (Public, Midtrans will call this)
 transactionRoutes.post("/notification", paymentNotificationController);

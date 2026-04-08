@@ -95,6 +95,37 @@ export const fetchAllCollectionService = async (
   };
 };
 
+export const getMyCollectionsService = async (
+  input: FetchAllCollectionSchema & { userId: string }
+) => {
+  const { limit, page, search, userId } = input;
+
+  const where: any = { userId };
+
+  if (search) {
+    where.name = { contains: search, mode: "insensitive" };
+  }
+
+  const [collections, totalCount] = await Promise.all([
+    prisma.collection.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { updatedAt: "desc" },
+      include: selectField,
+    }),
+    prisma.collection.count({ where }),
+  ]);
+
+  return {
+    collections,
+    totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+  };
+};
+
+
 export const createCollectionService = async (
   input: CreateCollectionType & { userId: string },
 ) => {
@@ -282,6 +313,12 @@ export const addItemToCollectionService = async (
       collectionId,
       stockId,
     },
+  });
+
+  // Update collection's updatedAt
+  await prisma.collection.update({
+    where: { id: collectionId },
+    data: { updatedAt: new Date() },
   });
 
   return newItem;

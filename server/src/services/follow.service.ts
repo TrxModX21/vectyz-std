@@ -1,11 +1,12 @@
 import prisma from "../lib/prisma";
+import { BadRequestException } from "../utils/app-error";
 
 export const followUserService = async (
   followerId: string,
-  followingId: string
+  followingId: string,
 ) => {
   if (followerId === followingId) {
-    throw new Error("You cannot follow yourself");
+    throw new BadRequestException("You cannot follow yourself");
   }
 
   // Check if already following
@@ -19,7 +20,7 @@ export const followUserService = async (
   });
 
   if (existingFollow) {
-    throw new Error("You are already following this user");
+    throw new BadRequestException("You are already following this user");
   }
 
   // Transaction: Create follow record and update counters
@@ -45,7 +46,7 @@ export const followUserService = async (
 
 export const unfollowUserService = async (
   followerId: string,
-  followingId: string
+  followingId: string,
 ) => {
   const existingFollow = await prisma.follow.findUnique({
     where: {
@@ -57,7 +58,7 @@ export const unfollowUserService = async (
   });
 
   if (!existingFollow) {
-    throw new Error("You are not following this user");
+    throw new BadRequestException("You are not following this user");
   }
 
   // Transaction: Delete follow record and update counters
@@ -85,7 +86,7 @@ export const unfollowUserService = async (
 
 export const checkFollowStatusService = async (
   followerId: string,
-  followingId: string
+  followingId: string,
 ) => {
   const follow = await prisma.follow.findUnique({
     where: {
@@ -102,7 +103,7 @@ export const checkFollowStatusService = async (
 export const getUserFollowersService = async (
   userId: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
 ) => {
   const skip = (page - 1) * limit;
 
@@ -138,7 +139,7 @@ export const getUserFollowersService = async (
 export const getUserFollowingService = async (
   userId: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
 ) => {
   const skip = (page - 1) * limit;
 

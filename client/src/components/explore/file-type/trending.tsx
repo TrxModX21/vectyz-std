@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { blurDataURL } from "@/lib/helpers";
 import { useGetTrendingStocks } from "@/hooks/use-stock";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
 
 const TRENDING_ITEMS = [
   {
@@ -93,6 +94,7 @@ const TRENDING_ITEMS = [
 ];
 
 const Trending = () => {
+  const router = useRouter();
   const params = useParams();
   const filetype = (params.filetype as string) || "vectors";
   const formattedTitle = filetype
@@ -129,13 +131,16 @@ const Trending = () => {
       {/* Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[200px] md:auto-rows-[240px]">
         {/* Desktop: First item spans 2 cols & 2 rows */}
-        <div className="relative group overflow-hidden rounded-2xl col-span-1 md:col-span-2 md:row-span-2 hidden md:block">
+        <div
+          className="relative group overflow-hidden rounded-2xl col-span-1 md:col-span-2 md:row-span-2 hidden md:block"
+          onClick={() => router.push(`/stock/${stocks[0].id}`)}
+        >
           <Image
             src={
-              stocks[0].files.find((f) => f.purpose === "PREVIEW")?.url ||
+              stocks[0]?.files.find((f) => f.purpose === "PREVIEW")?.url ||
               "/placeholder.jpg"
             }
-            alt={stocks[0].title}
+            alt={stocks[0]?.title}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             placeholder="blur"
@@ -146,7 +151,7 @@ const Trending = () => {
           <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300" />
 
           <div className="absolute top-2 left-2">
-            {stocks[0].isPremium && (
+            {stocks[0]?.isPremium && (
               <div className="bg-gray-600/80 backdrop-blur-sm p-1.5 rounded-md text-orange-400">
                 <Crown className="w-4 h-4 fill-orange-400" />
               </div>
@@ -185,7 +190,7 @@ const Trending = () => {
             {/* Bottom Row */}
             <div className="absolute inset-x-0 bottom-0 p-3 md:p-4 bg-linear-to-t from-black/80 via-black/40 to-transparent">
               <h3 className="text-white font-bold text-sm md:text-base mb-1 truncate">
-                {stocks[0].title}
+                {stocks[0]?.title}
               </h3>
 
               <div className="flex items-center justify-between">
@@ -195,14 +200,14 @@ const Trending = () => {
                     <Image src="/hero-bg.jpg" fill alt="avatar" />
                   </div>
                   <span className="text-white/90 text-xs md:text-sm font-medium truncate max-w-[80px] md:max-w-[100px]">
-                    {stocks[0].user.name}
+                    {stocks[0]?.user.name}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1 text-white/90">
                   <Heart className="w-3 h-3 fill-white" />
                   <span className="text-xs font-semibold">
-                    {stocks[0].totalLikes}
+                    {stocks[0]?.totalLikes}
                   </span>
                 </div>
               </div>
@@ -218,6 +223,7 @@ const Trending = () => {
             <div
               key={item.id}
               className="relative group overflow-hidden rounded-2xl col-span-1 row-span-1 hidden md:block"
+              onClick={() => router.push(`/stock/${item.id}`)}
             >
               <Image
                 src={preview || "/placeholder.jpg"}

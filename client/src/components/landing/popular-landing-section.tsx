@@ -7,20 +7,13 @@ import { blurDataURL } from "@/lib/helpers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetPopularFreeVector } from "@/hooks/use-stock";
 import Link from "next/link";
-import { useState } from "react";
-import { StockDetailDialog } from "../stock-detail-dialog/stock-detail-dialog";
+import { useRouter } from "next/navigation";
 
 const PopularLandingSection = () => {
+  const router = useRouter();
+
   const { data, isLoading } = useGetPopularFreeVector();
   const stocks = data?.stocks || [];
-
-  const [selectedStock, setSelectedStock] = useState<any>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const handleStockClick = (stock: any) => {
-    setSelectedStock(stock);
-    setIsDialogOpen(true);
-  };
 
   return (
     <div className="container mx-auto px-4 lg:px-6 py-8">
@@ -30,7 +23,7 @@ const PopularLandingSection = () => {
         </h2>
       </div>
 
-      <div className="flex flex-wrap gap-4 max-h-[500px] md:max-h-[580px] overflow-hidden">
+      <div className="flex flex-wrap gap-4 overflow-hidden">
         {isLoading
           ? Array.from({ length: 8 }).map((_, i) => (
               <PopularLandingSkeleton key={i} />
@@ -43,8 +36,8 @@ const PopularLandingSection = () => {
               return (
                 <div
                   key={item.id}
-                  className="relative group rounded-xl overflow-hidden bg-gray-100 flex-auto h-[240px] md:h-[280px]"
-                  onClick={() => handleStockClick(item)}
+                  className="relative group rounded-xl overflow-hidden bg-gray-100 flex-auto h-[240px] md:h-[280px] max-w-[380px]"
+                  onClick={() => router.push(`/stock/${item.id}`)}
                 >
                   <Image
                     src={preview || "/placeholder.jpg"}
@@ -134,13 +127,6 @@ const PopularLandingSection = () => {
               );
             })}
       </div>
-
-      <StockDetailDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        stock={selectedStock}
-        onStockSelect={setSelectedStock}
-      />
     </div>
   );
 };
