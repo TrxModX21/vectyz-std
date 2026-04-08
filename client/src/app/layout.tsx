@@ -11,8 +11,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Vectyz - High Quality Digital Assets",
-  description: "Download free vectors, photos, and PSD files on Vectyz.",
+  title: "Vectolio - High Quality Digital Assets",
+  description: "Download free vectors, photos, and PSD files on Vectolio.",
 };
 
 export default function RootLayout({
