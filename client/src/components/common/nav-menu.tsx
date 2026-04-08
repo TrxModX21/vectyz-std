@@ -9,13 +9,16 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Separator } from "@/components/ui/separator";
 import { useGetFileTypes } from "@/hooks/use-file-type";
-import { CircleCheckIcon, CircleHelpIcon, CircleIcon } from "lucide-react";
+import { CircleCheckIcon, CircleIcon, Users } from "lucide-react";
 import Link from "next/link";
 import NextImage from "next/image";
 
 const HeaderNavigationMenu = () => {
-  const { data: fileTypeResponse, isLoading: fileTypeLoading } =
-    useGetFileTypes({ sort: "asc", includeCategories: true, limit: 10 });
+  const { data: fileTypeResponse } = useGetFileTypes({
+    sort: "asc",
+    includeCategories: true,
+    limit: 20,
+  });
   const fileTypes = fileTypeResponse?.fileTypes ?? [];
 
   return (
@@ -27,9 +30,9 @@ const HeaderNavigationMenu = () => {
             <ul className="grid w-[200px] gap-4">
               <li>
                 <NavigationMenuLink asChild>
-                  <Link href="#" className="flex-row items-center gap-2">
-                    <CircleHelpIcon />
-                    <Label>Members</Label>
+                  <Link href="/members" className="flex-row items-center gap-2">
+                    <Users />
+                    <Label>Vectyzens</Label>
                   </Link>
                 </NavigationMenuLink>
                 <NavigationMenuLink asChild>

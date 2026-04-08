@@ -5,6 +5,7 @@ import { HTTPSTATUS } from "../utils/http.config";
 import { AppError } from "../utils/app-error";
 import {
   createDirectPurchaseTransaction,
+  createDonationTransactionGateway,
   createSubscriptionTransaction,
   createTopupTransaction,
   findAllTransactions,
@@ -90,6 +91,42 @@ export const buyAssetDirectController = asyncHandler(
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Purchase transaction created",
+      timestamp: new Date().toISOString(),
+      data: result,
+    });
+  },
+);
+
+export const createDonationGatewayController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = res.locals.user?.id;
+    const { targetUserId, amount, stockId } = req.body;
+
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
+    }
+
+    if (!targetUserId) {
+      throw new AppError("Target user ID is required", HTTPSTATUS.BAD_REQUEST);
+    }
+
+    if (!stockId) {
+      throw new AppError("Stock ID is required", HTTPSTATUS.UNAUTHORIZED);
+    }
+
+    if (!amount || Number(amount) < 11000) {
+      throw new AppError("Minimum donation amount is Rp 11.000", HTTPSTATUS.BAD_REQUEST);
+    }
+
+    const result = await createDonationTransactionGateway(
+      userId,
+      stockId,
+      targetUserId,
+      Number(amount),
+    );
+
+    return res.status(HTTPSTATUS.CREATED).json({
+      message: "Donation transaction created",
       timestamp: new Date().toISOString(),
       data: result,
     });

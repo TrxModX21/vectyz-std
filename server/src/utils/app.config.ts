@@ -34,6 +34,7 @@ const appConfig = () => ({
   EXCHANGE_RATE: {
     USD: 16000,
   },
+  PLATFORM_FEE_USER_ID: getEnv("PLATFORM_FEE_USER_ID", "") as string,
 });
 
 export const config = appConfig();

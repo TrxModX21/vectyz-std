@@ -22,7 +22,7 @@ export async function proxy(request: NextRequest) {
       ? "__Secure-better-auth.session_token"
       : "better-auth.session_token";
   const domainConfig =
-    process.env.NODE_ENV === "production" ? ".vectyz.com" : undefined;
+    process.env.NODE_ENV === "production" ? ".vectolio.com" : undefined;
 
   const sessionCookie =
     request.cookies.get(sessionCookieName) ||
@@ -84,9 +84,14 @@ export async function proxy(request: NextRequest) {
 
   // 2. If user is trying to access a public route (like Login) BUT has a cookie
   if (authRoutes.includes(pathname) && sessionCookie) {
-    const session = await verifySession();
+    const sessionData = await verifySession();
 
-    if (session) {
+    if (sessionData) {
+      // Allow anonymous users to access /auth/sign-up or /auth/sign-in so they can convert their account
+      if (sessionData.user?.isAnonymous) {
+        return NextResponse.next();
+      }
+
       // Valid session -> Redirect to home
       return NextResponse.redirect(new URL("/", request.url));
     } else {

@@ -11,3 +11,9 @@ export const subscriptionSchema = z.object({
 });
 
 export type SubscriptionFormInputs = z.infer<typeof subscriptionSchema>;
+
+export const donationSchema = z.object({
+  amount: z.coerce.number().min(11000, "Minimum donation is Rp 11.000"),
+});
+
+export type DonationFormInputs = z.infer<typeof donationSchema>;

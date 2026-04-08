@@ -11,27 +11,35 @@ import {
 import IconReader from "../common/icon-reader";
 import { useGetCategories } from "@/hooks/use-categories";
 import Link from "next/link";
+import { useGetFileTypes } from "@/hooks/use-file-type";
 
 const CategoryCarousel = () => {
-  const { data, isLoading } = useGetCategories();
+  // const { data, isLoading } = useGetCategories();
+
+  const { data: fileTypeResponse, isLoading } = useGetFileTypes({
+    sort: "asc",
+    includeCategories: true,
+    limit: 20,
+  });
+  const fileTypes = fileTypeResponse?.fileTypes ?? [];
 
   if (isLoading) {
     return <CategoryCarouselSkeleton />;
   }
 
-  const categories = data?.categories || [];
+  // const categories = data?.categories || [];
 
   return (
     <div className="max-w-[80%] lg:max-w-6xl mx-auto px-4">
       <Carousel>
         <CarouselContent>
-          {categories.map((item) => (
+          {fileTypes.map((item) => (
             <CarouselItem
               key={item.id}
               className="basis-1/2 md:basis-1/3 xl:basis-1/6 flex flex-col items-center gap-4 group cursor-pointer"
             >
               <Link
-                href={`/explore/search?categoryId=${item.id}`}
+                href={`/explore/${item.slug}`}
                 className="flex flex-col items-center justify-center"
               >
                 <div className="w-16 h-16 flex items-center justify-center rounded-2xl text-gray-600 group-hover:text-blue-600 transition-colors">

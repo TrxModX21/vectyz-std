@@ -33,7 +33,7 @@ export default function RootLayout({
       </head> */}
       <body className={`${montserrat.className} antialiased`}>
         <ReactQueryProvider>
-          <SplashScreen />
+          {/* <SplashScreen /> */}
           {children}
         </ReactQueryProvider>
 

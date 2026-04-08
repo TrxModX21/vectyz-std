@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
       new URL("https://res.cloudinary.com/dqwbgsznu/image/upload/**"),
+      new URL("https://lh3.googleusercontent.com/**")
     ],
   },
 };

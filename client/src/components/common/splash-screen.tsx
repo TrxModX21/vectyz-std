@@ -63,7 +63,7 @@ const SplashScreen = () => {
                   </div>
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                  Vectyz<span className="text-primary">.</span>
+                  Vectolio<span className="text-primary">.</span>
                 </h1>
               </div>
             </motion.div>

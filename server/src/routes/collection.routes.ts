@@ -7,6 +7,7 @@ import {
 import {
   createCollectionController,
   fetchCollectionListController,
+  getMyCollectionsController,
   getCollectionDetailController,
   updateCollectionController,
   deleteCollectionController,
@@ -19,6 +20,7 @@ import {
 const collectionRoutes = Router();
 
 collectionRoutes.get("/", optionalAuth, fetchCollectionListController);
+collectionRoutes.get("/me", requireAuth, getMyCollectionsController);
 collectionRoutes.get("/:id", optionalAuth, getCollectionDetailController);
 
 collectionRoutes.use(requireAuth);

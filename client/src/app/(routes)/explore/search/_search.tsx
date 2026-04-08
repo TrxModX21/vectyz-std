@@ -12,8 +12,7 @@ import FadeIn from "@/components/common/fade-in";
 import ItemCard from "@/components/explore/item-card";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useGetAllStocks } from "@/hooks/use-stock";
-import { useEffect, useState, useCallback } from "react";
-import { StockDetailDialog } from "@/components/stock-detail-dialog/stock-detail-dialog";
+import { useEffect } from "react";
 
 const SearchPages = () => {
   const searchParams = useSearchParams();
@@ -65,15 +64,6 @@ const SearchPages = () => {
     params.set("sortBy", newSort);
     router.replace(`/explore/search?${params.toString()}`);
   };
-
-  const [selectedStock, setSelectedStock] = useState<any>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // Wrap in useCallback to prevent re-creation on every render
-  const handleStockClick = useCallback((stock: any) => {
-    setSelectedStock(stock);
-    setIsDialogOpen(true);
-  }, []);
 
   const getHeaderText = () => {
     if (search) return `Search results for "${search}"`;
@@ -133,7 +123,7 @@ const SearchPages = () => {
             <div
               key={item.id}
               className="break-inside-avoid cursor-pointer"
-              onClick={() => handleStockClick(item)}
+              onClick={() => router.push(`/stock/${item.id}`)}
             >
               <FadeIn>
                 <ItemCard
@@ -185,13 +175,6 @@ const SearchPages = () => {
           </Button>
         </div>
       )}
-
-      <StockDetailDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        stock={selectedStock}
-        onStockSelect={setSelectedStock}
-      />
     </div>
   );
 };

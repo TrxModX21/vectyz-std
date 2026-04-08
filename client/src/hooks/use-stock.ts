@@ -84,3 +84,77 @@ export const useGetAllStocks = (params: GetStocksParams) => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
+
+export const useGetStockDetail = (id: string) => {
+  return useQuery<StockDetailResponse>({
+    queryKey: ["stockDetail", id],
+    queryFn: async () => {
+      const res = await api.get(`/stocks/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 30,
+  });
+};
+
+export const useToggleLikeStock = (stockId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!stockId) throw new Error("Stock ID required");
+      const res = await api.post(`/stocks/${stockId}/like`);
+      return res.data;
+    },
+    onMutate: async (user?: { id: string; name: string; image: string | undefined | null; username: string }) => {
+      if (!stockId) return;
+
+      await queryClient.cancelQueries({ queryKey: ["stockDetail", stockId] });
+
+      const previousStockDetail = queryClient.getQueryData<StockDetailResponse>(["stockDetail", stockId]);
+
+      if (previousStockDetail) {
+        let newLikes = [...previousStockDetail.stock.likes];
+        const isLiked = previousStockDetail.stock.isLiked;
+
+        if (!isLiked && user) {
+          // Optimistically add user to likes list
+          newLikes.unshift({
+            user: {
+              id: user.id,
+              name: user.name,
+              username: user.username,
+              image: user.image,
+            },
+          });
+        } else if (isLiked && user) {
+          // Optimistically remove user from likes list
+          newLikes = newLikes.filter((like) => like.user.id !== user.id);
+        }
+
+        queryClient.setQueryData<StockDetailResponse>(["stockDetail", stockId], {
+          ...previousStockDetail,
+          stock: {
+            ...previousStockDetail.stock,
+            isLiked: !isLiked,
+            totalLikes: isLiked
+              ? previousStockDetail.stock.totalLikes - 1
+              : previousStockDetail.stock.totalLikes + 1,
+            likes: newLikes,
+          },
+        });
+      }
+
+      return { previousStockDetail };
+    },
+    onError: (err: any, variables, context: any) => {
+      if (context?.previousStockDetail) {
+        queryClient.setQueryData(["stockDetail", stockId], context.previousStockDetail);
+      }
+      toast.error(err.response?.data?.message || "Failed to toggle like");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["stockDetail", stockId] });
+    },
+  });
+};

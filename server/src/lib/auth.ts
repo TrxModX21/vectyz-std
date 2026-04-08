@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { admin } from "better-auth/plugins";
+import { admin, anonymous } from "better-auth/plugins";
 import prisma from "./prisma";
 import { config } from "../utils/app.config";
 import { sendEmail } from "../mailers/mailer";
@@ -132,7 +132,37 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [admin()],
+  plugins: [
+    admin(),
+    anonymous({
+      generateRandomEmail: () => {
+        const id = crypto.randomUUID().slice(0, 5);
+        return `guest-${id}@vectolio.com`;
+      },
+      onLinkAccount: async ({ anonymousUser, newUser }) => {
+        const anonId = anonymousUser.user.id;
+        const newId = newUser.user.id;
+
+        // 1. Transfer histori pengunduhan (penting untuk perhitungan limit)
+        await prisma.downloadHistory.updateMany({
+          where: { userId: anonId },
+          data: { userId: newId },
+        });
+
+        // 2. Transfer histori "Likes"
+        await prisma.like.updateMany({
+          where: { userId: anonId },
+          data: { userId: newId },
+        });
+
+        // 3. Transfer histori "Views"
+        await prisma.stockView.updateMany({
+          where: { userId: anonId },
+          data: { userId: newId },
+        });
+      },
+    }),
+  ],
   advanced: {
     disableOriginCheck: config.NODE_ENV !== "production", // Fix issue Issue 403 MISSING_OR_NULL_ORIGIN
     defaultCookieAttributes: {

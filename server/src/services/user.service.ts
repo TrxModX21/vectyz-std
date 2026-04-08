@@ -40,12 +40,25 @@ export const getAllUsersService = async ({
         email: true,
         username: true,
         image: true,
+        isPremium: true,
         role: true,
         banned: true,
         createdAt: true,
         emailVerified: true,
         totalFollowers: true,
         totalFollowing: true,
+        profile: {
+          select: {
+            mobile: true,
+            dialCode: true,
+            countryCode: true,
+            countryName: true,
+            city: true,
+            state: true,
+            zip: true,
+            address: true,
+          },
+        },
         _count: {
           select: { uploadedStocks: true },
         },
@@ -104,7 +117,16 @@ export const banUserService = async (
   return { isBanning };
 };
 
-export const getUserByIdService = async (userId: string) => {
+export const getUserByIdService = async (
+  userId: string,
+  options?: {
+    includeStocks?: boolean;
+    page?: number;
+    limit?: number;
+  },
+) => {
+  const { includeStocks = false, page = 1, limit = 10 } = options || {};
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -134,7 +156,56 @@ export const getUserByIdService = async (userId: string) => {
     _count: undefined,
   };
 
-  return mappedUser;
+  if (!includeStocks) {
+    return mappedUser;
+  }
+
+  const skip = (page - 1) * limit;
+  const where: Prisma.StockWhereInput = {
+    userId,
+    status: "APPROVED",
+  };
+
+  const [stocks, stocksCount] = await Promise.all([
+    prisma.stock.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        category: {
+          select: { id: true, name: true, slug: true },
+        },
+        fileType: {
+          select: { id: true, name: true, slug: true },
+        },
+        files: {
+          select: {
+            id: true,
+            url: true,
+            purpose: true,
+            publicId: true,
+            format: true,
+            bytes: true,
+            width: true,
+            height: true,
+          },
+        },
+      },
+    }),
+    prisma.stock.count({ where }),
+  ]);
+
+  return {
+    ...mappedUser,
+    stocks: {
+      data: stocks,
+      totalCount: stocksCount,
+      totalPages: Math.ceil(stocksCount / limit),
+      currentPage: page,
+      limit,
+    },
+  };
 };
 
 export const getMeService = async (userId: string) => {

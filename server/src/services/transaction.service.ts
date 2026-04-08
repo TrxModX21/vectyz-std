@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 import { createSnapTransaction, verifySignatureKey } from "../lib/midtrans";
 import { NotFoundException, BadRequestException } from "../utils/app-error";
 import { TransactionType, PaymentStatus } from "../generated/prisma/client";
+import { config } from "../utils/app.config";
 
 // 1. TOPUP CREDIT
 export const createTopupTransaction = async (
@@ -196,6 +197,67 @@ export const createDirectPurchaseTransaction = async (
   };
 };
 
+// 3a. DONATION (Payment Gateway)
+export const createDonationTransactionGateway = async (
+  userId: string,
+  stockId: string,
+  targetUserId: string,
+  amount: number,
+) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+  });
+  const stock = await prisma.stock.findUnique({ where: { id: stockId } });
+
+  if (!user) throw new NotFoundException("User not found");
+  if (!targetUser) throw new NotFoundException("Target user not found");
+  if (!stock) throw new NotFoundException("Stock not found");
+  if (amount < 11000)
+    throw new BadRequestException("Minimum donation is Rp 11.000");
+
+  // Create Transaction Record
+  const transaction = await prisma.transaction.create({
+    data: {
+      userId,
+      targetUserId,
+      stockId: stock.id,
+      type: TransactionType.DONATION,
+      amount: amount,
+      status: PaymentStatus.PENDING,
+    },
+  });
+
+  // Get Snap Token
+  const snap = await createSnapTransaction({
+    order_id: transaction.id,
+    gross_amount: amount,
+    customer_details: {
+      first_name: user.name,
+      email: user.email,
+    },
+    item_details: [
+      {
+        id: "DONATION",
+        price: amount,
+        quantity: 1,
+        name: `Donation to ${targetUser.name}`,
+      },
+    ],
+  });
+
+  await prisma.transaction.update({
+    where: { id: transaction.id },
+    data: { snapToken: snap.token, externalId: snap.token },
+  });
+
+  return {
+    transactionId: transaction.id,
+    snapToken: snap.token,
+    redirectUrl: snap.redirect_url,
+  };
+};
+
 // 4. DIRECT PURCHASE (Internal Credit)
 export const processDirectPurchaseWithCredit = async (
   userId: string,
@@ -209,6 +271,23 @@ export const processDirectPurchaseWithCredit = async (
     });
 
     if (!user || !stock) throw new NotFoundException("User or Stock not found");
+
+    if (userId === stock.userId) {
+      throw new BadRequestException("You cannot buy your own asset");
+    }
+
+    const existingPurchase = await tx.transaction.findFirst({
+      where: {
+        userId,
+        stockId,
+        type: TransactionType.BUY_ASSET,
+        status: PaymentStatus.PAID,
+      },
+    });
+
+    if (existingPurchase) {
+      throw new BadRequestException("You already own this asset");
+    }
 
     // Calculate Price in Credits (Asumsi stock.price masih dalam rupiah, perlu konversi atau pakai field khusus credit)
     // Untuk simplifikasi, kita anggap stock.price adalah Rupiah, konversi ke Credit / 1000.
@@ -226,8 +305,8 @@ export const processDirectPurchaseWithCredit = async (
     });
 
     // 2. Distribusi Revenue (75% Creator, 25% Platform)
-    const creatorShare = Math.floor(priceInCredit * 0.75); // 75%
-    // const platformShare = priceInCredit - creatorShare; // 25% (Implisit masuk platform)
+    const creatorShare = priceInCredit * 0.75; // 75%
+    const platformShare = priceInCredit - creatorShare; // 25%
 
     // Tambah Saldo Creator
     await tx.user.update({
@@ -235,7 +314,14 @@ export const processDirectPurchaseWithCredit = async (
       data: { creditBalance: { increment: creatorShare } },
     });
 
-    // 3. Catat Transaksi
+    if (config.PLATFORM_FEE_USER_ID) {
+      await tx.user.update({
+        where: { id: config.PLATFORM_FEE_USER_ID },
+        data: { creditBalance: { increment: platformShare } },
+      });
+    }
+
+    // 3. Catat Transaksi Pembeli
     const transaction = await tx.transaction.create({
       data: {
         userId,
@@ -248,6 +334,35 @@ export const processDirectPurchaseWithCredit = async (
       },
     });
 
+    // 4. Catat Transaksi EARNING_ASSET & PLATFORM_FEE
+    await tx.transaction.create({
+      data: {
+        userId: stock.userId,
+        targetUserId: userId,
+        stockId,
+        type: TransactionType.EARNING_ASSET,
+        status: PaymentStatus.PAID,
+        amount: priceInRupiah,
+        creditAmount: creatorShare,
+        paymentMethod: "SYSTEM",
+      },
+    });
+
+    if (config.PLATFORM_FEE_USER_ID) {
+      await tx.transaction.create({
+        data: {
+          userId: config.PLATFORM_FEE_USER_ID,
+          targetUserId: stock.userId,
+          stockId,
+          type: TransactionType.PLATFORM_FEE,
+          status: PaymentStatus.PAID,
+          amount: priceInRupiah,
+          creditAmount: platformShare,
+          paymentMethod: "SYSTEM",
+        },
+      });
+    }
+
     return transaction;
   });
 };
@@ -259,7 +374,7 @@ export const handlePaymentNotification = async (notificationBody: any) => {
   // We need to add import { verifySignatureKey } from "../lib/midtrans"; at the top later.
   // For now, assuming it's available or we use requirement.
   const isValidSignature = verifySignatureKey(notificationBody);
-  
+
   if (!isValidSignature) {
     throw new BadRequestException("Invalid Signature Key");
   }
@@ -340,19 +455,21 @@ export const handlePaymentNotification = async (notificationBody: any) => {
         const plan = transaction.plan;
         if (plan) {
           const now = new Date();
-          
+
           // --- EXPIRY & QUOTA LOGIC ---
           const activeDays = transaction.periodDays || 30; // Fallback 30
-          
+
           // Calculate Expiry Date (Extend if active, Reset if expired)
           let subscriptionExpiresAt = new Date(now);
           if (user.subscriptionExpiresAt && user.subscriptionExpiresAt > now) {
-             // User masih aktif, tambahkan durasi ke tanggal expired lama
-             subscriptionExpiresAt = new Date(user.subscriptionExpiresAt);
-             subscriptionExpiresAt.setDate(subscriptionExpiresAt.getDate() + activeDays);
+            // User masih aktif, tambahkan durasi ke tanggal expired lama
+            subscriptionExpiresAt = new Date(user.subscriptionExpiresAt);
+            subscriptionExpiresAt.setDate(
+              subscriptionExpiresAt.getDate() + activeDays,
+            );
           } else {
-             // User sudah mati atau baru, set dari sekarang
-             subscriptionExpiresAt.setDate(now.getDate() + activeDays);
+            // User sudah mati atau baru, set dari sekarang
+            subscriptionExpiresAt.setDate(now.getDate() + activeDays);
           }
 
           // 2. Calculate Next Quota Reset (Always Monthly for Quota)
@@ -366,7 +483,7 @@ export const handlePaymentNotification = async (notificationBody: any) => {
               isPremium: true,
               planId: plan.id,
               billingCycle: transaction.billingCycle || "MONTHLY",
-              
+
               subscriptionExpiresAt: subscriptionExpiresAt,
               premiumQuota: plan.premiumQuota,
               premiumQuotaResetDate: nextQuotaReset,
@@ -378,7 +495,7 @@ export const handlePaymentNotification = async (notificationBody: any) => {
           const amount = Number(transaction.amount); // Ensure number
           const premiumShare = amount * 0.5;
           const freeShare = amount * 0.1;
-          
+
           const currentMonth = now.getMonth() + 1; // 1-12
           const currentYear = now.getFullYear();
 
@@ -405,8 +522,6 @@ export const handlePaymentNotification = async (notificationBody: any) => {
 
       // CASE C: DIRECT PURCHASE VIA GATEWAY (CASH)
       // Logic: Konversi amount -> credit -> beli aset -> bagi hasil
-      // But wait, the transaction type for this scenario needs to be handled.
-      // If we create order with type BUY_ASSET and status PENDING.
       if (
         transaction.type === TransactionType.BUY_ASSET &&
         transaction.stockId
@@ -418,16 +533,80 @@ export const handlePaymentNotification = async (notificationBody: any) => {
           const priceInRupiah = Number(stock.price);
           const priceInCredit = Math.ceil(priceInRupiah / 1000);
 
-          // Creator User
-          const creatorShare = Math.floor(priceInCredit * 0.75);
+          // Distribusi Creator & Platform
+          const creatorShare = priceInCredit * 0.75;
+          const platformShare = priceInCredit - creatorShare;
 
           await tx.user.update({
             where: { id: stock.userId },
             data: { creditBalance: { increment: creatorShare } },
           });
 
-          // Note: User doesn't need credit deduction because they paid cash.
-          // We just needed to forward share to Creator.
+          if (config.PLATFORM_FEE_USER_ID) {
+            await tx.user.update({
+              where: { id: config.PLATFORM_FEE_USER_ID },
+              data: { creditBalance: { increment: platformShare } },
+            });
+          }
+
+          // Catat Transaksi EARNING_ASSET & PLATFORM_FEE
+          await tx.transaction.create({
+            data: {
+              userId: stock.userId,
+              targetUserId: transaction.userId,
+              stockId: stock.id,
+              type: TransactionType.EARNING_ASSET,
+              status: PaymentStatus.PAID,
+              amount: priceInRupiah,
+              creditAmount: creatorShare,
+              paymentMethod: notificationBody.payment_type || "SYSTEM",
+              externalId: transaction.externalId,
+            },
+          });
+
+          if (config.PLATFORM_FEE_USER_ID) {
+            await tx.transaction.create({
+              data: {
+                userId: config.PLATFORM_FEE_USER_ID,
+                targetUserId: stock.userId,
+                stockId: stock.id,
+                type: TransactionType.PLATFORM_FEE,
+                status: PaymentStatus.PAID,
+                amount: priceInRupiah,
+                creditAmount: platformShare,
+                paymentMethod: notificationBody.payment_type || "SYSTEM",
+                externalId: transaction.externalId,
+              },
+            });
+          }
+        }
+      }
+
+      // CASE D: DONATION
+      if (
+        transaction.type === TransactionType.DONATION &&
+        transaction.targetUserId
+      ) {
+        const targetUser = await tx.user.findUnique({
+          where: { id: transaction.targetUserId },
+        });
+
+        if (targetUser) {
+          const donationInRupiah = Number(transaction.amount);
+
+          // Potongan 5% platform fee, jadi kreator dapat 95%
+          const creatorShareRupiah = donationInRupiah * 0.95;
+
+          // Convert ke Credit (1 Credit = Rp 1000). Boleh desimal maksimal 2 digit di belakang koma.
+          // Misal Rp 15.000 potong 5% = 14.250 -> 14.25 credit
+          // Jika 14.24343 maka jadi 14.24
+          const rawCredit = creatorShareRupiah / 1000;
+          const finalCredit = Math.floor(rawCredit * 100) / 100;
+
+          await tx.user.update({
+            where: { id: targetUser.id },
+            data: { creditBalance: { increment: finalCredit } },
+          });
         }
       }
     }

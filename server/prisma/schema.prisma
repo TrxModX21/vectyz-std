@@ -31,6 +31,7 @@ model User {
   banned         Boolean?
   banReason      String?
   banExpires     DateTime?
+  isAnonymous    Boolean?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   sessions       Session[]
@@ -68,9 +69,10 @@ model User {
   currentDeviceId String? // Session ID / Device ID login saat ini
 
   // Relations
-  transactions Transaction[]
-  downloads    DownloadHistory[]
-  payouts      Payout[]
+  transactions         Transaction[]     @relation("UserTransactions")
+  receivedTransactions Transaction[]     @relation("TargetUserTransactions")
+  downloads            DownloadHistory[]
+  payouts              Payout[]
 
   @@unique([email])
   @@map("user")
@@ -203,9 +205,12 @@ model UserProfile {
 model Transaction {
   id     String @id @default(cuid())
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation("UserTransactions", fields: [userId], references: [id])
 
-  type   TransactionType // TOPUP_CREDIT, SUBSCRIPTION, BUY_ASSET, WITHDRAWAL
+  targetUserId String?
+  targetUser   User?   @relation("TargetUserTransactions", fields: [targetUserId], references: [id])
+
+  type   TransactionType // TOPUP_CREDIT, SUBSCRIPTION, BUY_ASSET, WITHDRAWAL, DONATION
   status PaymentStatus   @default(PENDING) // PENDING, PAID, FAILED, REFUNDED
 
   // Detail Pembayaran
@@ -226,7 +231,7 @@ model Transaction {
   periodDays   Int? // Durasi yang dibeli (misal: 30 atau 365)
 
   stockId   String?
-  stock     Stock?   @relation(fields: [stockId], references: [id])
+  stock     Stock?   @relation(fields: [stockId], references: [id])  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -470,7 +475,9 @@ enum TransactionType {
   BUY_ASSET // User beli aset putus (Direct/Credit)
   WITHDRAWAL // Kreator tarik dana
   EARNING_ASSET // Hasil jual putus
+  PLATFORM_FEE // Potongan sistem 25% (atau sesuai formula)
   POOL_EARNING    // Hasil bagi hasil bulanan (Premium & Free)
+  DONATION // Berikan kontributor donasi
 }
 
 enum PaymentStatus {

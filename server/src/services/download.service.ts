@@ -29,10 +29,57 @@ export const validateDownloadAccess = async (
 
   // 0. Admin & Reviewer Bypass
   if (user.role === "admin" || user.role === "reviewer") {
-    return { allowed: true, quotaDeduction: false, reason: "ADMIN_ACCESS" };
+    return {
+      allowed: true,
+      quotaDeduction: false,
+      reason: "ADMIN_ACCESS",
+    };
   }
 
-  // 1. Cek Apakah User Pernah Beli Putus (Direct Purchase)
+  // 0.1 Owner bypass
+  if (user.id === stock.userId) {
+    return {
+      allowed: true,
+      quotaDeduction: false,
+      reason: "OWNER_ACCESS",
+    };
+  }
+
+  // 1. Cek User Anonim
+  if (user.isAnonymous) {
+    if (stock.isPremium) {
+      throw new ForbiddenException(
+        "Premium assets are for registered members only. Please sign up.",
+      );
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const downloadCount = await prisma.downloadHistory.count({
+      where: {
+        userId: user.id,
+        downloadDate: {
+          gte: today,
+        },
+      },
+    });
+
+    const remainingLimit = Math.max(0, 3 - downloadCount);
+
+    if (downloadCount >= 3) {
+      throw new ForbiddenException("ANONYMOUS_LIMIT_REACHED");
+    }
+
+    return {
+      allowed: true,
+      quotaDeduction: false,
+      reason: "ANONYMOUS_FREE",
+      remainingLimit,
+    };
+  }
+
+  // 2. Cek Apakah User Pernah Beli Putus (Direct Purchase)
   const hasPurchased = await prisma.transaction.findFirst({
     where: {
       userId: user.id,
@@ -57,6 +104,8 @@ export const validateDownloadAccess = async (
       };
     }
 
+    const remainingLimit = Math.max(0, 10 - user.dailyFreeDownloadCount);
+
     // User Free -> Cek Limit Harian
     if (user.dailyFreeDownloadCount >= 10) {
       throw new ForbiddenException(
@@ -64,7 +113,12 @@ export const validateDownloadAccess = async (
       );
     }
 
-    return { allowed: true, quotaDeduction: false, reason: "FREE_DAILY_QUOTA" };
+    return {
+      allowed: true,
+      quotaDeduction: false,
+      reason: "FREE_DAILY_QUOTA",
+      remainingLimit,
+    };
   }
 
   // 3. Jika Stock PREMIUM
@@ -84,13 +138,20 @@ export const validateDownloadAccess = async (
     }
 
     // Cek Kuota Premium User
+    const remainingLimit = user.premiumQuota;
+
     if (user.premiumQuota <= 0) {
       throw new ForbiddenException(
         "Your premium download quota for this month is exhausted.",
       );
     }
 
-    return { allowed: true, quotaDeduction: true, reason: "PREMIUM_QUOTA" };
+    return {
+      allowed: true,
+      quotaDeduction: true,
+      reason: "PREMIUM_QUOTA",
+      remainingLimit,
+    };
   }
 
   throw new ForbiddenException("Access denied.");
@@ -124,7 +185,7 @@ export const recordDownloadHistory = async (
   if (existingHistory) {
     return;
   }
-  
+
   // Jika Admin/Reviewer, skip recording
   if (reason === "ADMIN_ACCESS") {
     return;
@@ -153,7 +214,8 @@ export const recordDownloadHistory = async (
         isUserPremium: user.isPremium,
         userPlanId: user.planId,
         isStockPremium: stock.isPremium,
-        isCountedForPool: reason === "PREMIUM_QUOTA" || reason === "PREMIUM_FREE_UNLIMITED", // Logic untuk revenue share
+        isCountedForPool:
+          reason === "PREMIUM_QUOTA" || reason === "PREMIUM_FREE_UNLIMITED", // Logic untuk revenue share
       },
     });
 
@@ -222,16 +284,16 @@ export const createStockZipStream = async (stockId: string) => {
 
 export const checkStockAccess = async (userId: string, stockId: string) => {
   const result = await validateDownloadAccess(userId, stockId).catch((err) => {
-      // If validate throws Forbidden/NotFound, it means NO ACCESS.
-      // We want to return status, not throw error for this check endpoint.
-      return { allowed: false, reason: err.message, code: err.statusCode };
+    // If validate throws Forbidden/NotFound, it means NO ACCESS.
+    // We want to return status, not throw error for this check endpoint.
+    return { allowed: false, reason: err.message, code: err.statusCode };
   });
 
   // validateDownloadAccess returns { allowed: true, ... } if success.
   // If it returned object, it means allowed.
   if ((result as any).allowed) {
-      return result;
+    return result;
   }
-  
+
   return { allowed: false, reason: "Access denied", code: 403 };
 };

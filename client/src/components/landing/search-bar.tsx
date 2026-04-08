@@ -6,19 +6,20 @@ import SelectWithSearching from "../select-with-searching";
 import { useState } from "react";
 import { useGetCategories } from "@/hooks/use-categories";
 import { useRouter } from "next/navigation";
+import { useGetFileTypes } from "@/hooks/use-file-type";
 
 const LandingSearchBar = () => {
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedFileType, setSelectedFileType] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const { data, isLoading } = useGetCategories();
+  const { data, isLoading } = useGetFileTypes();
   const router = useRouter();
 
-  const categories = data?.categories || [];
+  const fileTypes = data?.fileTypes || [];
 
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (searchQuery) params.append("search", searchQuery);
-    if (selectedCategory) params.append("categoryId", selectedCategory);
+    if (selectedFileType) params.append("fileTypeId", selectedFileType);
 
     router.push(`/explore/search?${params.toString()}`);
   };
@@ -33,14 +34,14 @@ const LandingSearchBar = () => {
     <div className="w-full max-w-2xl mx-auto">
       <div className="bg-white rounded-full p-2 flex items-center shadow-lg w-full">
         {/* Dropdown Trigger */}
-        <SelectWithSearching<Category>
-          items={categories}
-          value={selectedCategory}
-          onValueChange={(val) => setSelectedCategory(val)}
+        <SelectWithSearching<FileType>
+          items={fileTypes}
+          value={selectedFileType}
+          onValueChange={(val) => setSelectedFileType(val)}
           getLabel={(c) => c.name}
           getValue={(c) => c.id.toString()}
-          placeholder="Select category"
-          searchPlaceholder="Search category..."
+          placeholder="Select type"
+          searchPlaceholder="Search file type..."
           disabled={isLoading}
           className="h-10 md:h-12 px-4 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold flex items-center gap-2 mr-2 shrink-0"
         />
