@@ -16,8 +16,6 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://v2.vectyz.com",
-  "https://v2admin.vectyz.com",
   "https://vectolio.com",
   "https://tcenter.vectolio.com",
 ];
