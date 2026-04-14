@@ -2,12 +2,56 @@ import prisma from "../lib/prisma";
 import { Prisma } from "../generated/prisma/client";
 import { auth } from "../lib/auth";
 import { generateSecurePassword, generateUsername } from "../utils/helper";
+import { NotFoundException } from "../utils/app-error";
 
 interface GetAllUsersParams {
   page?: number;
   limit?: number;
   search?: string;
 }
+
+const selectField = {
+  id: true,
+  name: true,
+  email: true,
+  username: true,
+  emailVerified: true,
+  image: true,
+  banner: true,
+  role: true,
+  banned: true,
+  banReason: true,
+  banExpires: true,
+  isAnonymous: true,
+  createdAt: true,
+  totalFollowers: true,
+  totalFollowing: true,
+  isPremium: true,
+  _count: {
+    select: {
+      uploadedStocks: true,
+      collections: {
+        where: {
+          isPrivate: false,
+        },
+      },
+    },
+  },
+  profile: {
+    select: {
+      mobile: true,
+      dialCode: true,
+      countryCode: true,
+      countryName: true,
+      city: true,
+      state: true,
+      zip: true,
+      address: true,
+      websites: true,
+      bio: true,
+    },
+  },
+};
 
 export const getAllUsersService = async ({
   page = 1,
@@ -18,6 +62,7 @@ export const getAllUsersService = async ({
 
   const where: Prisma.UserWhereInput = {
     role: "user",
+    isAnonymous: false,
     ...(search
       ? {
           OR: [
@@ -34,35 +79,7 @@ export const getAllUsersService = async ({
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-        image: true,
-        isPremium: true,
-        role: true,
-        banned: true,
-        createdAt: true,
-        emailVerified: true,
-        totalFollowers: true,
-        totalFollowing: true,
-        profile: {
-          select: {
-            mobile: true,
-            dialCode: true,
-            countryCode: true,
-            countryName: true,
-            city: true,
-            state: true,
-            zip: true,
-            address: true,
-          },
-        },
-        _count: {
-          select: { uploadedStocks: true },
-        },
-      },
+      select: selectField,
     }),
     prisma.user.count({ where }),
   ]);
@@ -77,6 +94,42 @@ export const getAllUsersService = async ({
     users: mappedUsers,
     totalCount,
     totalPages: Math.ceil(totalCount / limit),
+  };
+};
+
+export const getUserByIdService = async (username: string) => {
+  const user = await prisma.user.findUnique({
+    where: { username: username },
+    select: selectField,
+  });
+
+  if (!user) {
+    throw new NotFoundException("User not found");
+  }
+
+  // 👇 1. Agregasi: Jumlahkan seluruh stat "totalLikes" dari tabel Stock milik user ini
+  const aggregations = await prisma.stock.aggregate({
+    where: {
+      userId: user.id,
+      status: "APPROVED", // Hanya hitung like dari karya yang terpajang public
+    },
+    _sum: {
+      totalLikes: true,
+    },
+  });
+  // 👇 2. Fallback ke 0 jika dia belum punya aset sama sekali
+  const totalLikesReceived = aggregations._sum.totalLikes || 0;
+
+  const mappedUser = {
+    ...user,
+    totalUploadedStocks: user._count.uploadedStocks,
+    totalLikes: totalLikesReceived,
+    totalCollections: user._count.collections,
+    _count: undefined,
+  };
+
+  return {
+    ...mappedUser,
   };
 };
 
@@ -115,97 +168,6 @@ export const banUserService = async (
   ]);
 
   return { isBanning };
-};
-
-export const getUserByIdService = async (
-  userId: string,
-  options?: {
-    includeStocks?: boolean;
-    page?: number;
-    limit?: number;
-  },
-) => {
-  const { includeStocks = false, page = 1, limit = 10 } = options || {};
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      image: true,
-      role: true,
-      banned: true,
-      createdAt: true,
-      emailVerified: true,
-      totalFollowers: true,
-      totalFollowing: true,
-      _count: {
-        select: { uploadedStocks: true },
-      },
-    },
-  });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const mappedUser = {
-    ...user,
-    totalUploadedStocks: user._count.uploadedStocks,
-    _count: undefined,
-  };
-
-  if (!includeStocks) {
-    return mappedUser;
-  }
-
-  const skip = (page - 1) * limit;
-  const where: Prisma.StockWhereInput = {
-    userId,
-    status: "APPROVED",
-  };
-
-  const [stocks, stocksCount] = await Promise.all([
-    prisma.stock.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true },
-        },
-        fileType: {
-          select: { id: true, name: true, slug: true },
-        },
-        files: {
-          select: {
-            id: true,
-            url: true,
-            purpose: true,
-            publicId: true,
-            format: true,
-            bytes: true,
-            width: true,
-            height: true,
-          },
-        },
-      },
-    }),
-    prisma.stock.count({ where }),
-  ]);
-
-  return {
-    ...mappedUser,
-    stocks: {
-      data: stocks,
-      totalCount: stocksCount,
-      totalPages: Math.ceil(stocksCount / limit),
-      currentPage: page,
-      limit,
-    },
-  };
 };
 
 export const getMeService = async (userId: string) => {

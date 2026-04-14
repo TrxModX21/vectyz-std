@@ -27,6 +27,7 @@ model User {
   username       String?      @unique
   emailVerified  Boolean      @default(false)
   image          String?
+  banner         String?
   role           String       @default("user")
   banned         Boolean?
   banReason      String?
@@ -195,6 +196,8 @@ model UserProfile {
   state       String?
   zip         String?
   address     String?  @db.Text
+  websites    String?
+  bio         String?
   kycData     String?  @map("kyc_data") @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -231,7 +234,7 @@ model Transaction {
   periodDays   Int? // Durasi yang dibeli (misal: 30 atau 365)
 
   stockId   String?
-  stock     Stock?   @relation(fields: [stockId], references: [id])  
+  stock     Stock?   @relation(fields: [stockId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -476,7 +479,7 @@ enum TransactionType {
   WITHDRAWAL // Kreator tarik dana
   EARNING_ASSET // Hasil jual putus
   PLATFORM_FEE // Potongan sistem 25% (atau sesuai formula)
-  POOL_EARNING    // Hasil bagi hasil bulanan (Premium & Free)
+  POOL_EARNING // Hasil bagi hasil bulanan (Premium & Free)
   DONATION // Berikan kontributor donasi
 }
 

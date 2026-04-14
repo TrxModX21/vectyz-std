@@ -18,15 +18,18 @@ export const useGetPopularFreeVector = () => {
   });
 };
 
-export const useGetTrendingStocks = (fileType?: string, limit?: number) => {
+export const useGetTrendingStocks = (params: {
+  fileType?: string;
+  limit?: number;
+}) => {
   return useQuery<PopularFreeVectorResponse>({
-    queryKey: ["trendingStocks", fileType, limit],
+    queryKey: ["trendingStocks", params.fileType, params.limit],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (fileType) params.append("fileType", fileType);
-      if (limit) params.append("limit", limit.toString());
+      const paramsUrl = new URLSearchParams();
+      if (params.fileType) paramsUrl.append("fileType", params.fileType);
+      if (params.limit) paramsUrl.append("limit", params.limit.toString());
 
-      const res = await api.get(`/stocks/trending?${params.toString()}`);
+      const res = await api.get(`/stocks/trending?${paramsUrl.toString()}`);
       return res.data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -85,19 +88,42 @@ export const useGetAllStocks = (params: GetStocksParams) => {
   });
 };
 
-export const useGetStockDetail = (id: string) => {
-  return useQuery<StockDetailResponse>({
-    queryKey: ["stockDetail", id],
-    queryFn: async () => {
-      const res = await api.get(`/stocks/${id}`);
+export const useInfiniteGetStockByUser = (
+  userId: string,
+  params: GetStockByUserParams,
+) => {
+  return useInfiniteQuery<GetAllStockResponse>({
+    queryKey: ["stocksByUser", "infinite", userId, params],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get(`/stocks/from-user/${userId}`, {
+        params: { ...params, page: pageParam },
+      });
       return res.data;
     },
-    enabled: !!id,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const currentPage = lastPage.currentPage || 1;
+      const totalPages = lastPage.totalPages || 1;
+      return currentPage < totalPages ? currentPage + 1 : undefined;
+    },
+    // 30 menit = 1000ms * 60 * 30
     staleTime: 1000 * 60 * 30,
   });
 };
 
-export const useToggleLikeStock = (stockId?: string) => {
+export const useGetStockDetail = (slug: string) => {
+  return useQuery<StockDetailResponse>({
+    queryKey: ["stockDetail", slug],
+    queryFn: async () => {
+      const res = await api.get(`/stocks/${slug}`);
+      return res.data;
+    },
+    enabled: !!slug,
+    staleTime: 1000 * 60 * 30,
+  });
+};
+
+export const useToggleLikeStock = (stockId?: string, stockSlug?: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -106,12 +132,79 @@ export const useToggleLikeStock = (stockId?: string) => {
       const res = await api.post(`/stocks/${stockId}/like`);
       return res.data;
     },
-    onMutate: async (user?: { id: string; name: string; image: string | undefined | null; username: string }) => {
-      if (!stockId) return;
+    onMutate: async (user?: {
+      id: string;
+      name: string;
+      image: string | undefined | null;
+      username: string;
+    }) => {
+      if (!stockId || !stockSlug) return;
 
-      await queryClient.cancelQueries({ queryKey: ["stockDetail", stockId] });
+      await queryClient.cancelQueries({ queryKey: ["stockDetail", stockSlug] });
+      await queryClient.cancelQueries({
+        queryKey: ["stocksByUser", "infinite"],
+      });
+      await queryClient.cancelQueries({ queryKey: ["popularFreeVector"] });
 
-      const previousStockDetail = queryClient.getQueryData<StockDetailResponse>(["stockDetail", stockId]);
+      // Optimistic update for infinite grids
+      queryClient.setQueriesData<any>(
+        { queryKey: ["stocksByUser", "infinite"] },
+        (oldData: any) => {
+          if (!oldData || !oldData.pages) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              stocks: page.stocks?.map((st: any) => {
+                if (st.id === stockId) {
+                  const currentlyLiked = st.isLiked;
+                  return {
+                    ...st,
+                    isLiked: !currentlyLiked,
+                    totalLikes: currentlyLiked
+                      ? st.totalLikes - 1
+                      : st.totalLikes + 1,
+                  };
+                }
+                return st;
+              }),
+            })),
+          };
+        },
+      );
+
+      queryClient.setQueriesData<any>(
+        {
+          predicate: (query) =>
+            query.queryKey[0] === "popularFreeVector" ||
+            query.queryKey[0] === "trendingStocks" ||
+            query.queryKey[0] === "relatedStocks",
+        },
+        (oldData: any) => {
+          if (!oldData || !oldData.stocks) return oldData; // Hindari jika cache kosong
+          return {
+            ...oldData,
+            // Perhatikan bedanya: Kita langsung melooping array "stocks"
+            stocks: oldData.stocks.map((st: any) => {
+              if (st.id === stockId) {
+                const currentlyLiked = st.isLiked;
+                return {
+                  ...st,
+                  isLiked: !currentlyLiked,
+                  totalLikes: currentlyLiked
+                    ? st.totalLikes - 1
+                    : st.totalLikes + 1,
+                };
+              }
+              return st;
+            }),
+          };
+        },
+      );
+
+      const previousStockDetail = queryClient.getQueryData<StockDetailResponse>(
+        ["stockDetail", stockSlug],
+      );
 
       if (previousStockDetail) {
         let newLikes = [...previousStockDetail.stock.likes];
@@ -132,29 +225,40 @@ export const useToggleLikeStock = (stockId?: string) => {
           newLikes = newLikes.filter((like) => like.user.id !== user.id);
         }
 
-        queryClient.setQueryData<StockDetailResponse>(["stockDetail", stockId], {
-          ...previousStockDetail,
-          stock: {
-            ...previousStockDetail.stock,
-            isLiked: !isLiked,
-            totalLikes: isLiked
-              ? previousStockDetail.stock.totalLikes - 1
-              : previousStockDetail.stock.totalLikes + 1,
-            likes: newLikes,
+        queryClient.setQueryData<StockDetailResponse>(
+          ["stockDetail", stockSlug],
+          {
+            ...previousStockDetail,
+            stock: {
+              ...previousStockDetail.stock,
+              isLiked: !isLiked,
+              totalLikes: isLiked
+                ? previousStockDetail.stock.totalLikes - 1
+                : previousStockDetail.stock.totalLikes + 1,
+              likes: newLikes,
+            },
           },
-        });
+        );
       }
 
       return { previousStockDetail };
     },
     onError: (err: any, variables, context: any) => {
       if (context?.previousStockDetail) {
-        queryClient.setQueryData(["stockDetail", stockId], context.previousStockDetail);
+        queryClient.setQueryData(
+          ["stockDetail", stockId],
+          context.previousStockDetail,
+        );
       }
       toast.error(err.response?.data?.message || "Failed to toggle like");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["stockDetail", stockId] });
+      queryClient.invalidateQueries({ queryKey: ["stockDetail", stockSlug] });
+      queryClient.invalidateQueries({ queryKey: ["popularFreeVector"] });
+      queryClient.invalidateQueries({ queryKey: ["trendingStocks"] });
+      queryClient.invalidateQueries({ queryKey: ["relatedStocks"] });
+      queryClient.invalidateQueries({ queryKey: ["stocksByUser", "infinite"] });
+      queryClient.invalidateQueries({ queryKey: ["vectyzenDetail"] });
     },
   });
 };

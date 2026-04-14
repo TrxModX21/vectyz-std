@@ -96,13 +96,13 @@ const TRENDING_ITEMS = [
 const Trending = () => {
   const router = useRouter();
   const params = useParams();
-  const filetype = (params.filetype as string) || "vectors";
-  const formattedTitle = filetype
+  const fileType = (params.filetype as string) || "vectors";
+  const formattedTitle = fileType
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
-  const { data, isLoading } = useGetTrendingStocks(filetype);
+  const { data, isLoading } = useGetTrendingStocks({ fileType: fileType });
   const stocks = data?.stocks || [];
 
   if (isLoading) {

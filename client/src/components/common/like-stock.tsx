@@ -7,16 +7,20 @@ import { cn } from "@/lib/utils";
 const LikeStock = ({
   stock,
   variant = "default",
+  useCounter = true,
+  showHoverCard = true,
   className,
 }: {
   stock?: Stock;
   variant?: "default" | "outline" | "ghost" | "subtle" | undefined;
+  useCounter?: boolean;
+  showHoverCard?: boolean;
   className?: string;
 }) => {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const toggleLike = useToggleLikeStock(stock?.id);
+  const toggleLike = useToggleLikeStock(stock?.id, stock?.slug);
 
   const mappedUsers =
     stock?.likes?.map((like) => ({
@@ -31,6 +35,7 @@ const LikeStock = ({
     }
     toggleLike.mutate(session.user as any); // cast safely for the hook params
   };
+
   return (
     <NativeLikesCounter
       count={stock?.totalLikes || 0}
@@ -38,6 +43,8 @@ const LikeStock = ({
       users={mappedUsers}
       onLike={handleLike}
       variant={variant}
+      useCounter={useCounter}
+      showHoverCard={showHoverCard}
       className={cn("h-9", className)}
     />
   );

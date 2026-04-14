@@ -47,56 +47,6 @@ const StockAction = ({ stock }: { stock?: Stock }) => {
 
               <LikeStock stock={stock} variant="ghost" className="px-2" />
 
-              {/* <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full hover:bg-zinc-100"
-                  >
-                    <FolderPlusIcon className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Add to Collection</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {isLoadingRecent ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : recentCollectionsData?.collections?.length ? (
-                    recentCollectionsData.collections.map((c: any) => (
-                      <DropdownMenuItem key={c.id} onClick={() => handleAddToCollection(c.id)}>
-                        <Layers className="mr-2 h-4 w-4 shrink-0" />
-                        <span className="truncate">{c.name}</span>
-                      </DropdownMenuItem>
-                    ))
-                  ) : (
-                    <div className="p-2 text-xs text-muted-foreground text-center">
-                      No collections yet
-                    </div>
-                  )}
-
-                  {recentCollectionsData?.totalCount > 7 && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setIsAllCollectionsModalOpen(true)}>
-                        <Search className="mr-2 h-4 w-4 shrink-0" />
-                        <span>Save to another collection...</span>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setIsCreateCollectionOpen(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4 shrink-0" />
-                    <span>Create New Collection</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu> */}
-
               <AddToCollectionButton stock={stock} />
             </div>
           </div>

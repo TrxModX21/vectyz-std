@@ -21,7 +21,7 @@ import {
   useCreateCollection,
   useMyCollections,
 } from "@/hooks/use-collection";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +34,13 @@ import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
 
-const AddToCollectionButton = ({ stock }: { stock?: Stock }) => {
+const AddToCollectionButton = ({
+  stock,
+  children,
+}: {
+  stock?: Stock;
+  children?: ReactNode;
+}) => {
   const [isCreateCollectionOpen, setIsCreateCollectionOpen] = useState(false);
   const [isAllCollectionsModalOpen, setIsAllCollectionsModalOpen] =
     useState(false);
@@ -84,13 +90,17 @@ const AddToCollectionButton = ({ stock }: { stock?: Stock }) => {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full hover:bg-zinc-100"
-          >
-            <FolderPlusIcon className="h-4 w-4" />
-          </Button>
+          {children ? (
+            children
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-zinc-100"
+            >
+              <FolderPlusIcon className="h-4 w-4" />
+            </Button>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>Add to Collection</DropdownMenuLabel>
