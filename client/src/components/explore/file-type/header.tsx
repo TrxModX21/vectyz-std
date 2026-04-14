@@ -51,20 +51,20 @@ const Header = () => {
 
   // Filters State
   const [selectedLicense, setSelectedLicense] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  // const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedFileType, setSelectedFileType] = useState<string | null>(null);
 
   // Data Hooks
-  const { data: colorResponse } = useGetColors();
+  // const { data: colorResponse } = useGetColors();
   const { data: fileTypesData } = useGetFileTypes({ limit: 100 });
 
-  const colors = colorResponse?.colors || [];
+  // const colors = colorResponse?.colors || [];
 
   // Sync with URL on mount / update
   useEffect(() => {
     setSearchQuery(searchParams.get("search") || "");
     setSelectedLicense(searchParams.get("license"));
-    setSelectedColor(searchParams.get("color"));
+    // setSelectedColor(searchParams.get("color"));
     setSelectedFileType(searchParams.get("fileType"));
   }, [searchParams]);
 
@@ -177,7 +177,7 @@ const Header = () => {
               </DropdownMenu>
 
               {/* Color Filter */}
-              <DropdownMenu>
+              {/* <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -215,7 +215,7 @@ const Header = () => {
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
-              </DropdownMenu>
+              </DropdownMenu> */}
 
               {/* File Type Filter */}
               <DropdownMenu>
@@ -388,7 +388,7 @@ const Header = () => {
             ) : (
               <>
                 <Link href="/auth/sign-up">
-                  <Button className="bg-v-green hover:bg-[#95b514] text-black font-semibold rounded-md px-6">
+                  <Button className="hidden lg:block bg-v-green hover:bg-[#95b514] text-black font-semibold rounded-md px-6">
                     Sign Up Free
                   </Button>
                 </Link>

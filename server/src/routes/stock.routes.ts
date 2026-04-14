@@ -16,15 +16,21 @@ import {
   getRelatedStocksController,
   toggleLikeController,
   incrementViewController,
+  getStockByUserController,
 } from "../controllers/stock.controller";
 
 const stockRoutes = Router();
 
-stockRoutes.get("/", getAllStocksController);
-stockRoutes.get("/trending", getTrendingStocksController);
-stockRoutes.get("/popular-free-vector", getPopularFreeVectorStocksController);
-stockRoutes.get("/:id/related", getRelatedStocksController);
-stockRoutes.get("/:id", optionalAuth, getStockByIdController);
+stockRoutes.get("/", optionalAuth, getAllStocksController);
+stockRoutes.get("/trending", optionalAuth, getTrendingStocksController);
+stockRoutes.get(
+  "/popular-free-vector",
+  optionalAuth,
+  getPopularFreeVectorStocksController,
+);
+stockRoutes.get("/:id/related", optionalAuth, getRelatedStocksController);
+stockRoutes.get("/:slug", optionalAuth, getStockByIdController);
+stockRoutes.get("/from-user/:userId", optionalAuth, getStockByUserController);
 stockRoutes.post("/:id/view", optionalAuth, incrementViewController);
 stockRoutes.post("/:stockId/like", requireAuth, toggleLikeController);
 stockRoutes.post("/", requireAuth, createStockController);

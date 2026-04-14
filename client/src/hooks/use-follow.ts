@@ -68,6 +68,7 @@ export const useToggleFollow = (authorId?: string) => {
       queryClient.invalidateQueries({ queryKey: ["stockDetail"] });
       // Also invalidate user detail if they are on author profile
       queryClient.invalidateQueries({ queryKey: ["userDetail"] }); 
+      queryClient.invalidateQueries({ queryKey: ["vectyzenDetail"] }); 
     },
   });
 };

@@ -1,9 +1,12 @@
+import { StockWhereInput } from "./../generated/prisma/models/Stock";
 import prisma from "../lib/prisma";
+import { Prisma } from "../generated/prisma/client";
 import { config } from "../utils/app.config";
 import { StockStatus } from "../generated/prisma/enums";
 import {
   CreateStockSchema,
   GetAllStocksSchema,
+  GetStockByUserSchema,
   UpdateStockSchema,
 } from "../validation/stock.validation";
 import { ForbiddenException, NotFoundException } from "../utils/app-error";
@@ -129,7 +132,75 @@ export const getAllStocks = async (input: GetAllStocksSchema) => {
   };
 };
 
-export const getPopularFreeVectorStocks = async () => {
+export const getStockFromUser = async (
+  userId: string,
+  input: GetStockByUserSchema,
+  viewerId?: string,
+) => {
+  const {
+    page,
+    limit,
+    search,
+    isPremium,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = input;
+
+  const where: Prisma.StockWhereInput = {
+    userId,
+    status: "APPROVED",
+  };
+
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: "insensitive" } },
+      { slug: { contains: search, mode: "insensitive" } },
+      { keywords: { has: search } }, // Approximate check for keyword
+    ];
+  }
+  if (isPremium !== undefined) where.isPremium = isPremium;
+
+  const [stocks, totalCount] = await Promise.all([
+    prisma.stock.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      include: selectField,
+    }),
+    prisma.stock.count({ where }),
+  ]);
+
+  const stockIds = stocks.map((s) => s.id);
+  let likedStockIds = new Set<string>();
+  if (viewerId && stockIds.length > 0) {
+    const userLikes = await prisma.like.findMany({
+      where: {
+        userId: viewerId,
+        stockId: { in: stockIds }, // 👈 Ambil like hanya pada ke-10 id ini saja
+      },
+      select: { stockId: true },
+    });
+
+    likedStockIds = new Set(userLikes.map((l) => l.stockId));
+  }
+
+  const mappedStocks = stocks.map((stock) => ({
+    ...stock,
+    isLiked: likedStockIds.has(stock.id),
+  }));
+
+  return {
+    stocks: mappedStocks,
+    totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+  };
+};
+
+export const getPopularFreeVectorStocks = async (viewerId?: string) => {
   // 1. Get raw IDs with weighted score
   // Formula: (Views * 1) + (Likes * 3) + (Downloads * 10)
   const stocksRaw = await prisma.$queryRaw<Array<{ id: string }>>`
@@ -140,7 +211,7 @@ export const getPopularFreeVectorStocks = async () => {
       AND s."isPremium" = false
       AND ft.slug = 'vector'
       ORDER BY (s."totalViews" * 1 + s."totalLikes" * 3 + s."totalDownloads" * 10) DESC
-      LIMIT 10
+      LIMIT 12
     `;
 
   const ids = stocksRaw.map((s) => s.id);
@@ -155,15 +226,38 @@ export const getPopularFreeVectorStocks = async () => {
     include: selectField,
   });
 
+  const stockIds = stocks.map((s) => s.id);
+  let likedStockIds = new Set<string>();
+  if (viewerId && stockIds.length > 0) {
+    const userLikes = await prisma.like.findMany({
+      where: {
+        userId: viewerId,
+        stockId: { in: stockIds }, // 👈 Ambil like hanya pada ke-10 id ini saja
+      },
+      select: { stockId: true },
+    });
+
+    likedStockIds = new Set(userLikes.map((l) => l.stockId));
+  }
+
   // 3. Sort back to match the raw query order
   const sortedStocks = ids
     .map((id) => stocks.find((s) => s.id === id))
     .filter((s) => s !== undefined);
 
-  return sortedStocks;
+  const mappedStocks = sortedStocks.map((stock) => ({
+    ...stock,
+    isLiked: likedStockIds.has(stock?.id!),
+  }));
+
+  return mappedStocks;
 };
 
-export const getTrendingStocks = async (fileType?: string, limit = 10) => {
+export const getTrendingStocks = async (
+  viewerId?: string,
+  fileType?: string,
+  limit = 10,
+) => {
   // 1. Get raw IDs with weighted score
   // Formula: (Views * 1) + (Likes * 3) + (Downloads * 10)
   // Criteria: Created in the last 30 days, Approved, Any type/category/premium status
@@ -209,17 +303,36 @@ export const getTrendingStocks = async (fileType?: string, limit = 10) => {
     include: selectField,
   });
 
+  const stockIds = stocks.map((s) => s.id);
+  let likedStockIds = new Set<string>();
+  if (viewerId && stockIds.length > 0) {
+    const userLikes = await prisma.like.findMany({
+      where: {
+        userId: viewerId,
+        stockId: { in: stockIds }, // 👈 Ambil like hanya pada ke-10 id ini saja
+      },
+      select: { stockId: true },
+    });
+
+    likedStockIds = new Set(userLikes.map((l) => l.stockId));
+  }
+
   // 3. Sort back to match the raw query order
   const sortedStocks = ids
     .map((id) => stocks.find((s) => s.id === id))
     .filter((s) => s !== undefined);
 
-  return sortedStocks;
+  const mappedStocks = sortedStocks.map((stock) => ({
+    ...stock,
+    isLiked: likedStockIds.has(stock?.id!),
+  }));
+
+  return mappedStocks;
 };
 
-export const getStockById = async (id: string, userId?: string) => {
+export const getStockById = async (slug: string, userId?: string) => {
   const stock = await prisma.stock.findUnique({
-    where: { id },
+    where: { slug },
     include: selectField,
   });
 
@@ -233,7 +346,7 @@ export const getStockById = async (id: string, userId?: string) => {
       where: {
         userId_stockId: {
           userId,
-          stockId: id,
+          stockId: stock.id,
         },
       },
     });

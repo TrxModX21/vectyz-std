@@ -12,10 +12,10 @@ interface StockDetailResponse {
 
 interface GetAllStockResponse {
   message: string;
+  timestamp: string;
   totalCount: number;
   totalPages: number;
   currentPage: number;
-  timestamp: string;
   stocks: Stock[];
 }
 
@@ -104,6 +104,15 @@ interface GetStocksParams {
   isPremium?: string;
   minPrice?: number;
   maxPrice?: number;
+  sortBy?: "createdAt" | "price" | "totalDownloads";
+  sortOrder?: "asc" | "desc";
+}
+
+interface GetStockByUserParams {
+  page?: number;
+  limit?: number;
+  search?: number;
+  isPremium?: string;
   sortBy?: "createdAt" | "price" | "totalDownloads";
   sortOrder?: "asc" | "desc";
 }

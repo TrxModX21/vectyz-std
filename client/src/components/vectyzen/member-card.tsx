@@ -14,7 +14,10 @@ const MemberCard = ({
   member: Vectyzen;
   className?: string;
 }) => {
-  const location = `${member.profile.city || "Somewhere"}, ${member.profile.state || "Nowhere"}`;
+  let userLocation = "Not set";
+  if (member.profile?.city && member.profile.countryName) {
+    userLocation = `${(member.profile?.city, member.profile?.countryName)}`;
+  }
 
   return (
     <Card
@@ -73,10 +76,10 @@ const MemberCard = ({
             @{member.username}
           </p>
         </div>
-        {location && (
+        {userLocation && (
           <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mt-1">
             <MapPin className="h-3 w-3" />
-            <span>{location}</span>
+            <span>{userLocation}</span>
           </div>
         )}
       </CardHeader>

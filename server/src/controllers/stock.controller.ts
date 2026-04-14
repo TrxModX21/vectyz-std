@@ -4,6 +4,7 @@ import { asyncHandler } from "../middlewares/async-handler.middleware";
 import {
   createStockSchema,
   getAllStocksSchema,
+  getStockByUserSchema,
   updateStockSchema,
 } from "../validation/stock.validation";
 import {
@@ -18,6 +19,7 @@ import {
   getRelatedStocks,
   toggleLike,
   incrementView,
+  getStockFromUser,
 } from "../services/stock.service";
 import { BadRequestException } from "../utils/app-error";
 
@@ -41,10 +43,10 @@ export const getAllStocksController = asyncHandler(
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Stocks fetched successfully",
+      timestamp: new Date().toISOString(),
       totalCount,
       totalPages,
       currentPage,
-      timestamp: new Date().toISOString(),
       stocks,
     });
   },
@@ -52,22 +54,41 @@ export const getAllStocksController = asyncHandler(
 
 export const getStockByIdController = asyncHandler(
   async (req: Request, res: Response) => {
-    const id = req.params.id as string;
-    // User might be optional here if public access is allowed, but if route is protected or optional middleware used:
+    const slug = req.params.slug as string;
     const user = res.locals.user;
 
-    // Assuming we want to support checking like status even for guests (isLiked=false)
-    // or strictly for logged in users.
-    // If the route is public but optionally authenticated, we need to handle user being undefined.
-    // However, looking at index.ts/routes, usually specific middleware is applied.
-    // Let's assume for now we try to get user from locals if available.
-
-    const stock = await getStockById(id, user?.id);
+    const stock = await getStockById(slug, user?.id);
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Stock fetched successfully",
       timestamp: new Date().toISOString(),
       stock,
+    });
+  },
+);
+
+export const getStockByUserController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.params.userId as string;
+    const viewer = res.locals.user;
+    const query = getStockByUserSchema.parse(req.query);
+
+    const { stocks, totalCount, totalPages, currentPage } =
+      await getStockFromUser(
+        userId,
+        {
+          ...query,
+        },
+        viewer?.id,
+      );
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Stocks fetched successfully",
+      timestamp: new Date().toISOString(),
+      totalCount,
+      totalPages,
+      currentPage,
+      stocks,
     });
   },
 );
@@ -142,7 +163,9 @@ export const deleteStockController = asyncHandler(
 
 export const getPopularFreeVectorStocksController = asyncHandler(
   async (req: Request, res: Response) => {
-    const stocks = await getPopularFreeVectorStocks();
+    const viewer = res.locals.user;
+
+    const stocks = await getPopularFreeVectorStocks(viewer?.id);
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Popular stocks fetched successfully",
@@ -154,10 +177,12 @@ export const getPopularFreeVectorStocksController = asyncHandler(
 
 export const getTrendingStocksController = asyncHandler(
   async (req: Request, res: Response) => {
+    const viewer = res.locals.user;
     const fileType = req.query.fileType as string | undefined;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    console.log("limit " + limit);
 
-    const stocks = await getTrendingStocks(fileType, limit);
+    const stocks = await getTrendingStocks(viewer.id, fileType, limit);
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Trending stocks fetched successfully",

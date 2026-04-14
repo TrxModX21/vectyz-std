@@ -36,7 +36,7 @@ userRoutes.patch("/me", requireAuth, updateMeController);
 userRoutes.delete("/me", requireAuth, deleteMeController);
 
 userRoutes.get("/", optionalAuth, getAllUsersController);
-userRoutes.get("/:id", optionalAuth, getUserByIdController);
+userRoutes.get("/:username", optionalAuth, getUserByIdController);
 
 // Admin User Management Routes
 userRoutes.post("/", requireAuth, requireRole(["admin"]), createUserController);

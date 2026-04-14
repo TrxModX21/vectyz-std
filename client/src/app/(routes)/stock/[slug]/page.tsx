@@ -19,7 +19,7 @@ const StockPage = () => {
 
   const [isZoomOpen, setIsZoomOpen] = useState(false);
 
-  const { data, isLoading } = useGetStockDetail(params.id as string);
+  const { data, isLoading } = useGetStockDetail(params.slug as string);
   const stock = data?.stock;
 
   const previewFile = stock?.files.find((f) => f.purpose === "PREVIEW");

@@ -1,17 +1,6 @@
 import { api } from "@/lib/axios";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 
-export const useGetAllVectyzen = (params?: GetUsersParams) => {
-  return useQuery<GetAllVectyzenResponse>({
-    queryKey: ["users", params],
-    queryFn: async () => {
-      const res = await api.get(`/users`, { params });
-      return res.data;
-    },
-    staleTime: 1000 * 60 * 5,
-  });
-};
-
 export const useInfiniteGetAllVectyzen = (params?: GetUsersParams) => {
   return useInfiniteQuery<GetAllVectyzenResponse>({
     queryKey: ["users", "infinite", params],
@@ -29,6 +18,18 @@ export const useInfiniteGetAllVectyzen = (params?: GetUsersParams) => {
       const totalPages = lastPage.totalPages || 1;
       return currentPage < totalPages ? currentPage + 1 : undefined;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 30,
+  });
+};
+
+export const useGetVectyzenDetail = (username: string) => {
+  return useQuery<GetVectyzenDetailResponse>({
+    queryKey: ["vectyzenDetail", username],
+    queryFn: async () => {
+      const res = await api.get(`/users/${username}`);
+      return res.data;
+    },
+    // 1 jam = 1000ms * 60 * 60
+    staleTime: 1000 * 60 * 60,
   });
 };

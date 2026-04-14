@@ -27,6 +27,7 @@ export const getAllUsersController = asyncHandler(
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Users retrieved successfully",
+      timestamp: new Date().toISOString(),
       users,
       totalCount,
       totalPages,
@@ -38,19 +39,13 @@ export const getAllUsersController = asyncHandler(
 
 export const getUserByIdController = asyncHandler(
   async (req: Request, res: Response) => {
-    const userId = req.params.id as string;
-    const includeStocks = req.query.includeStocks === "true";
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const username = req.params.username as string;
 
-    const user = await getUserByIdService(userId, {
-      includeStocks,
-      page,
-      limit,
-    });
+    const user = await getUserByIdService(username);
 
     return res.status(HTTPSTATUS.OK).json({
       message: "User retrieved successfully",
+      timestamp: new Date().toISOString(),
       user,
     });
   },

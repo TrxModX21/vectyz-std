@@ -13,6 +13,7 @@ import ItemCard from "@/components/explore/item-card";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useGetAllStocks } from "@/hooks/use-stock";
 import { useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 
 const SearchPages = () => {
   const searchParams = useSearchParams();
@@ -47,7 +48,7 @@ const SearchPages = () => {
           ? undefined
           : "totalDownloads", // Simple mapping
     sortOrder: "desc",
-    limit: 20,
+    limit: 22,
   });
 
   // Re-fetch when params change
@@ -118,30 +119,32 @@ const SearchPages = () => {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : stocks.length > 0 ? (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-          {stocks.map((item) => (
-            <div
-              key={item.id}
-              className="break-inside-avoid cursor-pointer"
-              onClick={() => router.push(`/stock/${item.id}`)}
-            >
-              <FadeIn>
-                <ItemCard
-                  item={{
-                    ...item,
-                    width:
-                      item.files?.find((f: any) => f.purpose === "PREVIEW")
-                        ?.width || 800,
-                    height:
-                      item.files?.find((f: any) => f.purpose === "PREVIEW")
-                        ?.height || 600,
-                    image:
-                      item.files?.find((f: any) => f.purpose === "PREVIEW")
-                        ?.url || "/placeholder.jpg",
-                  }}
-                />
-              </FadeIn>
-            </div>
+        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+          {stocks.map((item, index) => (
+            <FadeIn key={item.id} delay={index * 0.05}>
+              <Card
+                className="break-inside-avoid cursor-pointer rounded-2xl bg-gray-200 py-4"
+                onClick={() => router.push(`/stock/${item.id}`)}
+              >
+                <CardContent className="px-4">
+                  <ItemCard
+                    item={{
+                      ...item,
+                      width:
+                        item.files?.find((f: any) => f.purpose === "PREVIEW")
+                          ?.width || 800,
+                      height:
+                        item.files?.find((f: any) => f.purpose === "PREVIEW")
+                          ?.height || 600,
+                      image:
+                        item.files?.find((f: any) => f.purpose === "PREVIEW")
+                          ?.url || "/placeholder.jpg",
+                    }}
+                    className="shadow-xs"
+                  />
+                </CardContent>
+              </Card>
+            </FadeIn>
           ))}
         </div>
       ) : (

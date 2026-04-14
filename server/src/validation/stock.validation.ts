@@ -21,6 +21,22 @@ export const getAllStocksSchema = z.object({
 });
 export type GetAllStocksSchema = z.infer<typeof getAllStocksSchema>;
 
+export const getStockByUserSchema = z.object({
+  page: z.coerce.number().min(1).optional().default(1),
+  limit: z.coerce.number().min(1).max(100).optional().default(10),
+  search: z.string().optional(),
+  sortBy: z
+    .enum(["createdAt", "price", "totalDownloads"])
+    .optional()
+    .default("createdAt"),
+  isPremium: z
+    .string()
+    .transform((val) => val === "true")
+    .optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+});
+export type GetStockByUserSchema = z.infer<typeof getStockByUserSchema>;
+
 export const createStockSchema = z.object({
   title: z.string().min(3).max(100),
   description: z.string().max(500).optional(),

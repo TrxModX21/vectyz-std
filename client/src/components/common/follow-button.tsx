@@ -3,8 +3,15 @@ import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import { useFollowStatus, useToggleFollow } from "@/hooks/use-follow";
 import { useRouter } from "next/navigation";
+import { UserPlus } from "lucide-react";
 
-const FollowButton = ({ authorId }: { authorId?: string }) => {
+const FollowButton = ({
+  authorId,
+  variant = "default",
+}: {
+  authorId?: string;
+  variant?: "default" | "style-2";
+}) => {
   const router = useRouter();
 
   const { data: session } = useSession();
@@ -24,6 +31,27 @@ const FollowButton = ({ authorId }: { authorId?: string }) => {
 
   if (isOwnProfile) {
     return null;
+  }
+
+  if (variant === "style-2") {
+    return (
+      <Button
+        className={cn(
+          "flex-1 gap-2 rounded-full h-12",
+          isFollowing && "border-primary/20",
+          isFollowing &&
+            !isLoadingFollow &&
+            !toggleFollow.isPending &&
+            "hover:bg-red-50 hover:text-red-600 hover:border-red-200",
+        )}
+        variant={isFollowing ? "outline" : "default"}
+        onClick={handleFollowClick}
+        disabled={isLoadingFollow || toggleFollow.isPending}
+      >
+        <UserPlus className="h-4 w-4" />{" "}
+        {isLoadingFollow ? "..." : isFollowing ? "Following" : "Follow"}
+      </Button>
+    );
   }
 
   return (

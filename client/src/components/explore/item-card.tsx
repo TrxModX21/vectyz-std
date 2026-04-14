@@ -1,12 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { blurDataURL } from "@/lib/helpers";
 import { Bookmark, Crown, Heart, Share2 } from "lucide-react";
 import Image from "next/image";
-
-// Placeholder Blur Data URL
-const blurDataURL =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mM8f/78fwAI0MN5q9372wAAAABJRU5ErkJggg==";
 
 interface ItemCardProps {
   item: {
@@ -24,16 +21,9 @@ interface ItemCardProps {
 
 const ItemCard = ({ item, className }: ItemCardProps) => {
   return (
-    <div className={`relative group rounded-xl overflow-hidden bg-gray-100 ${className}`}>
-      {/* 
-        Using simple Image with responsive filling style constraints for Masonry.
-        In a columns layout, we just need the image to render with intrinsic height.
-        However, next/image requires width/height or 'fill'.
-        For true masonry with next/image, we usually know aspect ratio or use 'width: 100%, height: auto' style on an <img> tag or a wrapper.
-        Let's try using a wrapper with `relative` and let properties control it,
-        but for Masonry `columns-`, elements display inline-block.
-        A reliable way is using `width={800} height={600}` (or actual dims) and `className="w-full h-auto"`.
-      */}
+    <div
+      className={`relative group rounded-xl overflow-hidden bg-gray-100 ${className}`}
+    >
       <Image
         src={item.image}
         alt={item.title}
@@ -57,7 +47,7 @@ const ItemCard = ({ item, className }: ItemCardProps) => {
       </div>
 
       {/* Hover Overlay */}
-      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3 md:p-4 z-10">
+      <div className="absolute inset-0 bg-black/10 lg:bg-black-20 opacity-100 lg:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3 md:p-4 z-10">
         {/* Top Row: Actions */}
         <div className="flex justify-between items-start">
           <div className="flex flex-col gap-2 ml-auto">
@@ -107,8 +97,8 @@ const ItemCard = ({ item, className }: ItemCardProps) => {
                 {typeof item.likes === "number"
                   ? item.likes
                   : Array.isArray(item.likes)
-                  ? item.likes.length
-                  : 0}
+                    ? item.likes.length
+                    : 0}
               </span>
             </div>
           </div>

@@ -117,3 +117,20 @@ export const priceToCredit = (amount: number) => {
 export const formatNumber = (num: number) => {
   return new Intl.NumberFormat("id-ID").format(num);
 };
+
+export function extractDomain(website?: string) {
+  if (!website) return null;
+
+  // tambahkan protocol jika belum ada
+  let url = website;
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = "https://" + url;
+  }
+
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.replace(/^www\./, "");
+  } catch {
+    return website;
+  }
+}
