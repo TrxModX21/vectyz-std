@@ -182,7 +182,7 @@ export const getTrendingStocksController = asyncHandler(
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
     console.log("limit " + limit);
 
-    const stocks = await getTrendingStocks(viewer.id, fileType, limit);
+    const stocks = await getTrendingStocks(viewer?.id, fileType, limit);
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Trending stocks fetched successfully",
