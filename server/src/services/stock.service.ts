@@ -356,7 +356,11 @@ export const getStockById = async (slug: string, userId?: string) => {
   return { ...stock, isLiked };
 };
 
-export const getRelatedStocks = async (id: string, limit = 20) => {
+export const getRelatedStocks = async (
+  id: string,
+  limit = 20,
+  viewerId?: string,
+) => {
   // 1. Get the current stock to find its category and tags
   const currentStock = await prisma.stock.findUnique({
     where: { id },
@@ -403,12 +407,31 @@ export const getRelatedStocks = async (id: string, limit = 20) => {
     include: selectField,
   });
 
+  const stockIds = stocks.map((s) => s.id);
+  let likedStockIds = new Set<string>();
+  if (viewerId && stockIds.length > 0) {
+    const userLikes = await prisma.like.findMany({
+      where: {
+        userId: viewerId,
+        stockId: { in: stockIds }, // 👈 Ambil like hanya pada ke-10 id ini saja
+      },
+      select: { stockId: true },
+    });
+
+    likedStockIds = new Set(userLikes.map((l) => l.stockId));
+  }
+
   // 4. Sort back to match the raw query order (by relevance)
   const sortedStocks = ids
     .map((id) => stocks.find((s) => s.id === id))
     .filter((s) => s !== undefined);
 
-  return sortedStocks;
+  const mappedStocks = sortedStocks.map((stock) => ({
+    ...stock,
+    isLiked: likedStockIds.has(stock?.id!),
+  }));
+
+  return mappedStocks;
 };
 
 export const createStock = async (

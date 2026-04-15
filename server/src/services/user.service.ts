@@ -62,7 +62,7 @@ export const getAllUsersService = async ({
 
   const where: Prisma.UserWhereInput = {
     role: "user",
-    isAnonymous: false,
+    isAnonymous: null,
     ...(search
       ? {
           OR: [

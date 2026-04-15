@@ -29,6 +29,7 @@ import SelectWithSearching from "@/components/select-with-searching";
 import { KeywordInput } from "@/components/keyword-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Props {
   open: boolean;
@@ -42,6 +43,9 @@ const UploadStock = ({ open, onOpenChange }: Props) => {
   const [selectedOriginalFiles, setSelectedOriginalFiles] = useState<File[]>(
     [],
   );
+
+  const { data: userProfileResponse } = useAuth();
+  const user = userProfileResponse?.user;
 
   const { data: categoriesResponse, isLoading: categoryLoading } =
     useGetCategories();
@@ -217,6 +221,7 @@ const UploadStock = ({ open, onOpenChange }: Props) => {
                 required={true}
                 disabled={isPending}
                 giveWatermark={true}
+                username={user?.username}
               />
               <p className="text-xs text-muted-foreground">
                 Max 5MB. Supported: JPG, PNG, SVG, GIF.

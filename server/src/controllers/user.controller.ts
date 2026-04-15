@@ -28,11 +28,11 @@ export const getAllUsersController = asyncHandler(
     return res.status(HTTPSTATUS.OK).json({
       message: "Users retrieved successfully",
       timestamp: new Date().toISOString(),
-      users,
       totalCount,
       totalPages,
       page,
       limit,
+      users,
     });
   },
 );

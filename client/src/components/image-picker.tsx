@@ -13,6 +13,7 @@ interface ImagePickerProps {
   disabled?: boolean;
   required?: boolean;
   giveWatermark?: boolean;
+  username?: string;
 }
 
 const ImagePicker = ({
@@ -22,6 +23,7 @@ const ImagePicker = ({
   disabled,
   required = false,
   giveWatermark = false,
+  username,
 }: ImagePickerProps) => {
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +44,7 @@ const ImagePicker = ({
     const file = e.target.files?.[0];
     if (file) {
       if (giveWatermark) {
-        const watermarkedFile = await addWatermark(file);
+        const watermarkedFile = await addWatermark(file, username);
         onChange?.(watermarkedFile);
       } else {
         onChange?.(file);
