@@ -1,4 +1,7 @@
-export const addWatermark = async (file: File): Promise<File> => {
+export const addWatermark = async (
+  file: File,
+  username?: string,
+): Promise<File> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file as any);
@@ -25,31 +28,31 @@ export const addWatermark = async (file: File): Promise<File> => {
         const fontSize = Math.max(24, Math.floor(img.width / 20)); // Responsive font size
         const font = `bold ${fontSize}px sans-serif`;
         const textColor = "rgba(255, 255, 255, 0.5)";
-        
+
         // Create a separate canvas for the pattern tile
         const patternCanvas = document.createElement("canvas");
         const patternCtx = patternCanvas.getContext("2d");
-        
+
         if (!patternCtx) {
-            reject(new Error("Could not get pattern canvas context"));
-            return;
+          reject(new Error("Could not get pattern canvas context"));
+          return;
         }
 
         // Tile size - adjust based on image size or fixed
-        const tileSize = fontSize * 8; 
+        const tileSize = fontSize * 8;
         patternCanvas.width = tileSize;
         patternCanvas.height = tileSize;
 
         // Draw diagonal lines (X shape)
         patternCtx.strokeStyle = "rgba(255, 255, 255, 0.2)";
         patternCtx.lineWidth = 1;
-        
+
         // Line from top-left to bottom-right
         patternCtx.beginPath();
         patternCtx.moveTo(0, 0);
         patternCtx.lineTo(tileSize, tileSize);
         patternCtx.stroke();
-        
+
         // Line from top-right to bottom-left
         patternCtx.beginPath();
         patternCtx.moveTo(tileSize, 0);
@@ -62,20 +65,35 @@ export const addWatermark = async (file: File): Promise<File> => {
         patternCtx.translate(-tileSize / 2, -tileSize / 2);
 
         // Draw Text
-        patternCtx.font = font;
         patternCtx.fillStyle = textColor;
         patternCtx.textAlign = "center";
         patternCtx.textBaseline = "middle";
-        patternCtx.fillText(text, tileSize / 2, tileSize / 2);
 
-        // Optional: Draw lines or extra decoration if needed to match "Creative Market" style
-        // For now, just the text is a good start.
+        if (username) {
+          patternCtx.font = font;
+          patternCtx.fillText(
+            text,
+            tileSize / 2,
+            tileSize / 2 - Math.floor(fontSize / 2),
+          );
+
+          const userFontSize = Math.floor(fontSize * 0.7);
+          patternCtx.font = `normal ${userFontSize}px sans-serif`;
+          patternCtx.fillText(
+            `@${username}`,
+            tileSize / 2,
+            tileSize / 2 + Math.floor(fontSize / 2),
+          );
+        } else {
+          patternCtx.font = font;
+          patternCtx.fillText(text, tileSize / 2, tileSize / 2);
+        }
 
         // Create the pattern
         const pattern = ctx.createPattern(patternCanvas, "repeat");
         if (pattern) {
-            ctx.fillStyle = pattern;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = pattern;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
         // Export as Blob/File

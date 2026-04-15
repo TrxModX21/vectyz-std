@@ -197,7 +197,9 @@ export const getRelatedStocksController = asyncHandler(
     const id = req.params.id as string;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
 
-    const stocks = await getRelatedStocks(id, limit);
+    const viewer = res.locals.user;
+
+    const stocks = await getRelatedStocks(id, limit, viewer?.id);
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Related stocks fetched successfully",
