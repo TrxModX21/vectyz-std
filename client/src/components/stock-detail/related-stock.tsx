@@ -1,21 +1,7 @@
-import {
-  Bookmark,
-  ChevronLeft,
-  ChevronRight,
-  Crown,
-  Download,
-  Heart,
-  MoreHorizontal,
-  Share2,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
-import { Card } from "../ui/card";
-import Link from "next/link";
-import Image from "next/image";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useRef } from "react";
 import { useGetRelatedStock } from "@/hooks/use-stock";
-import { blurDataURL } from "@/lib/helpers";
 import { useRouter } from "next/navigation";
 import StockCard from "../landing/stock-card";
 

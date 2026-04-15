@@ -1,8 +1,19 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middlewares/async-handler.middleware";
 import { HTTPSTATUS } from "../utils/http.config";
-import { allCategoryService, createCategoryService, deleteCategoryService, updateCategoryService, updateStatusCategoryService } from "../services/category.service";
-import { createCategorySchema, updateCategorySchema, updateStatusCategorySchema } from "../validation/category.validation";
+import {
+  allCategoryService,
+  createCategoryService,
+  deleteCategoryService,
+  getCategoryFromFileTypeService,
+  updateCategoryService,
+  updateStatusCategoryService,
+} from "../services/category.service";
+import {
+  createCategorySchema,
+  updateCategorySchema,
+  updateStatusCategorySchema,
+} from "../validation/category.validation";
 
 export const allCategoriesController = asyncHandler(
   async (req: Request, res: Response) => {
@@ -13,6 +24,20 @@ export const allCategoriesController = asyncHandler(
       timestamp: new Date().toISOString(),
       categories,
       totalCount,
+    });
+  },
+);
+
+export const getCategoryFromFileTypeController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const ftSlug = req.params.slug as string;
+
+    const { categories } = await getCategoryFromFileTypeService(ftSlug);
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Categories from spesific filetype fetched successfully",
+      timestamp: new Date().toISOString(),
+      categories,
     });
   },
 );
@@ -51,7 +76,10 @@ export const updateCategoryStatusController = asyncHandler(
     const { id } = req.params;
     const body = updateStatusCategorySchema.parse(req.body);
 
-    const category = await updateStatusCategoryService(id as string, body.status);
+    const category = await updateStatusCategoryService(
+      id as string,
+      body.status,
+    );
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Category status updated successfully",

@@ -11,3 +11,13 @@ export const useGetCategories = () => {
     staleTime: 1000 * 60 * 5,
   });
 };
+
+export const useGetCategoriesFromFiletype = (ftSlug: string) => {
+  return useQuery<CategoriesResponse>({
+    queryKey: ["categories", ftSlug],
+    queryFn: async () => {
+      const res = await api.get(`/categories/${ftSlug}`);
+      return res.data;
+    },
+  });
+};

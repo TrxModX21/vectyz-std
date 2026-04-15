@@ -13,6 +13,34 @@ export const allCategoryService = async () => {
   return { categories, totalCount };
 };
 
+export const getCategoryFromFileTypeService = async (slug: string) => {
+  const fileType = await prisma.fileType.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!fileType) {
+    throw new NotFoundException("File type not found");
+  }
+
+  const categories = await prisma.category.findMany({
+    where: {
+      status: "active",
+      stocks: {
+        some: {
+          fileTypeId: fileType?.id,
+          status: "APPROVED",
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return { categories };
+};
+
 export const createCategoryService = async (body: any) => {
   const { name, image, status, icon } = body;
 

@@ -1,8 +1,8 @@
 interface CategoriesResponse {
   message: string;
-  categories: Category[];
-  totalCount: number;
   timestamp: string;
+  totalCount?: number;
+  categories: Category[];
 }
 
 interface Category {
