@@ -13,7 +13,6 @@ const ExploreFileTypePage = () => {
         <Trending />
       </FadeIn>
       <FadeIn>
-        <SectionSeparator />
         <Categories />
       </FadeIn>
       <FadeIn>
