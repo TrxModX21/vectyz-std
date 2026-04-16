@@ -2,8 +2,7 @@
 
 import { useGetTrendingStocks } from "@/hooks/use-stock";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter } from "next/navigation";
-import StockCard from "./stock-card";
+import StockCard from "../common/stock-card";
 
 const TrendingLandingSection = () => {
   const { data, isLoading } = useGetTrendingStocks({ limit: 12 });
@@ -38,8 +37,15 @@ const TrendingLandingSection = () => {
                 <StockCard
                   key={item.id}
                   stock={item}
+                  useFill={true}
+                  useImagePadding={true}
+                  style={{
+                    flexGrow: aspectRatio,
+                    flexBasis: `${Math.max(aspectRatio * 270, 0)}px`,
+                    height: "270px",
+                  }}
                   aspectRatio={aspectRatio}
-                  preview={preview}
+                  previewUrl={preview}
                 />
               );
             })}

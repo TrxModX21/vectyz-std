@@ -2,7 +2,7 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetPopularFreeVector } from "@/hooks/use-stock";
-import StockCard from "./stock-card";
+import StockCard from "../common/stock-card";
 
 const PopularLandingSection = () => {
   const { data, isLoading } = useGetPopularFreeVector();
@@ -37,8 +37,15 @@ const PopularLandingSection = () => {
                 <StockCard
                   key={item.id}
                   stock={item}
+                  useFill={true}
+                  useImagePadding={true}
+                  style={{
+                    flexGrow: aspectRatio,
+                    flexBasis: `${Math.max(aspectRatio * 270, 0)}px`,
+                    height: "270px",
+                  }}
                   aspectRatio={aspectRatio}
-                  preview={preview}
+                  previewUrl={preview}
                 />
               );
             })}

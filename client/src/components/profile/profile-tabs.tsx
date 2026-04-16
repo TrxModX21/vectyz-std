@@ -8,7 +8,7 @@ import FadeIn from "../common/fade-in";
 import { Button } from "../ui/button";
 import { NativeTabs } from "../uitripled/native-tabs-shadcnui";
 import { LoaderOne } from "../ui/loader";
-import StockCard from "./stock-card";
+import StockCard from "../common/stock-card";
 
 type Props = {
   stocks: Stock[];
@@ -47,7 +47,7 @@ const ProfileTabs = ({
                 <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 space-y-4">
                   {stocks.map((asset, index) => (
                     <FadeIn key={asset.id} delay={index * 0.05}>
-                      <StockCard stock={asset} />
+                      <StockCard stock={asset} className="break-inside-avoid" useFill={false} />
                     </FadeIn>
                   ))}
                 </div>
