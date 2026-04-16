@@ -2,14 +2,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { useRef } from "react";
 import { useGetRelatedStock } from "@/hooks/use-stock";
-import { useRouter } from "next/navigation";
-import StockCard from "../landing/stock-card";
+import StockCard from "../common/stock-card";
 
 type Props = { stock?: Stock; isLoading: boolean };
 
 const RelatedStock = ({ stock, isLoading }: Props) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -77,8 +75,16 @@ const RelatedStock = ({ stock, isLoading }: Props) => {
             <StockCard
               key={item.id}
               stock={item}
+              className="snap-start shrink-0"
+              useFill={true}
+              useImagePadding={true}
+              style={{
+                flexGrow: aspectRatio,
+                flexBasis: `${Math.max(aspectRatio * 270, 0)}px`,
+                height: "270px",
+              }}
               aspectRatio={aspectRatio}
-              preview={relatedPreviewImage}
+              previewUrl={relatedPreviewImage}
             />
           );
         })}
