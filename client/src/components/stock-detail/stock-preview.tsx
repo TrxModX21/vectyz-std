@@ -17,13 +17,13 @@ const StockPreview = ({ stock, setIsZoomOpen }: Props) => {
   return (
     <Card>
       <CardContent>
-        <div className="relative aspect-4/3 bg-muted rounded-2xl overflow-hidden group shadow-xs">
+        <div className="relative bg-muted rounded-2xl overflow-hidden group shadow-xs">
           <Image
             src={previewFile?.url || "/placeholder.jpg"}
             alt={stock?.title || "stock preview"}
             width={width}
             height={height}
-            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105 rounded-2xl"
+            className="w-full h-full object-contain max-h-[70vh] transition-transform duration-500 group-hover:scale-105 rounded-2xl"
           />
 
           {/* Crown Icon (Top Left) */}

@@ -3,6 +3,7 @@
 import { useGetTrendingStocks } from "@/hooks/use-stock";
 import { Skeleton } from "@/components/ui/skeleton";
 import StockCard from "../common/stock-card";
+import FadeIn from "../common/fade-in";
 
 const TrendingLandingSection = () => {
   const { data, isLoading } = useGetTrendingStocks({ limit: 12 });
@@ -16,7 +17,25 @@ const TrendingLandingSection = () => {
         </h2>
       </div>
 
-      <div className="flex flex-wrap gap-4">
+      <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+        {isLoading
+          ? Array.from({ length: 12 }).map((_, i) => (
+              <TrendingLandingSkeleton key={i} />
+            ))
+          : stocks.map((item, index) => {
+              return (
+                <FadeIn key={item.id} delay={index * 0.05}>
+                  <StockCard
+                    stock={item}
+                    className="break-inside-avoid"
+                    useFill={false}
+                  />
+                </FadeIn>
+              );
+            })}
+      </div>
+
+      {/* <div className="flex flex-wrap gap-4">
         {isLoading
           ? Array.from({ length: 8 }).map((_, i) => (
               <TrendingLandingSkeleton key={i} />
@@ -49,8 +68,7 @@ const TrendingLandingSection = () => {
                 />
               );
             })}
-        {/* Placeholder to prevent last row stretching too much if needed, or rely on flex-grow constraints */}
-      </div>
+      </div> */}
     </div>
   );
 };

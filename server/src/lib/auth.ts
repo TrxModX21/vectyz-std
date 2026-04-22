@@ -118,6 +118,12 @@ export const auth = betterAuth({
         defaultValue: false,
         input: false,
       },
+      isOfficial: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false,
+      },
       banReason: {
         type: "string",
         required: false,

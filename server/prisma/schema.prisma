@@ -29,6 +29,7 @@ model User {
   image          String?
   banner         String?
   role           String       @default("user")
+  isOfficial     Boolean      @default(false)
   banned         Boolean?
   banReason      String?
   banExpires     DateTime?

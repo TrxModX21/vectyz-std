@@ -1,160 +1,253 @@
 "use client";
 
-import { ChevronDown, Loader2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Loader2, FolderXIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FadeIn from "@/components/common/fade-in";
-import ItemCard from "@/components/explore/item-card";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useGetAllStocks } from "@/hooks/use-stock";
-import { useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useMemo } from "react";
+import StockCard from "@/components/common/stock-card";
+import { useGetFileTypes } from "@/hooks/use-file-type";
+import { useGetCategoriesFromFiletype } from "@/hooks/use-categories";
+import ExploreFilters from "@/components/common/explore-filters";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const SearchPages = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
 
   // Params
   const search = searchParams.get("search") || "";
-  const categoryId = searchParams.get("categoryId") || undefined;
-  const isPremium = searchParams.get("isPremium") || undefined;
   const color = searchParams.get("color") || undefined;
-  const fileTypeId = searchParams.get("fileTypeId") || undefined;
-  const sortBy = (searchParams.get("sortBy") as any) || "newest";
+
+  // Unified parameter resolution (supports old ID params from header or new slug params)
+  const fileTypeParam =
+    searchParams.get("fileType") || searchParams.get("fileTypeId") || "";
+  const categoryParam =
+    searchParams.get("category") || searchParams.get("categoryId") || "";
+
+  const tempLicense = searchParams.get("license");
+  const tempPremium = searchParams.get("isPremium");
+  const licenseParam =
+    tempLicense === "premium" || tempPremium === "true"
+      ? "premium"
+      : tempLicense === "free" || tempPremium === "false"
+        ? "free"
+        : "all";
+
+  const sortParam =
+    searchParams.get("sort") || searchParams.get("sortBy") || "relevance";
+
+  // Hooks for fetching master data
+  const { data: fileTypesData, isLoading: isLoadingFT } = useGetFileTypes({
+    limit: 100,
+  });
+  const fileTypes = fileTypesData?.fileTypes || [];
+
+  const currentFileType = fileTypes.find(
+    (ft) => ft.slug === fileTypeParam || ft.id === fileTypeParam,
+  );
+  const filetypeSlug = currentFileType?.slug || "";
+  const fileTypeId = currentFileType?.id;
+
+  const { data: categoriesData, isLoading: isLoadingCat } =
+    useGetCategoriesFromFiletype(
+      filetypeSlug || "vectors", // Fallback to "vectors" to fetch some categories if empty
+    );
+  const categories = Array.isArray(categoriesData)
+    ? categoriesData
+    : (categoriesData as any)?.categories || [];
+
+  const currentCategory = categories.find(
+    (cat: any) => cat.slug === categoryParam || cat.id === categoryParam,
+  );
+  const categorySlug = currentCategory?.slug || "";
+  const categoryId = currentCategory?.id;
 
   // Data Fetching
   const {
-    data,
+    data: stocksData,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading,
-    refetch,
+    isLoading: isLoadingStocks,
   } = useGetAllStocks({
     search,
     categoryId,
-    isPremium,
+    isPremium:
+      licenseParam === "premium"
+        ? "true"
+        : licenseParam === "free"
+          ? "false"
+          : undefined,
     color,
     fileTypeId,
     sortBy:
-      sortBy === "newest"
+      sortParam === "newest"
         ? "createdAt"
-        : sortBy === "relevance"
+        : sortParam === "relevance"
           ? undefined
-          : "totalDownloads", // Simple mapping
+          : "totalDownloads",
     sortOrder: "desc",
-    limit: 22,
+    limit: 40,
   });
 
-  // Re-fetch when params change
-  useEffect(() => {
-    // React Query handles this automatically via queryKey, but if we need manual refetch:
-    // refetch();
-  }, [search, categoryId, isPremium, color, fileTypeId, sortBy]); // queryKey handles it
+  const totalStocks = stocksData?.pages[0]?.totalCount || 0;
+  const stocks = useMemo(
+    () => stocksData?.pages.flatMap((page) => page.stocks) || [],
+    [stocksData],
+  );
 
-  const totalStocks = data?.pages[0]?.totalCount || 0;
-  const stocks = data?.pages.flatMap((page) => page.stocks) || [];
+  const isDataReady = !isLoadingFT && !isLoadingCat;
+  const isPageLoading = !isDataReady || isLoadingStocks;
 
-  const updateSort = (newSort: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("sortBy", newSort);
-    router.replace(`/explore/search?${params.toString()}`);
+  const updateUrl = (params: URLSearchParams) => {
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  // Handlers for ExploreFilters
+  const onFiletypeChange = (slug: string) => {
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.set("fileType", slug);
+    // Cleanup old keys
+    sp.delete("fileTypeId");
+    // Clear category since filetype changed
+    sp.delete("category");
+    sp.delete("categoryId");
+    updateUrl(sp);
+  };
+
+  const onCategoryChange = (slug: string) => {
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.set("category", slug);
+    sp.delete("categoryId");
+    updateUrl(sp);
+  };
+
+  const onSearchParamChange = (key: string, value: string) => {
+    const sp = new URLSearchParams(searchParams.toString());
+    if (value === "all") {
+      sp.delete(key);
+      if (key === "license") sp.delete("isPremium");
+    } else {
+      sp.set(key, value);
+      if (key === "license") sp.delete("isPremium");
+      if (key === "sort") sp.delete("sortBy");
+    }
+    updateUrl(sp);
+  };
+
+  const applyMobileFilters = (
+    ft: string,
+    cat: string,
+    lic: string,
+    sort: string,
+  ) => {
+    const sp = new URLSearchParams(searchParams.toString());
+
+    // License
+    if (lic === "all") {
+      sp.delete("license");
+      sp.delete("isPremium");
+    } else {
+      sp.set("license", lic);
+      sp.delete("isPremium");
+    }
+
+    // Sort
+    if (sort === "relevance") {
+      sp.delete("sort");
+      sp.delete("sortBy");
+    } else {
+      sp.set("sort", sort);
+      sp.delete("sortBy");
+    }
+
+    // Filetype / Category
+    if (ft) {
+      sp.set("fileType", ft);
+      sp.delete("fileTypeId");
+    } else {
+      sp.delete("fileType");
+      sp.delete("fileTypeId");
+    }
+
+    if (cat) {
+      sp.set("category", cat);
+      sp.delete("categoryId");
+    } else {
+      sp.delete("category");
+      sp.delete("categoryId");
+    }
+
+    updateUrl(sp);
   };
 
   const getHeaderText = () => {
     if (search) return `Search results for "${search}"`;
-    if (categoryId) return "Category results";
+    if (currentCategory) return `${currentCategory.name} results`;
     if (color) return `${color} vectors`;
     return "All vectors";
   };
 
   return (
-    <div className="container mx-auto px-4 lg:px-6 py-6 space-y-6 mt-10 mb-32">
+    <div className="container mx-auto px-4 lg:px-6 py-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold">
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
           {getHeaderText()}{" "}
-          <span className="text-muted-foreground text-lg font-normal">
-            ({totalStocks} stocks)
-          </span>
         </h1>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground hidden md:inline-block">
-            Sort by:
-          </span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1 font-normal capitalize"
-              >
-                {sortBy === "createdAt" ? "Newest" : sortBy}{" "}
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => updateSort("relevance")}>
-                Relevance
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => updateSort("newest")}>
-                Newest
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => updateSort("trending")}>
-                Trending
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <span className="text-lg font-medium text-muted-foreground">
+          ({totalStocks} assets)
+        </span>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="border-b bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 sticky top-16 z-30 p-5 -mx-4 lg:-mx-6 px-4 lg:px-6">
+        <ExploreFilters
+          fileTypes={fileTypes}
+          categories={categories}
+          currentFiletype={filetypeSlug}
+          currentCategory={categorySlug}
+          currentLicense={licenseParam}
+          currentSort={sortParam}
+          onFiletypeChange={onFiletypeChange}
+          onCategoryChange={onCategoryChange}
+          onSearchParamChange={onSearchParamChange}
+          onApplyMobileFilters={applyMobileFilters}
+        />
       </div>
 
       {/* Masonry Grid */}
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : stocks.length > 0 ? (
-        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-          {stocks.map((item, index) => (
-            <FadeIn key={item.id} delay={index * 0.05}>
-              <Card
-                className="break-inside-avoid cursor-pointer rounded-2xl bg-gray-200 py-4"
-                onClick={() => router.push(`/stock/${item.id}`)}
-              >
-                <CardContent className="px-4">
-                  <ItemCard
-                    item={{
-                      ...item,
-                      width:
-                        item.files?.find((f: any) => f.purpose === "PREVIEW")
-                          ?.width || 800,
-                      height:
-                        item.files?.find((f: any) => f.purpose === "PREVIEW")
-                          ?.height || 600,
-                      image:
-                        item.files?.find((f: any) => f.purpose === "PREVIEW")
-                          ?.url || "/placeholder.jpg",
-                    }}
-                    className="shadow-xs"
-                  />
-                </CardContent>
-              </Card>
-            </FadeIn>
+      {isPageLoading && stocks.length === 0 ? (
+        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4 pt-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={`skeleton-${i}`}
+              className="break-inside-avoid shadow-none"
+            >
+              <Skeleton className="w-full h-[300px] rounded-2xl" />
+            </div>
           ))}
         </div>
+      ) : stocks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 text-center text-muted-foreground">
+          <FolderXIcon className="h-16 w-16 mb-4 opacity-20" />
+          <p className="text-xl font-medium">No results found</p>
+          <p className="text-sm">Try adjusting your search or filters.</p>
+        </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <p className="text-lg font-medium text-muted-foreground">
-            No results found.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Try adjusting your search or filters.
-          </p>
+        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4 pt-4">
+          {stocks.map((item, index) => (
+            <FadeIn key={item.id} direction="right">
+              <StockCard
+                stock={item}
+                className="break-inside-avoid"
+                useFill={false}
+              />
+            </FadeIn>
+          ))}
         </div>
       )}
 
@@ -163,7 +256,7 @@ const SearchPages = () => {
         <div className="flex justify-center pt-8 pb-4">
           <Button
             variant="outline"
-            className="rounded-full px-8"
+            className="rounded-full px-8 bg-white"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
           >

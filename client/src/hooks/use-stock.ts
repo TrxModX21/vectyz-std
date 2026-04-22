@@ -70,7 +70,7 @@ export const useGetRelatedStock = (id: string, limit?: number) => {
 
 export const useGetAllStocks = (params: GetStocksParams) => {
   return useInfiniteQuery<GetAllStockResponse>({
-    queryKey: ["stocks", params],
+    queryKey: ["stocks", "infinite", params],
     queryFn: async ({ pageParam = 1 }) => {
       const res = await api.get("/stocks", {
         params: { ...params, page: pageParam },
@@ -84,7 +84,7 @@ export const useGetAllStocks = (params: GetStocksParams) => {
       }
       return undefined;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 10, // 5 minutes
   });
 };
 
@@ -144,11 +144,40 @@ export const useToggleLikeStock = (stockId?: string, stockSlug?: string) => {
       await queryClient.cancelQueries({
         queryKey: ["stocksByUser", "infinite"],
       });
+      await queryClient.cancelQueries({
+        queryKey: ["stocks"],
+      });
       await queryClient.cancelQueries({ queryKey: ["popularFreeVector"] });
 
       // Optimistic update for infinite grids
       queryClient.setQueriesData<any>(
         { queryKey: ["stocksByUser", "infinite"] },
+        (oldData: any) => {
+          if (!oldData || !oldData.pages) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              stocks: page.stocks?.map((st: any) => {
+                if (st.id === stockId) {
+                  const currentlyLiked = st.isLiked;
+                  return {
+                    ...st,
+                    isLiked: !currentlyLiked,
+                    totalLikes: currentlyLiked
+                      ? st.totalLikes - 1
+                      : st.totalLikes + 1,
+                  };
+                }
+                return st;
+              }),
+            })),
+          };
+        },
+      );
+
+      queryClient.setQueriesData<any>(
+        { queryKey: ["stocks", "infinite"] },
         (oldData: any) => {
           if (!oldData || !oldData.pages) return oldData;
           return {

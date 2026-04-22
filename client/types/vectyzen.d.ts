@@ -23,6 +23,7 @@ interface Vectyzen {
   image?: string;
   banner?: string;
   role: string;
+  isOfficial: boolean;
   banned: boolean;
   banReason: any;
   banExpires: any;
