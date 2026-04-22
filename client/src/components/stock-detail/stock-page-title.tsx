@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Share2 } from "lucide-react";
@@ -9,14 +12,22 @@ type Props = {
 };
 
 const StockPageTitle = ({ stock }: Props) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const tags = stock?.keywords || [];
+  const maxTags = 10;
+  const hasMoreTags = tags.length > maxTags;
+
+  const displayedTags = isExpanded ? tags : tags.slice(0, maxTags);
+
   return (
-    <div className="flex items-start justify-between">
+    <div className="flex flex-col lg:flex-row gap-2 lg:gap-0 items-start justify-between">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
           {stock?.title}
         </h1>
         <div className="flex flex-wrap gap-2">
-          {stock?.keywords.map((tag) => (
+          {displayedTags.map((tag) => (
             <Badge
               key={tag}
               variant="secondary"
@@ -25,13 +36,22 @@ const StockPageTitle = ({ stock }: Props) => {
               #{tag}
             </Badge>
           ))}
+          {hasMoreTags && (
+            <Badge
+              variant="outline"
+              className="cursor-pointer border-dashed hover:bg-muted font-medium"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded ? "show less" : `+${tags.length - maxTags} another tag`}
+            </Badge>
+          )}
         </div>
       </div>
       <div className="flex gap-2 shrink-0">
         <LikeStock stock={stock} variant="outline" />
 
         <ShareDialog
-          url={`${window.location.origin}/stock/${stock?.slug}`}
+          url={`${typeof window !== 'undefined' ? window.location.origin : ''}/stock/${stock?.slug}`}
           title={`Share ${stock?.title}`}
         >
           <Button variant="outline" size="icon" className="rounded-full">

@@ -64,6 +64,7 @@ const Trending = () => {
                 stock={item}
                 className="hidden md:block col-span-1 row-span-1"
                 useFill={true}
+                objectFit="cover"
               />
             ))}
 

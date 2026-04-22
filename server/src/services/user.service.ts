@@ -19,6 +19,7 @@ const selectField = {
   image: true,
   banner: true,
   role: true,
+  isOfficial: true,
   banned: true,
   banReason: true,
   banExpires: true,

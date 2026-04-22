@@ -73,7 +73,10 @@ const selectField = {
   },
 };
 
-export const getAllStocks = async (input: GetAllStocksSchema) => {
+export const getAllStocks = async (
+  input: GetAllStocksSchema,
+  viewerId?: string,
+) => {
   const {
     page,
     limit,
@@ -124,8 +127,27 @@ export const getAllStocks = async (input: GetAllStocksSchema) => {
     prisma.stock.count({ where }),
   ]);
 
+  const stockIds = stocks.map((s) => s.id);
+  let likedStockIds = new Set<string>();
+  if (viewerId && stockIds.length > 0) {
+    const userLikes = await prisma.like.findMany({
+      where: {
+        userId: viewerId,
+        stockId: { in: stockIds }, // 👈 Ambil like hanya pada ke-10 id ini saja
+      },
+      select: { stockId: true },
+    });
+
+    likedStockIds = new Set(userLikes.map((l) => l.stockId));
+  }
+
+  const mappedStocks = stocks.map((stock) => ({
+    ...stock,
+    isLiked: likedStockIds.has(stock.id),
+  }));
+
   return {
-    stocks,
+    stocks: mappedStocks,
     totalCount,
     totalPages: Math.ceil(totalCount / limit),
     currentPage: page,

@@ -26,20 +26,24 @@ import { BadRequestException } from "../utils/app-error";
 export const getAllStocksController = asyncHandler(
   async (req: Request, res: Response) => {
     const query = getAllStocksSchema.parse(req.query);
+    const viewer = res.locals.user;
 
-    const { stocks, totalCount, totalPages, currentPage } = await getAllStocks({
-      page: query.page,
-      limit: query.limit,
-      search: query.search,
-      categoryId: query.categoryId,
-      fileTypeId: query.fileTypeId,
-      status: query.status,
-      isPremium: query.isPremium,
-      minPrice: query.minPrice,
-      maxPrice: query.maxPrice,
-      sortBy: query.sortBy,
-      sortOrder: query.sortOrder,
-    });
+    const { stocks, totalCount, totalPages, currentPage } = await getAllStocks(
+      {
+        page: query.page,
+        limit: query.limit,
+        search: query.search,
+        categoryId: query.categoryId,
+        fileTypeId: query.fileTypeId,
+        status: query.status,
+        isPremium: query.isPremium,
+        minPrice: query.minPrice,
+        maxPrice: query.maxPrice,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+      },
+      viewer?.id,
+    );
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Stocks fetched successfully",

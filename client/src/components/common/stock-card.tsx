@@ -25,6 +25,7 @@ export interface StockCardProps {
   previewUrl?: string;
   /** Use internal padding and borderRadius (landing page style) */
   useImagePadding?: boolean;
+  objectFit?: "fill" | "contain" | "cover" | "none" | "scale-down";
 }
 
 const StockCard = ({
@@ -35,6 +36,7 @@ const StockCard = ({
   aspectRatio,
   previewUrl,
   useImagePadding = false,
+  objectFit = "contain",
 }: StockCardProps) => {
   const router = useRouter();
 
@@ -60,10 +62,14 @@ const StockCard = ({
               src={preview}
               alt={stock.title}
               fill
-              className={`object-cover transition-transform duration-500 group-hover:scale-105 ${
+              className={`transition-transform duration-500 group-hover:scale-105 ${
                 useImagePadding ? "p-2" : ""
               }`}
-              style={useImagePadding ? { borderRadius: 20 } : {}}
+              style={
+                useImagePadding
+                  ? { borderRadius: 20, objectFit }
+                  : { objectFit }
+              }
               placeholder="blur"
               blurDataURL={blurDataURL}
               sizes={
@@ -79,7 +85,7 @@ const StockCard = ({
               alt={stock.title}
               width={imageWidth}
               height={imageHeight}
-              className="pointer-events-auto w-full h-auto min-h-56 object-cover transition-transform duration-500 group-hover:scale-105"
+              className="pointer-events-auto w-full h-auto min-h-28 size-full transition-transform duration-500 group-hover:scale-105"
               placeholder="blur"
               blurDataURL={blurDataURL}
               sizes="(max-width: 768px) 50vw, 25vw"

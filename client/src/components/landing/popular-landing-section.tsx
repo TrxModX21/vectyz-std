@@ -3,6 +3,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetPopularFreeVector } from "@/hooks/use-stock";
 import StockCard from "../common/stock-card";
+import FadeIn from "../common/fade-in";
 
 const PopularLandingSection = () => {
   const { data, isLoading } = useGetPopularFreeVector();
@@ -16,9 +17,80 @@ const PopularLandingSection = () => {
         </h2>
       </div>
 
-      <div className="flex flex-wrap gap-4">
+      <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
         {isLoading
-          ? Array.from({ length: 8 }).map((_, i) => (
+          ? Array.from({ length: 12 }).map((_, i) => (
+              <PopularLandingSkeleton key={i} />
+            ))
+          : stocks.map((item, index) => {
+              return (
+                <FadeIn key={item.id} delay={index * 0.05}>
+                  <StockCard
+                    stock={item}
+                    className="break-inside-avoid"
+                    useFill={false}
+                  />
+                </FadeIn>
+              );
+            })}
+      </div>
+
+      {/* <div className="flex flex-wrap gap-2">
+        {stocks.map((img) => {
+          const preview = img.files.find((f) => f.purpose === "PREVIEW");
+          const width = preview?.width || 800;
+          const height = preview?.height || 600;
+          const aspectRatio = width / height;
+
+          return (
+            <div
+              key={img.id}
+              className="overflow-hidden rounded flex-auto"
+              style={{
+                aspectRatio: `${width} / ${height}`,
+                maxHeight: "220px",
+                maxWidth: `${220 * (width / height)}px`,
+              }}
+            >
+              <img
+                src={preview?.url}
+                alt={img.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          );
+        })}
+        {stocks.map((img) => {
+          const preview = img.files.find((f) => f.purpose === "PREVIEW");
+          const width = preview?.width || 800;
+          const height = preview?.height || 600;
+          const aspectRatio = width / height;
+
+          return (
+            <div
+              key={img.id}
+              className="overflow-hidden rounded flex-auto"
+              style={{
+                aspectRatio: `${width} / ${height}`,
+                maxHeight: "220px",
+                maxWidth: `${220 * (width / height)}px`,
+              }}
+            >
+              <img
+                src={preview?.url}
+                alt={img.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          );
+        })}
+      </div> */}
+
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {isLoading
+          ? Array.from({ length: 12 }).map((_, i) => (
               <PopularLandingSkeleton key={i} />
             ))
           : stocks.map((item) => {
@@ -49,7 +121,7 @@ const PopularLandingSection = () => {
                 />
               );
             })}
-      </div>
+      </div> */}
     </div>
   );
 };

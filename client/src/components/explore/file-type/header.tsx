@@ -23,24 +23,22 @@ import {
   Languages,
   LogOut,
   Moon,
+  Plus,
   Search,
   Settings,
   Ticket,
   X,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useGetColors } from "@/hooks/use-colors";
-import { useGetFileTypes } from "@/hooks/use-file-type";
+import { useAuth } from "@/hooks/use-auth";
+import TopUpDialog from "@/components/common/top-up-dialog";
 
 const Header = () => {
-  const {
-    data: session,
-    isPending: sessionLoading, //loading state
-    error, //error object
-    refetch, //refetch the session
-  } = authClient.useSession();
+  const { data: userProfileResponse, isLoading } = useAuth();
+  const session = userProfileResponse?.user;
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const router = useRouter();
@@ -49,23 +47,9 @@ const Header = () => {
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filters State
-  const [selectedLicense, setSelectedLicense] = useState<string | null>(null);
-  // const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [selectedFileType, setSelectedFileType] = useState<string | null>(null);
-
-  // Data Hooks
-  // const { data: colorResponse } = useGetColors();
-  const { data: fileTypesData } = useGetFileTypes({ limit: 100 });
-
-  // const colors = colorResponse?.colors || [];
-
   // Sync with URL on mount / update
   useEffect(() => {
     setSearchQuery(searchParams.get("search") || "");
-    setSelectedLicense(searchParams.get("license"));
-    // setSelectedColor(searchParams.get("color"));
-    setSelectedFileType(searchParams.get("fileType"));
   }, [searchParams]);
 
   const updateUrl = (key: string, value: string | null) => {
@@ -133,258 +117,145 @@ const Header = () => {
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 lg:gap-3">
-            {/* Filters */}
-            <div className="hidden lg:flex items-center gap-2 mr-2">
-              {/* License Filter */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`gap-1 rounded-md font-normal hover:text-foreground ${
-                      selectedLicense
-                        ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                        : "bg-muted/30 text-muted-foreground"
-                    }`}
-                  >
-                    <span className="opacity-70">
-                      {selectedLicense === "true"
-                        ? "Premium"
-                        : selectedLicense === "false"
-                          ? "Free"
-                          : "License"}
-                    </span>{" "}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => updateUrl("isPremium", null)}
-                  >
-                    All
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => updateUrl("isPremium", "false")}
-                  >
-                    Free
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => updateUrl("isPremium", "true")}
-                  >
-                    Premium
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Color Filter */}
-              {/* <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`gap-1 rounded-md font-normal hover:text-foreground ${
-                      selectedColor
-                        ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                        : "bg-muted/30 text-muted-foreground"
-                    }`}
-                  >
-                    <span className="opacity-70">
-                      {colors?.find((c) => c.slug === selectedColor)?.name ||
-                        "Color"}
-                    </span>{" "}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="h-64 overflow-y-auto"
-                >
-                  <DropdownMenuItem onClick={() => updateUrl("color", null)}>
-                    All Colors
-                  </DropdownMenuItem>
-                  {colors?.map((color) => (
-                    <DropdownMenuItem
-                      key={color.id}
-                      onClick={() => updateUrl("color", color.slug)}
-                    >
-                      <div
-                        className="w-4 h-4 rounded-full mr-2 border"
-                        style={{ backgroundColor: color.color }}
-                      />
-                      {color.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu> */}
-
-              {/* File Type Filter */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`gap-1 rounded-md font-normal hover:text-foreground ${
-                      selectedFileType
-                        ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                        : "bg-muted/30 text-muted-foreground"
-                    }`}
-                  >
-                    <span className="opacity-70">
-                      {fileTypesData?.fileTypes?.find(
-                        (f) => f.slug === selectedFileType,
-                      )?.name || "File type"}
-                    </span>{" "}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="h-64 overflow-y-auto"
-                >
-                  <DropdownMenuItem
-                    onClick={() => updateUrl("fileTypeId", null)}
-                  >
-                    All Types
-                  </DropdownMenuItem>
-                  {fileTypesData?.fileTypes?.map((type) => (
-                    <DropdownMenuItem
-                      key={type.id}
-                      onClick={() => updateUrl("fileTypeId", type.slug)}
-                    >
-                      {type.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
             {session ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="size-10">
-                      <AvatarImage
-                        src={session.user.image || ""}
-                        alt="shadcn"
-                      />
-                      <AvatarFallback className="bg-v-green">
-                        {session.user.name.slice(0)[0]}
-                      </AvatarFallback>
-                    </Avatar>
+              <>
+                <TopUpDialog>
+                  <Button
+                    variant="outline"
+                    className="hidden md:flex h-9 gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary"
+                  >
+                    <Zap className="h-4 w-4 text-primary fill-primary/20" />
+                    <span className="font-semibold">
+                      {session.creditBalance || 0}
+                    </span>
+                    <Plus className="h-3 w-3 ml-1 opacity-50" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-72 p-2"
-                  sideOffset={10}
-                  align="end"
-                >
-                  <div className="flex items-center gap-3 p-2">
-                    <Avatar className="size-10">
-                      <AvatarImage
-                        src={session.user.image || ""}
-                        alt="shadcn"
-                      />
-                      <AvatarFallback className="bg-v-green">
-                        {session.user.name.slice(0)[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col space-y-0.5">
-                      <p className="text-sm font-bold leading-none">
-                        {session.user.name}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {session.user.email}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-2 flex flex-col gap-2">
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-                      Get a plan
-                    </Button>
-                    <Link href="/vectyzen">
-                      <Button
-                        variant="outline"
-                        className="w-full bg-transparent border-input hover:bg-accent hover:text-accent-foreground"
-                      >
-                        Dashboard
-                      </Button>
-                    </Link>
-                  </div>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <CreditCard className="mr-2 size-4" />
-                      Plan & billing
-                      <span className="ml-auto text-xs bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">
-                        Free
-                      </span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Settings className="mr-2 size-4" />
-                      Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Globe className="mr-2 size-4" />
-                      Creator profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Folder className="mr-2 size-4" />
-                      My collections
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-
-                  <DropdownMenuGroup className="mt-2">
-                    <div className="flex items-center justify-between px-2 py-1.5 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Languages className="size-4" />
-                        Language
-                      </div>
-                      <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
-                        English
-                        <ChevronDown className="size-3" />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between px-2 py-1.5 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Moon className="size-4" />
-                        Theme
-                      </div>
-                      <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
-                        Dark
-                        <ChevronDown className="size-3" />
-                      </div>
-                    </div>
-                  </DropdownMenuGroup>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Ticket className="mr-2 size-4" />
-                      Use AI code
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <HelpCircle className="mr-2 size-4" />
-                      Help center
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onSelect={() => setLogoutDialogOpen(true)}
+                </TopUpDialog>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full"
                     >
-                      <LogOut className="mr-2 size-4" />
-                      Log out
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      <Avatar className="size-10">
+                        <AvatarImage src={session.image || ""} alt="shadcn" />
+                        <AvatarFallback className="bg-v-green">
+                          {session.name.slice(0)[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    className="w-72 p-2"
+                    sideOffset={10}
+                    align="end"
+                  >
+                    <div className="flex items-center gap-3 p-2">
+                      <Avatar className="size-10">
+                        <AvatarImage src={session.image || ""} alt="shadcn" />
+                        <AvatarFallback className="bg-v-green">
+                          {session.name.slice(0)[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col space-y-0.5">
+                        <p className="text-sm font-bold leading-none">
+                          {session.name}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {session.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-2 flex flex-col gap-2">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                        Get a plan
+                      </Button>
+                      <Link href="/vectyzen">
+                        <Button
+                          variant="outline"
+                          className="w-full bg-transparent border-input hover:bg-accent hover:text-accent-foreground"
+                        >
+                          Dashboard
+                        </Button>
+                      </Link>
+                    </div>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <CreditCard className="mr-2 size-4" />
+                        Plan & billing
+                        <span className="ml-auto text-xs bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">
+                          Free
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Settings className="mr-2 size-4" />
+                        Settings
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Globe className="mr-2 size-4" />
+                        Creator profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Folder className="mr-2 size-4" />
+                        My collections
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+
+                    <DropdownMenuGroup className="mt-2">
+                      <div className="flex items-center justify-between px-2 py-1.5 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Languages className="size-4" />
+                          Language
+                        </div>
+                        <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
+                          English
+                          <ChevronDown className="size-3" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between px-2 py-1.5 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Moon className="size-4" />
+                          Theme
+                        </div>
+                        <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
+                          Dark
+                          <ChevronDown className="size-3" />
+                        </div>
+                      </div>
+                    </DropdownMenuGroup>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Ticket className="mr-2 size-4" />
+                        Use AI code
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <HelpCircle className="mr-2 size-4" />
+                        Help center
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onSelect={() => setLogoutDialogOpen(true)}
+                      >
+                        <LogOut className="mr-2 size-4" />
+                        Log out
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <>
                 <Link href="/auth/sign-up">
