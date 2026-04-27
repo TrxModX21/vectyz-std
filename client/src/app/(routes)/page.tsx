@@ -15,10 +15,10 @@ const HomePage = () => {
       <FadeIn>
         <HeroSection />
       </FadeIn>
-      <FadeIn>
+      {/* <FadeIn>
         <SectionSeparator />
         <PopularLandingSection />
-      </FadeIn>
+      </FadeIn> */}
       <FadeIn>
         <SectionSeparator />
         <TrendingLandingSection />

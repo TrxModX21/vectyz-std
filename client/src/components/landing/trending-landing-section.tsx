@@ -6,7 +6,7 @@ import StockCard from "../common/stock-card";
 import FadeIn from "../common/fade-in";
 
 const TrendingLandingSection = () => {
-  const { data, isLoading } = useGetTrendingStocks({ limit: 12 });
+  const { data, isLoading } = useGetTrendingStocks({ limit: 24 });
   const stocks = data?.stocks || [];
 
   return (
@@ -34,41 +34,6 @@ const TrendingLandingSection = () => {
               );
             })}
       </div>
-
-      {/* <div className="flex flex-wrap gap-4">
-        {isLoading
-          ? Array.from({ length: 8 }).map((_, i) => (
-              <TrendingLandingSkeleton key={i} />
-            ))
-          : stocks.map((item) => {
-              const preview = item.files.find(
-                (f) => f.purpose === "PREVIEW",
-              )?.url;
-              const originalFile = item?.files.find(
-                (f) => f.purpose === "ORIGINAL",
-              );
-
-              const width = originalFile?.width || 800;
-              const height = originalFile?.height || 600;
-              const aspectRatio = width / height;
-
-              return (
-                <StockCard
-                  key={item.id}
-                  stock={item}
-                  useFill={true}
-                  useImagePadding={true}
-                  style={{
-                    flexGrow: aspectRatio,
-                    flexBasis: `${Math.max(aspectRatio * 270, 0)}px`,
-                    height: "270px",
-                  }}
-                  aspectRatio={aspectRatio}
-                  previewUrl={preview}
-                />
-              );
-            })}
-      </div> */}
     </div>
   );
 };

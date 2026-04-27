@@ -1,12 +1,26 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
-  ChevronLeft,
-  ChevronRight,
-  Facebook,
-  Linkedin,
-  Mail,
-  MessageCircle,
-  Twitter,
-} from "lucide-react";
+  EmailShareButton,
+  EmailIcon,
+  PinterestShareButton,
+  PinterestIcon,
+  FacebookShareButton,
+  FacebookIcon,
+  FacebookMessengerShareButton,
+  FacebookMessengerIcon,
+  LineShareButton,
+  LineIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+  RedditShareButton,
+  RedditIcon,
+  TelegramShareButton,
+  TelegramIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+} from "next-share";
 import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
@@ -22,24 +36,16 @@ interface ShareDialogProps {
   children: React.ReactNode;
   title?: string;
   url: string;
+  media: string;
+  description?: string;
 }
-
-const PinterestIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
-    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.951-7.252 4.182 0 7.427 2.979 7.427 6.953 0 4.156-2.617 7.502-6.259 7.502-1.22 0-2.368-.635-2.76-1.385l-.753 2.868c-.27 1.026-1.002 2.311-1.493 3.096 1.16.335 2.38.513 3.633.513 6.627 0 11.989-5.365 11.989-11.989C24.01 5.367 18.644 0 12.017 0z" />
-  </svg>
-);
-
-const RedditIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
-    <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.688-.561-1.25-1.25-1.25zm-2.75 3.437c-1.124 0-2.223.351-2.905.918l.492.68c.55-.427 1.487-.714 2.414-.714.927 0 1.863.287 2.414.714l.491-.68c-.682-.567-1.781-.918-2.905-.918z" />
-  </svg>
-);
 
 export function ShareDialog({
   children,
   url,
   title = "Share Vectolio",
+  media = "",
+  description = "",
 }: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -76,85 +82,6 @@ export function ShareDialog({
     }
   };
 
-  const shareOptions = [
-    {
-      name: "WhatsApp",
-      icon: <MessageCircle className="h-6 w-6" />,
-      color: "bg-[#25D366] text-white hover:bg-[#25D366]/90",
-      action: () =>
-        window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, "_blank"),
-    },
-    {
-      name: "Facebook",
-      icon: <Facebook className="h-6 w-6" />,
-      color: "bg-[#1877F2] text-white hover:bg-[#1877F2]/90",
-      action: () =>
-        window.open(
-          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-            url,
-          )}`,
-          "_blank",
-        ),
-    },
-    {
-      name: "X",
-      icon: <Twitter className="h-6 w-6" />,
-      color:
-        "bg-black text-white dark:bg-white dark:text-black hover:opacity-90",
-      action: () =>
-        window.open(
-          `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`,
-          "_blank",
-        ),
-    },
-    {
-      name: "Pinterest",
-      icon: <PinterestIcon className="h-6 w-6" />,
-      color: "bg-[#E60023] text-white hover:bg-[#E60023]/90",
-      action: () =>
-        window.open(
-          `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(
-            url,
-          )}`,
-          "_blank",
-        ),
-    },
-    {
-      name: "Reddit",
-      icon: <RedditIcon className="h-6 w-6" />,
-      color: "bg-[#FF4500] text-white hover:bg-[#FF4500]/90",
-      action: () =>
-        window.open(
-          `https://www.reddit.com/submit?url=${encodeURIComponent(url)}`,
-          "_blank",
-        ),
-    },
-    {
-      name: "LinkedIn",
-      icon: <Linkedin className="h-6 w-6" />,
-      color: "bg-[#0A66C2] text-white hover:bg-[#0A66C2]/90",
-      action: () =>
-        window.open(
-          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-            url,
-          )}`,
-          "_blank",
-        ),
-    },
-    {
-      name: "Email",
-      icon: <Mail className="h-6 w-6" />,
-      color: "bg-gray-500 text-white hover:bg-gray-500/90",
-      action: () =>
-        window.open(
-          `mailto:?subject=Check out this profile&body=${encodeURIComponent(
-            url,
-          )}`,
-          "_blank",
-        ),
-    },
-  ];
-
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -182,24 +109,102 @@ export function ShareDialog({
               onScroll={checkScroll}
               className="flex items-start gap-4 overflow-x-auto pb-4 pt-2 px-2 scrollbar-hide scroll-smooth"
             >
-              {shareOptions.map((option) => (
-                <div
-                  key={option.name}
-                  className="flex flex-col items-center gap-2 min-w-[72px]"
-                >
-                  <button
-                    type="button"
-                    onClick={option.action}
-                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95 ${option.color}`}
-                    aria-label={`Share to ${option.name}`}
-                  >
-                    {option.icon}
-                  </button>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <EmailShareButton url={url} subject={"Next Share"} body="body">
+                  <EmailIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
                   <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                    {option.name}
+                    Email
                   </span>
-                </div>
-              ))}
+                </EmailShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <PinterestShareButton
+                  url={url}
+                  media={media}
+                  description={description}
+                >
+                  <PinterestIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Pinterest
+                  </span>
+                </PinterestShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <FacebookShareButton
+                  url={url}
+                  quote={title}
+                  hashtag={"#vectolio"}
+                >
+                  <FacebookIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Facebook
+                  </span>
+                </FacebookShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <FacebookMessengerShareButton
+                  url={url}
+                  appId={""}
+                  redirectUri={url}
+                >
+                  <FacebookMessengerIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Messenger
+                  </span>
+                </FacebookMessengerShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <RedditShareButton url={url} title={title}>
+                  <RedditIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Rediit
+                  </span>
+                </RedditShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <LineShareButton url={url} title={title}>
+                  <LineIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Line
+                  </span>
+                </LineShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <TelegramShareButton url={url} title={title}>
+                  <TelegramIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Telegram
+                  </span>
+                </TelegramShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <TwitterShareButton
+                  url={url}
+                  title={title}
+                  hashtags={["vectolio"]}
+                >
+                  <TwitterIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    X
+                  </span>
+                </TwitterShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <WhatsappShareButton url={url} title={title} separator=":: ">
+                  <WhatsappIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Whatsapp
+                  </span>
+                </WhatsappShareButton>
+              </div>
+              <div className="flex flex-col items-center gap-2 min-w-[72px]">
+                <LinkedinShareButton url={url}>
+                  <LinkedinIcon className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95" />
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    Linkedin
+                  </span>
+                </LinkedinShareButton>
+              </div>
             </div>
 
             {canScrollRight && (
