@@ -54,6 +54,8 @@ const Trending = () => {
                 stock={stocks[0]}
                 className="col-span-1 md:col-span-2 md:row-span-2 hidden md:block"
                 useFill={true}
+                useImagePadding={true}
+                useImageLayer={true}
               />
             )}
 
@@ -64,7 +66,9 @@ const Trending = () => {
                 stock={item}
                 className="hidden md:block col-span-1 row-span-1"
                 useFill={true}
-                objectFit="cover"
+                objectFit="contain"
+                useImageLayer={true}
+                useImagePadding={true}
               />
             ))}
 
@@ -76,6 +80,9 @@ const Trending = () => {
                   stock={item}
                   className="relative flex-none w-[85vw] h-full snap-center"
                   useFill={true}
+                  objectFit="contain"
+                  useImageLayer={true}
+                  useImagePadding={true}
                 />
               ))}
             </div>

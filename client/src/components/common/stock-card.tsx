@@ -26,6 +26,7 @@ export interface StockCardProps {
   /** Use internal padding and borderRadius (landing page style) */
   useImagePadding?: boolean;
   objectFit?: "fill" | "contain" | "cover" | "none" | "scale-down";
+  useImageLayer?: boolean;
 }
 
 const StockCard = ({
@@ -37,6 +38,7 @@ const StockCard = ({
   previewUrl,
   useImagePadding = false,
   objectFit = "contain",
+  useImageLayer = false,
 }: StockCardProps) => {
   const router = useRouter();
 
@@ -57,6 +59,18 @@ const StockCard = ({
     >
       <CardContent className="px-2 h-full w-full">
         <div className="relative rounded-xl bg-gray-100 overflow-hidden w-full h-full">
+          {useImageLayer && (
+            <Image
+              src={preview}
+              alt={stock.title}
+              className={`size-full blur-sm brightness-75 h-full w-full ${useImagePadding ? "p-2" : ""}`}
+              placeholder="blur"
+              blurDataURL={blurDataURL}
+              width={100}
+              height={100}
+            />
+          )}
+
           {useFill ? (
             <Image
               src={preview}
@@ -140,6 +154,8 @@ const StockCard = ({
                       : ""
                   }
                   title={`Share ${stock.title}`}
+                  media={previewFile?.url || ""}
+                  description={stock?.description}
                 >
                   <Button
                     size="icon"

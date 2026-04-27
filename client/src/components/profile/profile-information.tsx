@@ -78,6 +78,8 @@ const ProfileInformation = ({
         <ShareDialog
           url={`${window.location.href}`}
           title={`Share ${user?.name} Profile`}
+          media={user?.image || ""}
+          description={user?.profile.bio}
         >
           <Button
             variant="outline"

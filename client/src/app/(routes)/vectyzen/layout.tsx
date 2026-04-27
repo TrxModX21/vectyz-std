@@ -1,17 +1,13 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { cookies } from "next/headers";
 import { ReactNode } from "react";
 import AppSidebar from "./_common/app-sidebar";
 import AppHeader from "./_common/app-header";
 import ImpersonateMode from "@/components/impersonate-mode";
 
 const DashboardLayout = async ({ children }: { children: ReactNode }) => {
-  const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
-
   return (
     <SidebarProvider
-      defaultOpen={defaultOpen}
+      defaultOpen={true}
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",

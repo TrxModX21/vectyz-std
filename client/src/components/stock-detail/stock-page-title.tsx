@@ -20,6 +20,8 @@ const StockPageTitle = ({ stock }: Props) => {
 
   const displayedTags = isExpanded ? tags : tags.slice(0, maxTags);
 
+  const previewFile = stock?.files.find((f) => f.purpose === "PREVIEW");
+
   return (
     <div className="flex flex-col lg:flex-row gap-2 lg:gap-0 items-start justify-between">
       <div>
@@ -42,7 +44,9 @@ const StockPageTitle = ({ stock }: Props) => {
               className="cursor-pointer border-dashed hover:bg-muted font-medium"
               onClick={() => setIsExpanded(!isExpanded)}
             >
-              {isExpanded ? "show less" : `+${tags.length - maxTags} another tag`}
+              {isExpanded
+                ? "show less"
+                : `+${tags.length - maxTags} another tag`}
             </Badge>
           )}
         </div>
@@ -51,8 +55,10 @@ const StockPageTitle = ({ stock }: Props) => {
         <LikeStock stock={stock} variant="outline" />
 
         <ShareDialog
-          url={`${typeof window !== 'undefined' ? window.location.origin : ''}/stock/${stock?.slug}`}
+          url={`${typeof window !== "undefined" ? window.location.origin : ""}/stock/${stock?.slug}`}
           title={`Share ${stock?.title}`}
+          media={previewFile?.url || ""}
+          description={stock?.description}
         >
           <Button variant="outline" size="icon" className="rounded-full">
             <Share2 className="h-4 w-4" />

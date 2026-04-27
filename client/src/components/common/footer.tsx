@@ -58,15 +58,15 @@ const Footer = () => {
     products: {
       title: "Product",
       links: [
-        "Brusheezy",
-        "Vecteezy",
-        "Videezy",
-        "Enterprise",
-        "Education",
-        "Developer API",
-        "AI Reverse Image Search",
-        "AI Background Removal",
-        "QR Code Generator",
+        "Twibify",
+        "Design Service",
+        "Digital Invitation",
+        "Create Website",
+        // "Education",
+        // "Developer API",
+        // "AI Reverse Image Search",
+        // "AI Background Removal",
+        // "QR Code Generator",
       ],
     },
     getStarted: {
@@ -74,23 +74,24 @@ const Footer = () => {
       links: [
         "Licensing Agreement",
         "DMCA",
-        "Affiliate Program",
-        "Popular Vector Searches",
-        "Popular Photo Searches",
-        "Popular Video Searches",
+        // "Affiliate Program",
+        // "Popular Vector Searches",
+        // "Popular Photo Searches",
+        // "Popular Video Searches",
       ],
     },
     company: {
       title: "Company",
       links: [
         "About us",
-        "Careers",
-        "Search trends",
         "Blog",
-        "Events",
-        "Magnific",
-        "Slidesgo",
+        "Careers",
         "Help center",
+        "Contact Us",
+        // "Search trends",
+        // "Events",
+        // "Magnific",
+        // "Slidesgo",
       ],
     },
   };
@@ -339,7 +340,7 @@ const Footer = () => {
 
         {/* Footer Bottom */}
         <div className="flex flex-col md:flex-row items-center md:items-end justify-between text-xs md:text-sm text-white/70 space-y-4 md:space-y-0 mt-8 mb-8 md:mb-0">
-          <p>© {currentYear} Eezy LLC. All rights reserved</p>
+          <p>© {currentYear} Vectolio. All rights reserved</p>
           <div className="flex items-center gap-1">
             <Link href="#" className="hover:text-white transition-colors">
               Terms of Use
