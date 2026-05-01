@@ -27,10 +27,12 @@ import {
 } from "@tabler/icons-react";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
 
 const NavUser = () => {
   const { isMobile } = useSidebar();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const router = useRouter();
 
   const {
     data: session,
@@ -51,7 +53,7 @@ const NavUser = () => {
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton
                 size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
@@ -102,7 +104,7 @@ const NavUser = () => {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/vectyzen/me")}>
                   <IconUserCircle />
                   Account
                 </DropdownMenuItem>

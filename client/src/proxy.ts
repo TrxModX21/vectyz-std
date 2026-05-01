@@ -7,7 +7,19 @@ const authRoutes = [
   "/auth/reset-password",
 ];
 
-const protectedRoutes = ["/vectyzen"];
+const protectedRoutes = [
+  "/vectyzen",
+  "/vectyzen/me",
+  "/vectyzen/stocks/upload",
+  "/vectyzen/stocks/revision",
+  "/vectyzen/stocks/rejected",
+  "/vectyzen/stocks/published",
+  "/vectyzen/collections",
+  "/vectyzen/downloads",
+  "/vectyzen/earnings",
+  "/vectyzen/transactions",
+  "/vectyzen/create-stock",
+];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
