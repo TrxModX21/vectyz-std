@@ -2,12 +2,36 @@
 
 import { useGetTrendingStocks } from "@/hooks/use-stock";
 import { Skeleton } from "@/components/ui/skeleton";
-import StockCard from "../common/stock-card";
 import FadeIn from "../common/fade-in";
+import StockCard from "../common/stock-card";
+import { cn } from "@/lib/utils";
+import { ColumnsPhotoAlbum, RenderImageProps } from "react-photo-album";
+import "react-photo-album/columns.css";
 
 const TrendingLandingSection = () => {
   const { data, isLoading } = useGetTrendingStocks({ limit: 24 });
   const stocks = data?.stocks || [];
+
+  const photos = stocks.map((stock) => {
+    const preview = stock.files.find((f) => f.purpose === "PREVIEW")!;
+    return {
+      src: preview.url,
+      width: preview.width || 800,
+      height: preview.height || 600,
+      alt: stock.title,
+      key: stock.id,
+      stockData: stock,
+    };
+  });
+
+  const renderPhoto = (imageProps: RenderImageProps, context: any) => {
+    return (
+      <StockCard
+        stock={context.photo.stockData}
+        style={{ width: "100%", height: "100%" }}
+      />
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 lg:px-6 py-8">
@@ -17,22 +41,31 @@ const TrendingLandingSection = () => {
         </h2>
       </div>
 
-      <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-        {isLoading
-          ? Array.from({ length: 12 }).map((_, i) => (
-              <TrendingLandingSkeleton key={i} />
-            ))
-          : stocks.map((item, index) => {
-              return (
-                <FadeIn key={item.id} delay={index * 0.05}>
-                  <StockCard
-                    stock={item}
-                    className="break-inside-avoid"
-                    useFill={false}
-                  />
-                </FadeIn>
-              );
-            })}
+      <div
+        className={cn(
+          isLoading
+            ? "columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4"
+            : "min-h-screen",
+        )}
+      >
+        {isLoading ? (
+          Array.from({ length: 12 }).map((_, i) => (
+            <TrendingLandingSkeleton key={i} />
+          ))
+        ) : (
+          <FadeIn>
+            <ColumnsPhotoAlbum
+              photos={photos}
+              columns={(containerWidth) => {
+                if (containerWidth < 428) return 1;
+                if (containerWidth < 900) return 2;
+                return 4;
+              }}
+              render={{ image: renderPhoto }}
+              spacing={16}
+            />
+          </FadeIn>
+        )}
       </div>
     </div>
   );

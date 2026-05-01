@@ -2,13 +2,35 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetPopularFreeVector } from "@/hooks/use-stock";
-import StockCard from "../common/stock-card";
 import FadeIn from "../common/fade-in";
+import StockCard from "../common/stock-card";
+import { ColumnsPhotoAlbum, RenderImageProps } from "react-photo-album";
+import "react-photo-album/columns.css";
 
 const PopularLandingSection = () => {
   const { data, isLoading } = useGetPopularFreeVector();
   const stocks = data?.stocks || [];
 
+  const photos = stocks.map((stock) => {
+    const preview = stock.files.find((f) => f.purpose === "PREVIEW")!;
+    return {
+      src: preview.url,
+      width: preview.width || 800,
+      height: preview.height || 600,
+      alt: stock.title,
+      key: stock.id,
+      stockData: stock,
+    };
+  });
+
+  const renderPhoto = (imageProps: RenderImageProps, context: any) => {
+    return (
+      <StockCard
+        stock={context.photo.stockData}
+        style={{ width: "100%", height: "100%" }}
+      />
+    );
+  };
   return (
     <div className="container mx-auto px-4 lg:px-6 py-8">
       <div className="flex flex-col items-center justify-center mb-10 gap-2">
@@ -18,110 +40,25 @@ const PopularLandingSection = () => {
       </div>
 
       <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-        {isLoading
-          ? Array.from({ length: 12 }).map((_, i) => (
-              <PopularLandingSkeleton key={i} />
-            ))
-          : stocks.map((item, index) => {
-              return (
-                <FadeIn key={item.id} delay={index * 0.05}>
-                  <StockCard
-                    stock={item}
-                    className="break-inside-avoid"
-                    useFill={false}
-                  />
-                </FadeIn>
-              );
-            })}
+        {isLoading ? (
+          Array.from({ length: 12 }).map((_, i) => (
+            <PopularLandingSkeleton key={i} />
+          ))
+        ) : (
+          <FadeIn>
+            <ColumnsPhotoAlbum
+              photos={photos}
+              columns={(containerWidth) => {
+                if (containerWidth < 428) return 1;
+                if (containerWidth < 900) return 2;
+                return 4;
+              }}
+              render={{ image: renderPhoto }}
+              spacing={16}
+            />
+          </FadeIn>
+        )}
       </div>
-
-      {/* <div className="flex flex-wrap gap-2">
-        {stocks.map((img) => {
-          const preview = img.files.find((f) => f.purpose === "PREVIEW");
-          const width = preview?.width || 800;
-          const height = preview?.height || 600;
-          const aspectRatio = width / height;
-
-          return (
-            <div
-              key={img.id}
-              className="overflow-hidden rounded flex-auto"
-              style={{
-                aspectRatio: `${width} / ${height}`,
-                maxHeight: "220px",
-                maxWidth: `${220 * (width / height)}px`,
-              }}
-            >
-              <img
-                src={preview?.url}
-                alt={img.title}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </div>
-          );
-        })}
-        {stocks.map((img) => {
-          const preview = img.files.find((f) => f.purpose === "PREVIEW");
-          const width = preview?.width || 800;
-          const height = preview?.height || 600;
-          const aspectRatio = width / height;
-
-          return (
-            <div
-              key={img.id}
-              className="overflow-hidden rounded flex-auto"
-              style={{
-                aspectRatio: `${width} / ${height}`,
-                maxHeight: "220px",
-                maxWidth: `${220 * (width / height)}px`,
-              }}
-            >
-              <img
-                src={preview?.url}
-                alt={img.title}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </div>
-          );
-        })}
-      </div> */}
-
-      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading
-          ? Array.from({ length: 12 }).map((_, i) => (
-              <PopularLandingSkeleton key={i} />
-            ))
-          : stocks.map((item) => {
-              const preview = item.files.find(
-                (f) => f.purpose === "PREVIEW",
-              )?.url;
-              const originalFile = item?.files.find(
-                (f) => f.purpose === "ORIGINAL",
-              );
-
-              const width = originalFile?.width || 800;
-              const height = originalFile?.height || 600;
-              const aspectRatio = width / height;
-
-              return (
-                <StockCard
-                  key={item.id}
-                  stock={item}
-                  useFill={true}
-                  useImagePadding={true}
-                  style={{
-                    flexGrow: aspectRatio,
-                    flexBasis: `${Math.max(aspectRatio * 270, 0)}px`,
-                    height: "270px",
-                  }}
-                  aspectRatio={aspectRatio}
-                  previewUrl={preview}
-                />
-              );
-            })}
-      </div> */}
     </div>
   );
 };

@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import FadeIn from "@/components/common/fade-in";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useGetAllStocks } from "@/hooks/use-stock";
-import { useMemo } from "react";
-import StockCard from "@/components/common/stock-card";
+import { useMemo, useEffect } from "react";
+import { useIntersectionObserver } from "usehooks-ts";
 import { useGetFileTypes } from "@/hooks/use-file-type";
 import { useGetCategoriesFromFiletype } from "@/hooks/use-categories";
 import ExploreFilters from "@/components/common/explore-filters";
 import { Skeleton } from "@/components/ui/skeleton";
+import StockCard from "@/components/common/stock-card";
+import { MasonryPhotoAlbum, RenderImageProps } from "react-photo-album";
+import "react-photo-album/masonry.css";
 
 const SearchPages = () => {
   const searchParams = useSearchParams();
@@ -90,14 +93,25 @@ const SearchPages = () => {
           ? undefined
           : "totalDownloads",
     sortOrder: "desc",
-    limit: 40,
+    limit: 20,
   });
 
   const totalStocks = stocksData?.pages[0]?.totalCount || 0;
+  const pageCount = stocksData?.pages.length || 0;
   const stocks = useMemo(
     () => stocksData?.pages.flatMap((page) => page.stocks) || [],
     [stocksData],
   );
+
+  const { isIntersecting, ref } = useIntersectionObserver({
+    threshold: 0.5,
+  });
+
+  useEffect(() => {
+    if (isIntersecting && hasNextPage && !isFetchingNextPage && pageCount < 4) {
+      fetchNextPage();
+    }
+  }, [isIntersecting, hasNextPage, isFetchingNextPage, pageCount, fetchNextPage]);
 
   const isDataReady = !isLoadingFT && !isLoadingCat;
   const isPageLoading = !isDataReady || isLoadingStocks;
@@ -191,6 +205,27 @@ const SearchPages = () => {
     return "All vectors";
   };
 
+  const photos = stocks.map((stock) => {
+    const preview = stock.files.find((f) => f.purpose === "PREVIEW")!;
+    return {
+      src: preview.url,
+      width: preview.width || 800,
+      height: preview.height || 600,
+      alt: stock.title,
+      key: stock.id,
+      stockData: stock,
+    };
+  });
+
+  const renderPhoto = (imageProps: RenderImageProps, context: any) => {
+    return (
+      <StockCard
+        stock={context.photo.stockData}
+        style={{ width: "100%", height: "100%" }}
+      />
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 lg:px-6 py-6 space-y-6">
       {/* Header */}
@@ -238,37 +273,48 @@ const SearchPages = () => {
           <p className="text-sm">Try adjusting your search or filters.</p>
         </div>
       ) : (
-        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4 pt-4">
-          {stocks.map((item, index) => (
-            <FadeIn key={item.id} direction="right">
-              <StockCard
-                stock={item}
-                className="break-inside-avoid"
-                useFill={false}
-              />
-            </FadeIn>
-          ))}
+        <div className="py-10 px-4 min-h-screen">
+          <FadeIn className="space-x-4 space-y-4">
+            <MasonryPhotoAlbum
+              photos={photos}
+              columns={(containerWidth) => {
+                if (containerWidth < 428) return 1;
+                if (containerWidth < 900) return 2;
+                return 4;
+              }}
+              render={{ image: renderPhoto }}
+              spacing={16}
+            />
+          </FadeIn>
         </div>
       )}
 
       {/* Load More */}
       {hasNextPage && (
         <div className="flex justify-center pt-8 pb-4">
-          <Button
-            variant="outline"
-            className="rounded-full px-8 bg-white"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              "Load more"
-            )}
-          </Button>
+          {pageCount < 4 ? (
+            <div ref={ref} className="w-full h-10 flex justify-center items-center">
+              {isFetchingNextPage && (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              className="rounded-full px-8 bg-white"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                "Load more"
+              )}
+            </Button>
+          )}
         </div>
       )}
     </div>

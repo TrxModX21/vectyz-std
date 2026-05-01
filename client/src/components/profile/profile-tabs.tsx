@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useIntersectionObserver } from "usehooks-ts";
 import {
   FetchNextPageOptions,
   InfiniteData,
@@ -8,12 +10,15 @@ import FadeIn from "../common/fade-in";
 import { Button } from "../ui/button";
 import { NativeTabs } from "../uitripled/native-tabs-shadcnui";
 import { LoaderOne } from "../ui/loader";
+import { ColumnsPhotoAlbum, RenderImageProps } from "react-photo-album";
+import "react-photo-album/columns.css";
 import StockCard from "../common/stock-card";
 
 type Props = {
   stocks: Stock[];
   user: Vectyzen;
   totalCount: number;
+  pageCount: number;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: (
@@ -30,10 +35,41 @@ const ProfileTabs = ({
   stocks,
   user,
   totalCount,
+  pageCount,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
 }: Props) => {
+  const { isIntersecting, ref } = useIntersectionObserver({
+    threshold: 0.5,
+  });
+
+  useEffect(() => {
+    if (isIntersecting && hasNextPage && !isFetchingNextPage && pageCount < 4) {
+      fetchNextPage();
+    }
+  }, [isIntersecting, hasNextPage, isFetchingNextPage, pageCount, fetchNextPage]);
+  const photos = stocks.map((stock) => {
+    const preview = stock.files.find((f) => f.purpose === "PREVIEW")!;
+    return {
+      src: preview.url,
+      width: preview.width || 800,
+      height: preview.height || 600,
+      alt: stock.title,
+      key: stock.id,
+      stockData: stock,
+    };
+  });
+
+  const renderPhoto = (imageProps: RenderImageProps, context: any) => {
+    return (
+      <StockCard
+        stock={context.photo.stockData}
+        style={{ width: "100%", height: "100%" }}
+      />
+    );
+  };
+
   return (
     <NativeTabs
       defaultValue="assets"
@@ -44,24 +80,37 @@ const ProfileTabs = ({
           content:
             stocks.length > 0 ? (
               <>
-                <div className="columns-1 lg:columns-2 xl:columns-3 gap-4 space-y-4">
-                  {stocks.map((asset, index) => (
-                    <FadeIn key={asset.id} delay={index * 0.05}>
-                      <StockCard stock={asset} className="break-inside-avoid" useFill={false} />
-                    </FadeIn>
-                  ))}
+                <div className="space-y-4 space-x-4">
+                  <FadeIn className="space-x-4 space-y-4">
+                    <ColumnsPhotoAlbum
+                      photos={photos}
+                      columns={(containerWidth) => {
+                        if (containerWidth < 428) return 1;
+                        if (containerWidth < 900) return 2;
+                        return 3;
+                      }}
+                      render={{ image: renderPhoto }}
+                      spacing={16}
+                    />
+                  </FadeIn>
                 </div>
 
                 {hasNextPage && (
                   <div className="flex justify-center pt-8 pb-4">
-                    <Button
-                      variant="outline"
-                      className="rounded-full px-8"
-                      onClick={() => fetchNextPage()}
-                      disabled={isFetchingNextPage}
-                    >
-                      {isFetchingNextPage ? <LoaderOne /> : "Load more"}
-                    </Button>
+                    {pageCount < 4 ? (
+                      <div ref={ref} className="w-full h-10 flex justify-center items-center">
+                        {isFetchingNextPage && <LoaderOne />}
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="rounded-full px-8"
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                      >
+                        {isFetchingNextPage ? <LoaderOne /> : "Load more"}
+                      </Button>
+                    )}
                   </div>
                 )}
               </>

@@ -58,34 +58,28 @@ const RelatedStock = ({ stock, isLoading }: Props) => {
         className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {related.map((item) => {
+        {related.map((item, index) => {
           const relatedPreviewImage = item?.files.find(
             (f) => f.purpose === "PREVIEW",
-          )?.url;
-
-          const originalFile = item?.files.find(
-            (f) => f.purpose === "ORIGINAL",
           );
 
-          const width = originalFile?.width || 800;
-          const height = originalFile?.height || 600;
+          const width = relatedPreviewImage?.width || 800;
+          const height = relatedPreviewImage?.height || 600;
           const aspectRatio = width / height;
+          const targetHeight = 250;
+          const targetWidth = targetHeight * aspectRatio;
 
           return (
-            <StockCard
+            <div
               key={item.id}
-              stock={item}
-              className="snap-start shrink-0"
-              useFill={true}
-              useImagePadding={true}
-              style={{
-                flexGrow: aspectRatio,
-                flexBasis: `${Math.max(aspectRatio * 270, 0)}px`,
-                height: "270px",
-              }}
-              aspectRatio={aspectRatio}
-              previewUrl={relatedPreviewImage}
-            />
+              className="snap-start! shrink-0! relative!"
+              style={{ width: targetWidth, height: targetHeight }}
+            >
+              <StockCard
+                stock={item}
+                style={{ width: "100%", height: "100%" }}
+              />
+            </div>
           );
         })}
       </div>

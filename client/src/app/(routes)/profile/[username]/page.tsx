@@ -31,6 +31,7 @@ const ProfilePage = () => {
   const stocks: Stock[] =
     stockDataResponse?.pages.flatMap((page: any) => page.stocks) || [];
   const stockCount = stockDataResponse?.pages[0].totalCount || 0;
+  const pageCount = stockDataResponse?.pages.length || 0;
 
   const isLoading = userDataLoading || stockDataLoading;
 
@@ -46,7 +47,7 @@ const ProfilePage = () => {
           <ProfilePageSkeleton />
         </>
       ) : (
-        <div className="bg-background min-h-screen container mx-auto py-4 pt-0">
+        <div className="bg-background min-h-screen container mx-auto py-4 lg:pb-10 pt-0">
           <ProfileBanner user={user!} />
 
           <div className="container px-4 md:px-8 max-w-screen-2xl relative -mt-32">
@@ -61,6 +62,7 @@ const ProfilePage = () => {
                   stocks={stocks}
                   user={user!}
                   totalCount={stockCount}
+                  pageCount={pageCount}
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
                   fetchNextPage={fetchNextPage}
