@@ -23,7 +23,7 @@ import {
   IconListDetails,
   IconPalette,
 } from "@tabler/icons-react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, CreditCard, DollarSign, Download } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import UploadStock from "./upload-stock";
@@ -38,38 +38,50 @@ const data = [
   },
   {
     title: "Files",
-    url: "/vectyzen/files",
+    url: "/vectyzen/stocks", // ✅ beda dari dashboard
     icon: IconListDetails,
     type: "two",
     items: [
       {
         title: "Upload",
-        url: "/",
+        url: "/vectyzen/stocks/upload",
       },
       {
         title: "Under Revision",
-        url: "/",
+        url: "/vectyzen/stocks/revision",
       },
       {
         title: "Rejections",
-        url: "/",
+        url: "/vectyzen/stocks/rejected",
       },
       {
         title: "Published",
-        url: "/",
+        url: "/vectyzen/stocks/published",
       },
     ],
   },
   {
     title: "Collections",
-    url: "/colors",
+    url: "/vectyzen/collections",
     icon: IconPalette,
     type: "one",
   },
   {
-    title: "Download History",
-    url: "/file-type",
-    icon: IconFileTypography,
+    title: "Downloads",
+    url: "/vectyzen/downloads",
+    icon: Download,
+    type: "one",
+  },
+  {
+    title: "Earnings",
+    url: "/vectyzen/earnings",
+    icon: DollarSign,
+    type: "one",
+  },
+  {
+    title: "Transactions",
+    url: "/vectyzen/transactions",
+    icon: CreditCard,
     type: "one",
   },
 ];
@@ -77,6 +89,13 @@ const data = [
 const NavMain = () => {
   const pathname = usePathname();
   const [openUploadForm, setOpenUploadForm] = useState(false);
+
+  const isOpen = (url: string) => {
+    return pathname === url || pathname.startsWith(url + "/");
+  };
+  const isActive = (url: string) => {
+    return pathname === url;
+  };
 
   return (
     <>
@@ -107,7 +126,7 @@ const NavMain = () => {
                     <Link href={item.url}>
                       <SidebarMenuButton
                         tooltip={item.title}
-                        isActive={item.url.startsWith(pathname)}
+                        isActive={isActive(item.url)}
                       >
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
@@ -121,14 +140,14 @@ const NavMain = () => {
                 <Collapsible
                   key={item.title}
                   asChild
-                  defaultOpen={item.url.startsWith(pathname)}
+                  defaultOpen={isOpen(item.url)}
                   className="group/collapsible"
                 >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
                         tooltip={item.title}
-                        isActive={item.url.startsWith(pathname)}
+                        isActive={isActive(item.url)}
                       >
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
@@ -139,7 +158,10 @@ const NavMain = () => {
                       <SidebarMenuSub>
                         {item.items?.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={isActive(subItem.url)}
+                            >
                               <Link href={subItem.url}>
                                 <span>{subItem.title}</span>
                               </Link>

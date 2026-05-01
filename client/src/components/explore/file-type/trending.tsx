@@ -5,7 +5,10 @@ import { useParams } from "next/navigation";
 import { useGetTrendingStocks } from "@/hooks/use-stock";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/common/empty-state";
+import FadeIn from "@/components/common/fade-in";
 import StockCard from "@/components/common/stock-card";
+import { RowsPhotoAlbum } from "react-photo-album";
+import "react-photo-album/rows.css";
 
 const Trending = () => {
   const params = useParams();
@@ -20,6 +23,27 @@ const Trending = () => {
     limit: 13,
   });
   const stocks = data?.stocks || [];
+
+  const photos = stocks.map((stock) => {
+    const preview = stock.files.find((f) => f.purpose === "PREVIEW")!;
+    return {
+      src: preview.url,
+      width: preview.width || 800,
+      height: preview.height || 600,
+      alt: stock.title,
+      key: stock.id,
+      stockData: stock,
+    };
+  });
+
+  const renderPhoto = (imageProps: any, context: any) => {
+    return (
+      <StockCard
+        stock={context.photo.stockData}
+        style={{ width: "100%", height: "100%" }}
+      />
+    );
+  };
 
   if (isLoading) {
     return <TrendingSkeleton />;
@@ -47,50 +71,50 @@ const Trending = () => {
           </div>
 
           {/* Grid Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[200px] md:auto-rows-[240px]">
-            {/* Desktop: First item spans 2 cols & 2 rows */}
-            {stocks[0] && (
-              <StockCard
-                stock={stocks[0]}
-                className="col-span-1 md:col-span-2 md:row-span-2 hidden md:block"
-                useFill={true}
-                useImagePadding={true}
-                useImageLayer={true}
+          <div className="hidden lg:block py-8">
+            <FadeIn className="space-x-4 space-y-4">
+              <RowsPhotoAlbum
+                photos={photos}
+                targetRowHeight={250}
+                render={{ image: renderPhoto }}
+                spacing={16} // Anda bisa mengatur jarak antar gambar
+                rowConstraints={{ singleRowMaxHeight: 250 }}
               />
-            )}
+            </FadeIn>
+          </div>
 
-            {/* Desktop: Remaining Items (1-8) */}
-            {stocks.slice(1).map((item) => (
-              <StockCard
-                key={item.id}
-                stock={item}
-                className="hidden md:block col-span-1 row-span-1"
-                useFill={true}
-                objectFit="contain"
-                useImageLayer={true}
-                useImagePadding={true}
-              />
-            ))}
+          {/* Mobile */}
+          <div className="lg:hidden flex overflow-x-auto gap-4 snap-x snap-mandatory w-full scrollbar-hide">
+            {photos.map((photo, index) => {
+              // Kita hitung lebarnya agar tetap proporsional dengan tinggi yang konstan
+              const targetHeight = 250;
+              const aspectRatio = photo.width / photo.height;
+              const targetWidth = targetHeight * aspectRatio;
 
-            {/* Mobile: Horizontal Scroll View */}
-            <div className="md:hidden flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory col-span-1 h-[300px]">
-              {stocks.map((item) => (
-                <StockCard
-                  key={item.id}
-                  stock={item}
-                  className="relative flex-none w-[85vw] h-full snap-center"
-                  useFill={true}
-                  objectFit="contain"
-                  useImageLayer={true}
-                  useImagePadding={true}
-                />
-              ))}
-            </div>
+              return (
+                <div
+                  key={photo.key}
+                  className="snap-start! shrink-0! relative!"
+                  style={{ width: targetWidth, height: targetHeight }}
+                >
+                  {/* Memanggil kembali fungsi render kustom kita tanpa membuat ulang komponen! */}
+                  {renderPhoto(
+                    {},
+                    {
+                      photo,
+                      width: targetWidth,
+                      height: targetHeight,
+                      index,
+                    },
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <Button
             variant="secondary"
-            className="w-full rounded-full bg-muted/50 hover:bg-muted text-sm font-medium md:hidden mt-28"
+            className="w-full rounded-full bg-muted/50 hover:bg-muted text-sm font-medium md:hidden mt-16"
           >
             Discover free {formattedTitle.toLowerCase()}
           </Button>

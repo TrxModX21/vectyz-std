@@ -27,7 +27,7 @@ export const addWatermark = async (
         const text = "Vectolio";
         const fontSize = Math.max(24, Math.floor(img.width / 20)); // Responsive font size
         const font = `bold ${fontSize}px sans-serif`;
-        const textColor = "rgba(255, 255, 255, 0.5)";
+        const textColor = "rgba(255, 255, 255, 0.3)";
 
         // Create a separate canvas for the pattern tile
         const patternCanvas = document.createElement("canvas");

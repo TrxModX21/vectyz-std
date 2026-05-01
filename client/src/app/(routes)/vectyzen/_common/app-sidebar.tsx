@@ -21,10 +21,10 @@ const AppSidebar = ({ ...props }: ComponentProps<typeof Sidebar>) => {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
+              className="data-[slot=sidebar-menu-button]:p-1.5! hover:bg-transparent"
             >
               <div>
-                <IconInnerShadowTop className="size-5!" />
+                <IconInnerShadowTop className="size-5! text-accent-foreground!" />
                 <VectyzLogo />
               </div>
             </SidebarMenuButton>

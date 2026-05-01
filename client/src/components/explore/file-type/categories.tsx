@@ -40,10 +40,10 @@ const Categories = () => {
         </div>
 
         {/* Grid Layout */}
-        <div className="hidden md:grid md:grid-cols-4 gap-4">
+        <div className="hidden lg:grid lg:grid-cols-4 gap-4">
           {categories.map((category) => (
             <Link
-              href={`/explore/${params.filetype}/${category.slug}`}
+              href={`/explore/search?fileType=${params.filetype}&category=${category.slug}`}
               key={category.id}
               className="relative group overflow-hidden rounded-xl aspect-video cursor-pointer"
             >
@@ -73,7 +73,7 @@ const Categories = () => {
         </div>
 
         {/* Mobile Scroll Layout */}
-        <div className="md:hidden flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory">
+        <div className="lg:hidden flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory">
           {categories.map((category) => (
             <Link
               href={`/explore/`}
