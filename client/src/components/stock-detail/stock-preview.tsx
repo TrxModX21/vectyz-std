@@ -23,7 +23,7 @@ const StockPreview = ({ stock, setIsZoomOpen }: Props) => {
             alt={stock?.title || "stock preview"}
             width={width}
             height={height}
-            className="w-full h-full object-contain max-h-[70vh] transition-transform duration-500 group-hover:scale-105 rounded-2xl"
+            className="w-full h-full object-contain max-h-[70vh] transition-transform duration-500 rounded-2xl"
           />
 
           {/* Crown Icon (Top Left) */}

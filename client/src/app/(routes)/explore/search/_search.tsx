@@ -93,6 +93,7 @@ const SearchPages = () => {
           ? undefined
           : "totalDownloads",
     sortOrder: "desc",
+    status: 'APPROVED',
     limit: 20,
   });
 
