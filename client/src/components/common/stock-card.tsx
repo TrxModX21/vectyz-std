@@ -49,7 +49,7 @@ const StockCard = ({
         alt={stock.title}
         width={imageWidth}
         height={imageHeight}
-        className="pointer-events-auto w-full h-auto min-h-28 size-full transition-transform duration-500 group-hover:scale-105"
+        className="pointer-events-auto w-full h-auto min-h-28 size-full transition-transform duration-500"
         placeholder="blur"
         blurDataURL={blurDataURL}
         onClick={() => router.push(`/stock/${stock.slug}`)}
