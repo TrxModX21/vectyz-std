@@ -11,6 +11,7 @@ import { Separator } from "./ui/separator";
 interface Props {
   counter: number;
   maxCounter: string;
+  inputName?: string;
   onCopy: () => void;
   onDelete: () => void;
 }
@@ -18,6 +19,7 @@ interface Props {
 const InputStockExtension = ({
   counter,
   maxCounter,
+  inputName = "title",
   onCopy,
   onDelete,
 }: Props) => {
@@ -37,7 +39,7 @@ const InputStockExtension = ({
                 <IconCopy className="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Copy Title</TooltipContent>
+            <TooltipContent>Copy {inputName}</TooltipContent>
           </Tooltip>
           <Separator orientation="vertical" className="mx-0.5 h-3" />
           <Tooltip>
@@ -52,7 +54,7 @@ const InputStockExtension = ({
                 <IconTrash className="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Clear Title</TooltipContent>
+            <TooltipContent>Clear {inputName}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
