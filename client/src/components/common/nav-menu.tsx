@@ -26,7 +26,7 @@ const HeaderNavigationMenu = () => {
       <NavigationMenuList className="flex-wrap">
         <NavigationMenuItem className="hidden md:block">
           <NavigationMenuTrigger useIcon={false}>Explore</NavigationMenuTrigger>
-          <NavigationMenuContent>
+          <NavigationMenuContent className="bg-background!">
             <ul className="grid w-[200px] gap-4">
               <li>
                 <NavigationMenuLink asChild>
@@ -71,7 +71,7 @@ const HeaderNavigationMenu = () => {
             <NavigationMenuTrigger useIcon={false}>
               {fileType.name}
             </NavigationMenuTrigger>
-            <NavigationMenuContent>
+            <NavigationMenuContent className="bg-background!">
               <ul className="grid gap-2 md:w-[400px] lg:w-[600px] lg:grid-cols-[.75fr_1fr]">
                 <li className="row-span-3 flex flex-col gap-5">
                   <div className="flex flex-col gap-2">

@@ -19,8 +19,8 @@ const HomePage = () => {
         <SectionSeparator />
         <PopularLandingSection />
       </FadeIn> */}
-      <FadeIn>
-        <SectionSeparator />
+      <FadeIn className="py-10">
+        {/* <SectionSeparator /> */}
         <TrendingLandingSection />
       </FadeIn>
       <FadeIn>
