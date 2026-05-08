@@ -32,7 +32,7 @@ const HeaderNavigationMenu = () => {
                 <NavigationMenuLink asChild>
                   <Link href="/members" className="flex-row items-center gap-2">
                     <Users />
-                    <Label>Vectyzens</Label>
+                    <Label>Vectyzen</Label>
                   </Link>
                 </NavigationMenuLink>
                 <NavigationMenuLink asChild>

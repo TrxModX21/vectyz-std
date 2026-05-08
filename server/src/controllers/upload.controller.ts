@@ -34,7 +34,7 @@ export const getUploadSignatureController = asyncHandler(
 export const getPresignedUrlController = asyncHandler(
   async (req: Request, res: Response) => {
     const { folder, fileName, fileType } = req.body;
-    console.log("Presigned URL Request:", { folder, fileName, fileType });
+    // console.log("Presigned URL Request:", { folder, fileName, fileType });
 
     if (!fileName || !fileType) {
       return res.status(HTTPSTATUS.BAD_REQUEST).json({

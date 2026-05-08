@@ -151,6 +151,7 @@ const CreateStockPage = () => {
           setIsUploading(false);
         },
         onError: (err) => {
+          console.log(err);
           toast.error("An error occurred during stock creation", {
             id: "create-stock",
           });
@@ -158,6 +159,7 @@ const CreateStockPage = () => {
         },
       });
     } catch (err) {
+      console.log(err);
       toast.error("An error occurred during stock creation", {
         id: "create-stock",
       });

@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin, anonymous } from "better-auth/plugins";
+import { dash } from "@better-auth/infra";
 import prisma from "./prisma";
 import { config } from "../utils/app.config";
 import { sendEmail } from "../mailers/mailer";
@@ -166,6 +167,7 @@ export const auth = betterAuth({
         });
       },
     }),
+    dash(),
   ],
   advanced: {
     disableOriginCheck: config.NODE_ENV !== "production", // Fix issue Issue 403 MISSING_OR_NULL_ORIGIN

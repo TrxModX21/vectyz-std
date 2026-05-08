@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Check, MapPin, UserPlus } from "lucide-react";
 import { Button } from "../ui/button";
 import { motion } from "motion/react";
+import Image from "next/image";
+import { TextHoverEffect } from "../ui/text-hover-effect";
 
 const MemberCard = ({
   member,
@@ -16,7 +18,7 @@ const MemberCard = ({
 }) => {
   let userLocation = "Not set";
   if (member.profile?.city && member.profile.countryName) {
-    userLocation = `${(member.profile?.city, member.profile?.countryName)}`;
+    userLocation = `${member?.profile?.city}, ${member?.profile?.countryName}`;
   }
 
   return (
@@ -31,23 +33,38 @@ const MemberCard = ({
         role="img"
         aria-label="Profile cover background"
       >
-        <motion.div
-          className="absolute inset-0"
-          animate={{
-            background: [
-              "linear-gradient(45deg, #667eea 0%, #764ba2 100%)",
-              "linear-gradient(45deg, #f093fb 0%, #f5576c 100%)",
-              "linear-gradient(45deg, #4facfe 0%, #00f2fe 100%)",
-              "linear-gradient(45deg, #43e97b 0%, #38f9d7 100%)",
-              "linear-gradient(45deg, #667eea 0%, #764ba2 100%)",
-            ],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
+        {member?.banner ? (
+          <Image
+            src={member?.banner!}
+            alt="Cover"
+            width={1366}
+            height={768}
+            className="rounded-b-2xl h-full w-full object-cover"
+          />
+        ) : (
+          <>
+            <motion.div
+              className="absolute inset-0"
+              animate={{
+                background: [
+                  "linear-gradient(45deg, #667eea 0%, #764ba2 100%)",
+                  "linear-gradient(45deg, #f093fb 0%, #f5576c 100%)",
+                  "linear-gradient(45deg, #4facfe 0%, #00f2fe 100%)",
+                  "linear-gradient(45deg, #43e97b 0%, #38f9d7 100%)",
+                  "linear-gradient(45deg, #667eea 0%, #764ba2 100%)",
+                ],
+              }}
+              transition={{
+                duration: 15,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+            <div className="hidden md:block absolute h-28 z-10 top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
+              <TextHoverEffect text="Vectolio" />
+            </div>
+          </>
+        )}
         <div className="absolute inset-0 bg-black/10" />
         {member.isPremium && (
           <Badge className="absolute top-3 right-3 bg-amber-500 hover:bg-amber-600 text-white border-none">

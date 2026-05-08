@@ -1,19 +1,31 @@
 import { motion } from "motion/react";
 import { TextHoverEffect } from "../ui/text-hover-effect";
 import { Badge } from "../ui/badge";
+import Image from "next/image";
+import { blurDataURL } from "@/lib/helpers";
 
-const ProfileBanner = ({ user }: { user: Vectyzen }) => {
+const ProfileBanner = ({
+  preview,
+  user,
+}: {
+  preview?: string | null;
+  user?: Vectyzen | User;
+}) => {
   return (
     <div
       className="relative h-64 md:h-80 w-full overflow-hidden rounded-b-2xl"
       role="img"
       aria-label="Profile cover background"
     >
-      {user?.banner ? (
-        <img
-          src={user.banner}
+      {preview || user?.banner ? (
+        <Image
+          src={preview! || user?.banner!}
           alt="Cover"
-          className="w-full h-full object-cover"
+          width={1366}
+          height={768}
+          className="rounded-b-2xl h-full w-full object-cover"
+          placeholder="blur"
+          blurDataURL={blurDataURL}
         />
       ) : (
         <>
@@ -46,7 +58,9 @@ const ProfileBanner = ({ user }: { user: Vectyzen }) => {
           Premium
         </Badge>
       )}
-      <div className="absolute inset-0 bg-linear-to-t from-background/90 via-background/20 to-transparent" />
+      {!user?.banner && (
+        <div className="absolute inset-0 bg-linear-to-t from-background/20 via-background/10 to-transparent" />
+      )}
     </div>
   );
 };

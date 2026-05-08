@@ -10,6 +10,7 @@ import collectionRoutes from "./collection.routes";
 import planRoutes from "./plan.routes";
 import downloadRoutes from "./download.routes";
 import transactionRoutes from "./transaction.routes";
+import profileRoutes from "./profile.routes";
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use("/file-types", fileTypeRoutes);
 router.use("/uploads", uploadRoutes);
 router.use("/stocks", stockRoutes);
 router.use("/users", userRoutes);
+router.use("/profile", profileRoutes);
 router.use("/collections", collectionRoutes);
 router.use("/plans", planRoutes);
 router.use("/downloads", downloadRoutes);

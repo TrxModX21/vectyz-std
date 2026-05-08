@@ -139,7 +139,10 @@ const Header = () => {
                       className="rounded-full"
                     >
                       <Avatar className="size-10">
-                        <AvatarImage src={session.image || ""} alt="shadcn" />
+                        <AvatarImage
+                          src={session.image || ""}
+                          alt={session.username + "avatar"}
+                        />
                         <AvatarFallback className="bg-v-green">
                           {session.name.slice(0)[0]}
                         </AvatarFallback>
@@ -153,7 +156,10 @@ const Header = () => {
                   >
                     <div className="flex items-center gap-3 p-2">
                       <Avatar className="size-10">
-                        <AvatarImage src={session.image || ""} alt="shadcn" />
+                        <AvatarImage
+                          src={session.image || ""}
+                          alt={session.username + "avatar"}
+                        />
                         <AvatarFallback className="bg-v-green">
                           {session.name.slice(0)[0]}
                         </AvatarFallback>
