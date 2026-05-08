@@ -171,6 +171,16 @@ export const auth = betterAuth({
   ],
   advanced: {
     disableOriginCheck: config.NODE_ENV !== "production", // Fix issue Issue 403 MISSING_OR_NULL_ORIGIN
+    ipAddress: {
+      // For Cloudflare
+      ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
+
+      // For Vercel
+      // ipAddressHeaders: ["x-vercel-forwarded-for", "x-forwarded-for"],
+
+      // For AWS/Generic
+      // ipAddressHeaders: ["x-forwarded-for"],
+    },
     defaultCookieAttributes: {
       domain: config.NODE_ENV === "production" ? ".vectolio.com" : undefined,
       sameSite: "lax",
@@ -182,7 +192,7 @@ export const auth = betterAuth({
     cookieCache: {
       enabled: true,
       refreshCache: true,
-      strategy: "jwt",
+      strategy: "jwe",
     },
   },
   databaseHooks: {
