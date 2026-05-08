@@ -5,10 +5,11 @@ import { toast } from "sonner";
 export const uploadToCloudinary = async (
   file: File,
   onProgress?: (progress: number) => void,
+  folder?: string,
 ) => {
   // 1. Get Signature
   const { data: signData } = await api.post("/uploads/sign-upload", {
-    folder: "vectyz/stocks/previews",
+    folder: folder || "vectyz/stocks/previews",
   });
 
   const formData = new FormData();

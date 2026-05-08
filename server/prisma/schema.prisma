@@ -200,6 +200,7 @@ model UserProfile {
   websites    String?
   bio         String?
   kycData     String?  @map("kyc_data") @db.Text
+  newsletter Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

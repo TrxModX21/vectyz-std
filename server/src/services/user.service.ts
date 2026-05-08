@@ -50,6 +50,7 @@ const selectField = {
       address: true,
       websites: true,
       bio: true,
+      newsletter: true,
     },
   },
 };

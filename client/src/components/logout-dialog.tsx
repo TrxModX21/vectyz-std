@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   open: boolean;
@@ -23,12 +24,14 @@ type Props = {
 const LogoutDialog = ({ open, onOpenChange }: Props) => {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     setIsPending(true);
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
+          queryClient.removeQueries({ queryKey: ["authUser"] });
           onOpenChange(false);
           toast.success("Logout berhasil!");
           router.replace("/");

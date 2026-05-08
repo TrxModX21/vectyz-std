@@ -12,6 +12,7 @@ interface User {
   emailVerified: boolean;
   image: string;
   role: string;
+  banner: string;
   banned: boolean;
   banReason: string;
   banExpires: string;
@@ -46,6 +47,7 @@ interface Profile {
   zip: any;
   address: any;
   kycData: any;
+  newsletter: boolean;
   createdAt: string;
   updatedAt: string;
 }
