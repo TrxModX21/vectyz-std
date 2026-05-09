@@ -58,7 +58,7 @@ export const uploadToR2 = async (
     const { data: presignedData } = await api.post("/uploads/presigned-url", {
       folder: "vectyz/stocks/originals",
       fileName: file.name,
-      fileType: file.type,
+      fileType: file.type || "application/octet-stream",
     });
 
     // 2. Upload

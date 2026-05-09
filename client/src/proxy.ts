@@ -10,6 +10,7 @@ const authRoutes = [
 const protectedRoutes = [
   "/vectyzen",
   "/vectyzen/me",
+  "/vectyzen/security",
   "/vectyzen/stocks/upload",
   "/vectyzen/stocks/revision",
   "/vectyzen/stocks/rejected",
