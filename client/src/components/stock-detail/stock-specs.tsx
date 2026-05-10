@@ -7,11 +7,12 @@ const StockSpecs = ({ stock }: { stock?: Stock }) => {
 
   const width = originalFile?.width || previewFile?.width;
   const height = originalFile?.height || previewFile?.height;
-  const format = (
-    originalFile?.format ||
-    stock?.fileType?.name ||
-    "JPG"
-  ).toUpperCase();
+
+  const originalFormats =
+    stock?.files
+      ?.filter((f) => f.purpose === "ORIGINAL")
+      .map((f) => (f.format || stock?.fileType?.name || "JPG").toUpperCase()) ||
+    [];
 
   return (
     <Card>
@@ -54,7 +55,15 @@ const StockSpecs = ({ stock }: { stock?: Stock }) => {
             <span className="text-muted-foreground flex items-center gap-2">
               <Layers className="h-4 w-4" /> Format
             </span>
-            <span className="font-bold text-zinc-800">{format}</span>
+            <div>
+              {originalFormats.map((format, index) => (
+                <span key={index} className="font-bold text-zinc-800">
+                  {format}
+                  {index < originalFormats.length - 1 && ", "}
+                </span>
+              ))}
+            </div>
+            {/* <span className="font-bold text-zinc-800">{format}</span> */}
           </div>
           <div className="flex justify-between py-2 border-b border-dashed">
             <span className="text-muted-foreground flex items-center gap-2">

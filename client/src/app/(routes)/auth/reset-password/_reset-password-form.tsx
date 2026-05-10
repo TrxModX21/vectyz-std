@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import VectyzLogo from "@/components/common/vectyz-logo";
 import { ArrowLeft, Eye, EyeOff, Loader, LockKeyhole } from "lucide-react";
 import Link from "next/link";

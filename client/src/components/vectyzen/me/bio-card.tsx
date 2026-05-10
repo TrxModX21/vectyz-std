@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { ButtonGroup } from "@/components/ui/button-group";
 import {
   Card,
@@ -14,7 +15,9 @@ import { Input } from "@/components/ui/input";
 import {
   useCheckUsernameAvailable,
   useUpdateProfileBio,
+  useLinkedAccounts,
 } from "@/hooks/use-profile";
+import ChangeEmailDialog from "./change-email-dialog";
 import {
   UpdateProfileBioShcema,
   updateProfileBioSchema,
@@ -33,6 +36,10 @@ const BioCard = ({
   profile: Profile | undefined;
 }) => {
   const { mutate, isPending } = useUpdateProfileBio();
+  const { data: linkedAccounts } = useLinkedAccounts();
+  
+  const hasPassword = linkedAccounts?.some((acc) => acc.providerId === "credential");
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
 
   const form = useForm<UpdateProfileBioShcema>({
     resolver: zodResolver(updateProfileBioSchema),
@@ -144,13 +151,25 @@ const BioCard = ({
               <FieldLabel>Email Address</FieldLabel>
               <ButtonGroup>
                 <Input value={user?.email} readOnly />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="bg-v-green text-background hover:bg-green-500 hover:text-background"
-                >
-                  Change
-                </Button>
+                {hasPassword === false ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="cursor-default hover:bg-secondary text-muted-foreground whitespace-nowrap"
+                    disabled
+                  >
+                    Linked to Google
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEmailDialogOpen(true)}
+                    className="bg-v-green text-background hover:bg-green-500 hover:text-background"
+                  >
+                    Change
+                  </Button>
+                )}
               </ButtonGroup>
             </Field>
           </div>
@@ -230,6 +249,10 @@ const BioCard = ({
           </Button>
         </CardFooter>
       </form>
+      <ChangeEmailDialog
+        isOpen={isEmailDialogOpen}
+        onClose={() => setIsEmailDialogOpen(false)}
+      />
     </Card>
   );
 };

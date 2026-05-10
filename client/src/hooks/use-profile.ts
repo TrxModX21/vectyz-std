@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { api } from "@/lib/axios";
 import { UpdateProfileBioShcema } from "@/validators/profile.validator";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -104,6 +105,17 @@ export const useUpdateNewsletter = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+  });
+};
+
+export const useLinkedAccounts = () => {
+  return useQuery({
+    queryKey: ["linkedAccounts"],
+    queryFn: async () => {
+      const { data, error } = await authClient.listAccounts();
+      if (error) throw error;
+      return data || [];
     },
   });
 };
