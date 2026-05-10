@@ -5,6 +5,7 @@ import AccountSettingSkeleton from "@/components/vectyzen/me/acount-setting-skel
 import AvatarCard from "@/components/vectyzen/me/avatar-card";
 import BannerCard from "@/components/vectyzen/me/banner-card";
 import BioCard from "@/components/vectyzen/me/bio-card";
+import LinkedAccountsCard from "@/components/vectyzen/me/linked-accounts-card";
 import NewsLetterSwitchCard from "@/components/vectyzen/me/newsletter-switch-card";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -36,7 +37,11 @@ const AccountSettingPage = () => {
 
               <BioCard user={user} profile={profile} />
 
-              <NewsLetterSwitchCard user={user} />
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                <LinkedAccountsCard />
+
+                <NewsLetterSwitchCard user={user} />
+              </div>
             </div>
           </div>
         )}

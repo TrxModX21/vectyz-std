@@ -8,6 +8,7 @@ import { sendEmail } from "../mailers/mailer";
 import {
   passwordResetTemplate,
   securityAlertTemplate,
+  updateEmailTemplate,
 } from "../mailers/templates/template";
 import { generateUsername } from "../utils/helper";
 
@@ -72,6 +73,16 @@ export const auth = betterAuth({
       });
     },
   },
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url, token }) => {
+      // Construct manual link to frontend
+      const verificationLink = `${config.BETTER_AUTH_URL}/verify-email?token=${token}`;
+      await sendEmail({
+        to: user.email,
+        ...updateEmailTemplate(verificationLink),
+      });
+    },
+  },
   socialProviders: {
     google: {
       clientId: config.GOOGLE_CLIENT_ID as string,
@@ -100,6 +111,9 @@ export const auth = betterAuth({
     },
   },
   user: {
+    changeEmail: {
+      enabled: true,
+    },
     additionalFields: {
       username: {
         type: "string",
@@ -199,8 +213,20 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          if (!user.username) {
+            const baseUsername = user.email
+              ? user.email
+                  .split("@")[0]
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]/g, "")
+              : "vectyzen";
+            user.username = generateUsername(baseUsername);
+          }
+          return { data: user };
+        },
         after: async (user) => {
-          // 2. Create Empty User Profile
+          // Di hook 'after' kita hanya fokus membuat relasinya saja
           await prisma.userProfile.create({
             data: {
               userId: user.id,
