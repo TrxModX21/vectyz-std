@@ -11,6 +11,7 @@ import planRoutes from "./plan.routes";
 import downloadRoutes from "./download.routes";
 import transactionRoutes from "./transaction.routes";
 import profileRoutes from "./profile.routes";
+import userStocksRoutes from "./user-stock.routes";
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.use("/file-types", fileTypeRoutes);
 router.use("/uploads", uploadRoutes);
 router.use("/stocks", stockRoutes);
 router.use("/users", userRoutes);
+router.use("/user-stocks", userStocksRoutes);
 router.use("/profile", profileRoutes);
 router.use("/collections", collectionRoutes);
 router.use("/plans", planRoutes);
