@@ -191,6 +191,10 @@ export const recordDownloadHistory = async (
     return;
   }
 
+  if (reason === "OWNER_ACCESS") {
+    return;
+  }
+
   // Transaction untuk History & Deduksi
   await prisma.$transaction(async (tx) => {
     // 1. Deduksi Kuota / Limit
@@ -235,8 +239,10 @@ export const createStockZipStream = async (stockId: string) => {
 
   if (!stock) throw new NotFoundException("Stock not found");
 
-  const originalFile = stock.files.find((f) => f.purpose === "ORIGINAL");
-  if (!originalFile) throw new NotFoundException("Original file not found");
+  const originalFiles = stock.files.filter((f) => f.purpose === "ORIGINAL");
+  if (originalFiles.length === 0) {
+    throw new NotFoundException("Original files not found");
+  }
 
   // Init Archiver
   const archive = archiver("zip", {
@@ -245,15 +251,17 @@ export const createStockZipStream = async (stockId: string) => {
 
   // 1. Add Original File from R2
   try {
-    // Cari key dari URL atau publicId (tergantung implementasi file upload sebelumnya)
-    const r2Key = originalFile.publicId;
-    const r2Stream = await getFileStream(r2Key);
-
-    // Nama file di dalam ZIP
-    // const extension = originalFile.format || "file";
-    const nameInZip = `${stock.slug}.${originalFile.format}`;
-
-    archive.append(r2Stream, { name: nameInZip });
+    for (let i = 0; i < originalFiles.length; i++) {
+      const file = originalFiles[i];
+      const r2Stream = await getFileStream(file.publicId);
+      // Penamaan dinamis/aman
+      const nameInZip =
+        originalFiles.length > 1
+          ? `${stock.slug}-${file.format || "file"}-${i + 1}.${file.format}`
+          : // atau cukup opsi sederhana: `${stock.slug}-${i + 1}.${file.format}`
+            `${stock.slug}.${file.format}`;
+      archive.append(r2Stream, { name: nameInZip });
+    }
   } catch (error) {
     console.error("Error streaming from R2:", error);
     throw new AppError("Failed to retrieve file from storage", 500);

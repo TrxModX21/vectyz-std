@@ -8,7 +8,7 @@ export const useGetCategories = () => {
       const res = await api.get(`/categories`);
       return res.data;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 60,
   });
 };
 

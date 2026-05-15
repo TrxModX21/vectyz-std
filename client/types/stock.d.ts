@@ -16,7 +16,7 @@ interface GetAllStockResponse {
   totalCount: number;
   totalPages: number;
   currentPage: number;
-  stocks: Stock[];
+  stocks: Stock[] | UserStock[];
 }
 
 interface Stock {
@@ -53,6 +53,33 @@ interface Stock {
       image: any;
     };
   }[];
+}
+
+interface UserStock {
+  id: string;
+  userId: string;
+  reviewerId: any;
+  categoryId: string;
+  fileTypeId: string;
+  title: string;
+  slug: string;
+  description: string;
+  keywords: string[];
+  colors: any[];
+  isPremium: boolean;
+  isSubscriptionAccessible: boolean;
+  price: string;
+  status: string;
+  rejectionReason: any;
+  totalDownloads: number;
+  totalViews: number;
+  totalLikes: number;
+  createdAt: string;
+  updatedAt: string;
+  user: User;
+  category: Category;
+  fileType: FileType;
+  files: File[];
 }
 
 interface User {
@@ -104,7 +131,7 @@ interface GetStocksParams {
   isPremium?: string;
   minPrice?: number;
   maxPrice?: number;
-  sortBy?: "createdAt" | "price" | "totalDownloads";
+  sortBy?: "createdAt" | "price" | "totalDownloads" | "title";
   sortOrder?: "asc" | "desc";
 }
 

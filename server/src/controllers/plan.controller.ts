@@ -4,7 +4,7 @@ import { HTTPSTATUS } from "../utils/http.config";
 import {
   createPlanSchema,
   updatePlanSchema,
-} from "../validators/plan.validator";
+} from "../validation/plan.validation";
 import {
   allPlanService,
   createPlanService,
