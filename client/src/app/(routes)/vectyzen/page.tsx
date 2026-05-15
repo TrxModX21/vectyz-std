@@ -21,15 +21,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-
-const downloadChartData = [
-  { month: "Jan", downloads: 186 },
-  { month: "Feb", downloads: 305 },
-  { month: "Mar", downloads: 237 },
-  { month: "Apr", downloads: 273 },
-  { month: "May", downloads: 209 },
-  { month: "Jun", downloads: 314 },
-];
+import { useGetDashboardAnalytics } from "@/hooks/use-dashboard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from "date-fns";
 
 const downloadChartConfig = {
   downloads: {
@@ -38,28 +32,35 @@ const downloadChartConfig = {
   },
 };
 
-const earningChartData = [
-  { month: "Jan", earnings: 1860 },
-  { month: "Feb", earnings: 3050 },
-  { month: "Mar", earnings: 2370 },
-  { month: "Apr", earnings: 2730 },
-  { month: "May", earnings: 2090 },
-  { month: "Jun", earnings: 3140 },
-];
-
 const earningChartConfig = {
   earnings: {
-    label: "Earnings",
+    label: "Earnings (Credits)",
     color: "var(--color-chart-2)",
   },
 };
 
 const DashboardPage = () => {
+  const { data, isLoading, isError } = useGetDashboardAnalytics();
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <p className="text-muted-foreground">Failed to load dashboard data.</p>
+      </div>
+    );
+  }
+
+  const { overview, charts, recentActivities } = data;
+
   return (
     <FadeIn>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Link href="/dashboard/upload">
+        <Link href="/vectyzen/stocks/upload">
           <Button>
             <Upload className="mr-2 h-4 w-4" /> Upload New Asset
           </Button>
@@ -68,7 +69,7 @@ const DashboardPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
-        <Card className="hover:shadow-lg hover:-translate-y-1 hover:border-primary/20">
+        <Card className="hover:shadow-lg hover:-translate-y-1 hover:border-primary/20 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Current Credits
@@ -76,7 +77,7 @@ const DashboardPage = () => {
             <Zap className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">240</div>
+            <div className="text-2xl font-bold">{overview.credits}</div>
             <div className="mt-2 text-xs text-muted-foreground">
               <TopUpDialog>
                 <span className="text-primary font-medium cursor-pointer hover:underline">
@@ -86,47 +87,62 @@ const DashboardPage = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-lg hover:-translate-y-1 hover:border-primary/20">
+        <Card className="hover:shadow-lg hover:-translate-y-1 hover:border-primary/20 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Current Plan</CardTitle>
             <Crown className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold flex items-center gap-2">
-              Premium
-              <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider font-bold">
-                PRO
-              </span>
+              {overview.plan.name}
+              {overview.plan.name !== "Free" && (
+                <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider font-bold">
+                  PRO
+                </span>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Renews on{" "}
-              <span className="font-medium text-foreground">Mar 15, 2026</span>
-            </p>
+            {overview.plan.renewalDate ? (
+              <p className="text-xs text-muted-foreground mt-2">
+                Renews on{" "}
+                <span className="font-medium text-foreground">
+                  {new Date(overview.plan.renewalDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              </p>
+            ) : (
+               <p className="text-xs text-muted-foreground mt-2">
+                Lifetime Access
+              </p>
+            )}
           </CardContent>
         </Card>
         <StatsCard
           title="Total Earnings"
-          value="$420.50"
+          value={`${overview.stats.earnings.current.totalCredits} Credits`}
+          subValue={`≈ Rp ${overview.stats.earnings.current.fiat.IDR.toLocaleString("id-ID")} / $${overview.stats.earnings.current.fiat.USD.toFixed(2)}`}
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-          change="+8%"
+          change={`${overview.stats.earnings.changePercent >= 0 ? "+" : ""}${overview.stats.earnings.changePercent}%`}
+          isChangePositive={overview.stats.earnings.changePercent >= 0}
         />
         <StatsCard
           title="Total Downloads"
-          value="1,294"
+          value={overview.stats.downloads.current.toLocaleString("id-ID")}
           icon={<Download className="h-4 w-4 text-muted-foreground" />}
-          change="+12%"
+          change={`${overview.stats.downloads.changePercent >= 0 ? "+" : ""}${overview.stats.downloads.changePercent}%`}
+          isChangePositive={overview.stats.downloads.changePercent >= 0}
         />
         <StatsCard
           title="Active Assets"
-          value="34"
+          value={overview.stats.activeAssets.current.toLocaleString("id-ID")}
           icon={<PieChart className="h-4 w-4 text-muted-foreground" />}
-          change="+2"
+          change={`${overview.stats.activeAssets.changeValue >= 0 ? "+" : ""}${overview.stats.activeAssets.changeValue}`}
+          isChangePositive={overview.stats.activeAssets.changeValue >= 0}
         />
         <StatsCard
           title="Profile Views"
-          value="843"
+          value={overview.stats.profileViews.current.toLocaleString("id-ID")}
           icon={<Users className="h-4 w-4 text-muted-foreground" />}
-          change="+24%"
+          change={`${overview.stats.profileViews.changePercent >= 0 ? "+" : ""}${overview.stats.profileViews.changePercent}%`}
+          isChangePositive={overview.stats.profileViews.changePercent >= 0}
         />
       </div>
 
@@ -143,7 +159,7 @@ const DashboardPage = () => {
                 className="h-[300px] w-full"
               >
                 <AreaChart
-                  data={downloadChartData}
+                  data={charts.downloads}
                   margin={{ left: 12, right: 12, top: 12, bottom: 0 }}
                 >
                   <CartesianGrid vertical={false} />
@@ -172,7 +188,7 @@ const DashboardPage = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Earnings Summary</CardTitle>
+              <CardTitle>Earnings Summary (Credits)</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer
@@ -180,7 +196,7 @@ const DashboardPage = () => {
                 className="h-[300px] w-full"
               >
                 <BarChart
-                  data={earningChartData}
+                  data={charts.earnings}
                   margin={{ left: 12, right: 12, top: 12, bottom: 0 }}
                 >
                   <CartesianGrid vertical={false} />
@@ -210,37 +226,46 @@ const DashboardPage = () => {
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`h-8 w-8 rounded-full flex items-center justify-center ${i % 2 === 0 ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"}`}
-                    >
-                      {i % 2 === 0 ? (
-                        <Download className="h-4 w-4" />
-                      ) : (
-                        <DollarSign className="h-4 w-4" />
-                      )}
+            {recentActivities.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                <Zap className="h-8 w-8 mb-4 opacity-20" />
+                <p>No recent activity yet</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentActivities.map((activity, i) => (
+                  <div
+                    key={activity.id + i}
+                    className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-8 w-8 rounded-full flex items-center justify-center ${activity.type === "DOWNLOAD" ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"}`}
+                      >
+                        {activity.type === "DOWNLOAD" ? (
+                          <Download className="h-4 w-4" />
+                        ) : (
+                          <DollarSign className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {activity.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-1 max-w-[150px]" title={activity.description}>
+                          {activity.description}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {i % 2 === 0 ? "Asset Downloaded" : "Sale Completed"}
-                      </p>
+                    <div className="text-right">
                       <p className="text-xs text-muted-foreground">
-                        2 hours ago
+                        {formatDistanceToNow(new Date(activity.date), { addSuffix: true })}
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -251,28 +276,106 @@ const DashboardPage = () => {
 function StatsCard({
   title,
   value,
+  subValue,
   icon,
   change,
+  isChangePositive,
 }: {
   title: string;
   value: string;
+  subValue?: string;
   icon: React.ReactNode;
   change: string;
+  isChangePositive: boolean;
 }) {
   return (
-    <Card className="hover:shadow-lg hover:-translate-y-1 hover:border-primary/20">
+    <Card className="hover:shadow-lg hover:-translate-y-1 hover:border-primary/20 transition-all">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground">
-          <span className="text-green-500 font-medium">{change}</span> from last
-          month
-        </p>
+        {subValue ? (
+          <p className="text-xs text-muted-foreground mt-1">
+            {subValue}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground mt-2">
+            <span className={`font-medium ${isChangePositive ? "text-green-500" : "text-red-500"}`}>{change}</span> from last
+            month
+          </p>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="flex items-center justify-between mb-8">
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-10 w-48" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-4 rounded-full" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-20 mb-2" />
+              <Skeleton className="h-3 w-32" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="col-span-1 lg:col-span-2 flex flex-col gap-8">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-40" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[300px] w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-40" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[300px] w-full" />
+            </CardContent>
+          </Card>
+        </div>
+        <Card className="col-span-1">
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div>
+                      <Skeleton className="h-4 w-24 mb-2" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
