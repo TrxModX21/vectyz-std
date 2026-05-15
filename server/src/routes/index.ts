@@ -12,6 +12,7 @@ import downloadRoutes from "./download.routes";
 import transactionRoutes from "./transaction.routes";
 import profileRoutes from "./profile.routes";
 import userStocksRoutes from "./user-stock.routes";
+import dashboardRoutes from "./dashboard.routes";
 
 const router = Router();
 
@@ -27,6 +28,7 @@ router.use("/collections", collectionRoutes);
 router.use("/plans", planRoutes);
 router.use("/downloads", downloadRoutes);
 router.use("/transactions", transactionRoutes);
+router.use("/dashboard", dashboardRoutes);
 router.use("/test", testRoutes);
 
 export default router;
