@@ -3,16 +3,67 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import ReactQueryProvider from "@/provider/react-query-provider";
-import Script from "next/script";
-import SplashScreen from "@/components/common/splash-screen";
+import DisableInspect from "@/components/common/disable-inspect";
 
 const montserrat = Montserrat({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
-  title: "Vectolio - High Quality Digital Assets",
-  description: "Download free vectors, photos, and PSD files on Vectolio.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  ),
+  title: {
+    default: "Vectolio - High Quality Digital Assets", // Title default jika halaman tidak punya title
+    template: "%s | Vectolio", // %s akan diganti dengan title dari halaman child
+  },
+  description:
+    "Download free vectors, photos, and PSD files on Vectolio. High-quality digital assets for your creative projects.",
+  keywords: [
+    "vectors",
+    "free vectors",
+    "photos",
+    "PSD",
+    "digital assets",
+    "design resources",
+  ],
+  authors: [{ name: "Vectolio Team" }],
+  creator: "Vectolio",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "Vectolio",
+    title: "Vectolio - High Quality Digital Assets",
+    description:
+      "Download free vectors, photos, and PSD files on Vectolio. High-quality digital assets for your creative projects.",
+    images: [
+      {
+        url: "/logo.png", // Kita perlu menyiapkan gambar ini di folder /public
+        width: 1200,
+        height: 630,
+        alt: "Vectolio Preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vectolio - High Quality Digital Assets",
+    description:
+      "Download free vectors, photos, and PSD files on Vectolio. High-quality digital assets for your creative projects.",
+    images: ["/logo.png"], // Sama dengan OG image
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
@@ -22,18 +73,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* <head>
-        <Script
-          async
-          strategy="afterInteractive"
-          type="text/javascript"
-          src="//e.crmrkt.com/product_embed.js"
-          crossOrigin="anonymous"
-        />
-      </head> */}
       <body className={`${montserrat.className} antialiased`}>
         <ReactQueryProvider>
-          {/* <SplashScreen /> */}
+          <DisableInspect />
           {children}
         </ReactQueryProvider>
 

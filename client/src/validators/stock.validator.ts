@@ -17,7 +17,7 @@ export const createStockSchema = z.object({
     .max(50, "Maximum 50 keywords allowed"),
   colors: z.array(z.string()).optional(),
   isPremium: z.boolean(),
-  price: z.number().min(1, "Price can't be 0").nonnegative(),
+  price: z.number().min(10000, "Min price is 10000").nonnegative(),
   currency: z.enum(["IDR", "USD"]),
 });
 
