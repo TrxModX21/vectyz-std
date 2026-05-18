@@ -63,7 +63,7 @@ const CreateStockPage = () => {
       keywords: [],
       colors: [],
       isPremium: false,
-      price: 1,
+      price: 10000,
       currency: "IDR",
       files: [],
     },
@@ -505,8 +505,8 @@ const ImagePicker = ({
   const processFile = async (file: File) => {
     try {
       setIsProcessing(true);
-      const watermarkedFile = await addWatermark(file, username);
-      onChange?.(watermarkedFile);
+      // const watermarkedFile = await addWatermark(file, username);
+      onChange?.(file);
     } catch (error) {
       toast.error("Failed to process image watermark");
     } finally {
