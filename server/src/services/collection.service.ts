@@ -126,6 +126,135 @@ export const getMyCollectionsService = async (
 };
 
 
+export const getCollectionBySlugService = async (
+  slug: string,
+  currentUserId?: string
+) => {
+  const collection = await prisma.collection.findUnique({
+    where: { slug },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          username: true,
+        },
+      },
+      _count: {
+        select: { items: true },
+      },
+    },
+  });
+
+  if (!collection) {
+    throw new NotFoundException("Collection not found");
+  }
+
+  // Privacy check
+  if (collection.isPrivate && collection.userId !== currentUserId) {
+    throw new ForbiddenException("You do not have permission to view this collection");
+  }
+
+  return collection;
+};
+
+export const getCollectionItemsBySlugService = async (
+  input: { slug: string; page: number; limit: number; currentUserId?: string }
+) => {
+  const { slug, page, limit, currentUserId } = input;
+
+  const collection = await prisma.collection.findUnique({
+    where: { slug },
+    select: { id: true, userId: true, isPrivate: true },
+  });
+
+  if (!collection) {
+    throw new NotFoundException("Collection not found");
+  }
+
+  // Privacy check
+  if (collection.isPrivate && collection.userId !== currentUserId) {
+    throw new ForbiddenException("You do not have permission to view this collection");
+  }
+
+  const where = { collectionId: collection.id };
+
+  const [items, totalCount] = await Promise.all([
+    prisma.collectionItem.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        stock: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                username: true,
+              },
+            },
+            files: {
+              where: { purpose: { in: [FilePurpose.PREVIEW, FilePurpose.ORIGINAL] } },
+            },
+          },
+        },
+      },
+    }),
+    prisma.collectionItem.count({ where }),
+  ]);
+
+  let likedStockIds = new Set<string>();
+  if (currentUserId) {
+    const stockIds = items.map((item) => item.stock.id);
+    const likes = await prisma.like.findMany({
+      where: {
+        userId: currentUserId,
+        stockId: { in: stockIds },
+      },
+      select: { stockId: true },
+    });
+    likedStockIds = new Set(likes.map((like) => like.stockId));
+  }
+
+  const mappedItems = items.map((item) => ({
+    ...item,
+    stock: {
+      ...item.stock,
+      isLiked: likedStockIds.has(item.stock.id),
+    },
+  }));
+
+  return {
+    items: mappedItems,
+    totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+  };
+};
+
+export const getSavedCollectionsForStockService = async (
+  stockId: string,
+  userId: string
+) => {
+  const collections = await prisma.collection.findMany({
+    where: {
+      userId,
+      items: {
+        some: {
+          stockId,
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  return collections.map((c) => c.id);
+};
+
 export const createCollectionService = async (
   input: CreateCollectionType & { userId: string },
 ) => {

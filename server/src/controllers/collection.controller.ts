@@ -7,6 +7,7 @@ import {
   updateCollectionSchema,
   addItemToCollectionSchema,
   removeItemFromCollectionSchema,
+  collectionSlugSchema,
 } from "../validation/collection.validation";
 import {
   createCollectionService,
@@ -19,6 +20,9 @@ import {
   removeItemFromCollectionService,
   toggleCollectionStatusService,
   toggleCollectionFeaturedService,
+  getCollectionBySlugService,
+  getCollectionItemsBySlugService,
+  getSavedCollectionsForStockService,
 } from "../services/collection.service";
 import { HTTPSTATUS } from "../utils/http.config";
 
@@ -64,6 +68,46 @@ export const getMyCollectionsController = asyncHandler(
       collections,
     });
   },
+);
+
+export const getCollectionBySlugController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { slug } = collectionSlugSchema.parse(req.params);
+    const user = res.locals.user;
+
+    const collection = await getCollectionBySlugService(slug, user?.id);
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Collection fetched successfully",
+      timestamp: new Date().toISOString(),
+      collection,
+    });
+  }
+);
+
+export const getCollectionItemsBySlugController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { slug } = collectionSlugSchema.parse(req.params);
+    const query = fetchAllCollectionSchema.parse(req.query);
+    const user = res.locals.user;
+
+    const { items, currentPage, totalCount, totalPages } =
+      await getCollectionItemsBySlugService({
+        slug,
+        page: query.page,
+        limit: query.limit,
+        currentUserId: user?.id,
+      });
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Collection items fetched successfully",
+      timestamp: new Date().toISOString(),
+      totalCount,
+      totalPages,
+      currentPage,
+      items,
+    });
+  }
 );
 
 export const createCollectionController = asyncHandler(
@@ -185,4 +229,20 @@ export const toggleCollectionFeaturedController = asyncHandler(
       collection,
     });
   },
+);
+
+export const getSavedCollectionsForStockController = asyncHandler(
+  async (req: Request, res: Response) => {
+    // Cast req.params to ensure stockId is treated as a string
+    const { stockId } = req.params as { stockId: string };
+    const user = res.locals.user;
+
+    const collections = await getSavedCollectionsForStockService(stockId, user.id);
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Saved collections fetched successfully",
+      timestamp: new Date().toISOString(),
+      collections,
+    });
+  }
 );

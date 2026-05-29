@@ -1,4 +1,5 @@
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   Layers,
@@ -20,6 +21,8 @@ import {
   useAddItemToCollection,
   useCreateCollection,
   useMyCollections,
+  useCheckStockCollections,
+  useRemoveItemFromCollection,
 } from "@/hooks/use-collection";
 import { ReactNode, useState } from "react";
 import {
@@ -41,6 +44,7 @@ const AddToCollectionButton = ({
   stock?: Stock;
   children?: ReactNode;
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const [isCreateCollectionOpen, setIsCreateCollectionOpen] = useState(false);
   const [isAllCollectionsModalOpen, setIsAllCollectionsModalOpen] =
     useState(false);
@@ -53,6 +57,7 @@ const AddToCollectionButton = ({
   const { data: recentCollectionsData, isLoading: isLoadingRecent } =
     useMyCollections({ limit: 7 });
   const { mutate: addItemToCollection } = useAddItemToCollection();
+  const { mutate: removeItemFromCollection } = useRemoveItemFromCollection();
   const { mutate: createCollection, isPending: isCreating } =
     useCreateCollection();
   const { data: allCollectionsData, isLoading: isLoadingAll } =
@@ -62,9 +67,18 @@ const AddToCollectionButton = ({
       search: debouncedSearch,
     });
 
-  const handleAddToCollection = (collectionId: string) => {
+  const { data: savedCollectionIds = [] } = useCheckStockCollections(
+    stock?.id || "",
+    isOpen
+  );
+
+  const handleToggleCollection = (collectionId: string) => {
     if (!stock) return;
-    addItemToCollection({ collectionId, stockId: stock.id });
+    if (savedCollectionIds.includes(collectionId)) {
+      removeItemFromCollection({ collectionId, stockId: stock.id });
+    } else {
+      addItemToCollection({ collectionId, stockId: stock.id });
+    }
   };
 
   const handleCreateAndSave = () => {
@@ -88,7 +102,7 @@ const AddToCollectionButton = ({
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           {children ? (
             children
@@ -113,10 +127,19 @@ const AddToCollectionButton = ({
             recentCollectionsData.collections.map((c: any) => (
               <DropdownMenuItem
                 key={c.id}
-                onClick={() => handleAddToCollection(c.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleToggleCollection(c.id);
+                }}
+                className="flex items-center justify-between"
               >
-                <Layers className="mr-2 h-4 w-4 shrink-0" />
-                <span className="truncate">{c.name}</span>
+                <div className="flex items-center truncate">
+                  <Layers className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">{c.name}</span>
+                </div>
+                {savedCollectionIds.includes(c.id) && (
+                  <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
+                )}
               </DropdownMenuItem>
             ))
           ) : (
@@ -125,7 +148,7 @@ const AddToCollectionButton = ({
             </div>
           )}
 
-          {recentCollectionsData?.totalCount > 7 && (
+          {recentCollectionsData?.totalCount! > 7 && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -225,14 +248,19 @@ const AddToCollectionButton = ({
                   <Button
                     key={c.id}
                     variant="ghost"
-                    className="w-full justify-start font-normal"
+                    className="w-full justify-between font-normal"
                     onClick={() => {
-                      handleAddToCollection(c.id);
+                      handleToggleCollection(c.id);
                       setIsAllCollectionsModalOpen(false);
                     }}
                   >
-                    <Layers className="mr-2 h-4 w-4 shrink-0" />
-                    <span className="truncate">{c.name}</span>
+                    <div className="flex items-center truncate">
+                      <Layers className="mr-2 h-4 w-4 shrink-0" />
+                      <span className="truncate">{c.name}</span>
+                    </div>
+                    {savedCollectionIds.includes(c.id) && (
+                      <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
+                    )}
                   </Button>
                 ))
               ) : (

@@ -16,6 +16,8 @@ export interface StockCardProps {
   className?: string;
   /** Manually provided preview url, if not provided will be dynamically accessed */
   previewUrl?: string;
+  /** Custom action button (e.g. Trash button for quick removal in collections) */
+  customAction?: React.ReactNode;
 }
 
 const StockCard = ({
@@ -23,6 +25,7 @@ const StockCard = ({
   className,
   previewUrl,
   style,
+  customAction,
 }: StockCardProps) => {
   const router = useRouter();
 
@@ -89,6 +92,8 @@ const StockCard = ({
                 <Bookmark className="w-4 h-4 text-gray-700" />
               </Button>
             </AddToCollectionButton>
+            
+            {customAction}
 
             <ShareDialog
               url={

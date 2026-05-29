@@ -144,10 +144,36 @@ export const useToggleLikeStock = (stockId?: string, stockSlug?: string) => {
       await queryClient.cancelQueries({
         queryKey: ["stocksByUser", "infinite"],
       });
-      await queryClient.cancelQueries({
-        queryKey: ["stocks"],
-      });
+      await queryClient.cancelQueries({ queryKey: ["stocks"] });
       await queryClient.cancelQueries({ queryKey: ["popularFreeVector"] });
+      await queryClient.cancelQueries({ queryKey: ["collection-items"] });
+
+      // Optimistic update for collection-items
+      queryClient.setQueriesData<any>(
+        { queryKey: ["collection-items"] },
+        (oldData: any) => {
+          if (!oldData || !oldData.items) return oldData;
+          return {
+            ...oldData,
+            items: oldData.items.map((item: any) => {
+              if (item.stock?.id === stockId) {
+                const currentlyLiked = item.stock.isLiked;
+                return {
+                  ...item,
+                  stock: {
+                    ...item.stock,
+                    isLiked: !currentlyLiked,
+                    totalLikes: currentlyLiked
+                      ? item.stock.totalLikes - 1
+                      : item.stock.totalLikes + 1,
+                  },
+                };
+              }
+              return item;
+            }),
+          };
+        },
+      );
 
       // Optimistic update for infinite grids
       queryClient.setQueriesData<any>(
@@ -288,6 +314,7 @@ export const useToggleLikeStock = (stockId?: string, stockSlug?: string) => {
       queryClient.invalidateQueries({ queryKey: ["relatedStocks"] });
       queryClient.invalidateQueries({ queryKey: ["stocksByUser", "infinite"] });
       queryClient.invalidateQueries({ queryKey: ["vectyzenDetail"] });
+      queryClient.invalidateQueries({ queryKey: ["collection-items"] });
     },
   });
 };
