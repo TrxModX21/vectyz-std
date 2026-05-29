@@ -165,14 +165,19 @@ const Header = () => {
                           <Settings className="mr-2 size-4" />
                           Settings
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer">
-                          <Globe className="mr-2 size-4" />
-                          Creator profile
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer">
-                          <Folder className="mr-2 size-4" />
-                          My collections
-                        </DropdownMenuItem>
+                        <Link href="/vectyzen/me">
+                          <DropdownMenuItem className="cursor-pointer">
+                            <Globe className="mr-2 size-4" />
+                            Creator profile
+                          </DropdownMenuItem>
+                        </Link>
+
+                        <Link href="/vectyzen/collections">
+                          <DropdownMenuItem className="cursor-pointer">
+                            <Folder className="mr-2 size-4" />
+                            My collections
+                          </DropdownMenuItem>
+                        </Link>
                       </DropdownMenuGroup>
 
                       <DropdownMenuGroup className="mt-2">
@@ -186,7 +191,7 @@ const Header = () => {
                             <ChevronDown className="size-3" />
                           </div>
                         </div>
-                        <div className="flex items-center justify-between px-2 py-1.5 text-sm">
+                        {/* <div className="flex items-center justify-between px-2 py-1.5 text-sm">
                           <div className="flex items-center gap-2">
                             <Moon className="size-4" />
                             Theme
@@ -195,16 +200,16 @@ const Header = () => {
                             Dark
                             <ChevronDown className="size-3" />
                           </div>
-                        </div>
+                        </div> */}
                       </DropdownMenuGroup>
 
                       <DropdownMenuSeparator />
 
                       <DropdownMenuGroup>
-                        <DropdownMenuItem className="cursor-pointer">
+                        {/* <DropdownMenuItem className="cursor-pointer">
                           <Ticket className="mr-2 size-4" />
                           Use AI code
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuItem className="cursor-pointer">
                           <HelpCircle className="mr-2 size-4" />
                           Help center

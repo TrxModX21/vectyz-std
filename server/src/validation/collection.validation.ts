@@ -34,3 +34,7 @@ export const removeItemFromCollectionSchema = z.object({
   stockId: z.string().min(1),
 });
 export type RemoveItemFromCollectionType = z.infer<typeof removeItemFromCollectionSchema>;
+
+export const collectionSlugSchema = z.object({
+  slug: z.string().min(1),
+});

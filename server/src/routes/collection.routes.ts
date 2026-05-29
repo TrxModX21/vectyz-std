@@ -15,16 +15,22 @@ import {
   removeItemFromCollectionController,
   toggleCollectionStatusController,
   toggleCollectionFeaturedController,
+  getCollectionBySlugController,
+  getCollectionItemsBySlugController,
+  getSavedCollectionsForStockController,
 } from "../controllers/collection.controller";
 
 const collectionRoutes = Router();
 
 collectionRoutes.get("/", optionalAuth, fetchCollectionListController);
 collectionRoutes.get("/me", requireAuth, getMyCollectionsController);
+collectionRoutes.get("/slug/:slug", optionalAuth, getCollectionBySlugController);
+collectionRoutes.get("/slug/:slug/items", optionalAuth, getCollectionItemsBySlugController);
 collectionRoutes.get("/:id", optionalAuth, getCollectionDetailController);
 
 collectionRoutes.use(requireAuth);
 
+collectionRoutes.get("/check-stock/:stockId", getSavedCollectionsForStockController);
 collectionRoutes.post("/", createCollectionController);
 collectionRoutes.put("/:id", updateCollectionController);
 collectionRoutes.patch(
