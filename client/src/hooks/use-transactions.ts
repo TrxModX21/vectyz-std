@@ -87,3 +87,20 @@ export const useTopupCredit = () => {
     },
   });
 };
+
+interface UseGetUserTransactionsParams {
+  page?: number;
+  limit?: number;
+  type?: string;
+  status?: string;
+}
+
+export const useGetUserTransactions = (params: UseGetUserTransactionsParams) => {
+  return useQuery({
+    queryKey: ["user-transactions", params],
+    queryFn: async () => {
+      const res = await api.get("/transactions/me", { params });
+      return res.data;
+    },
+  });
+};

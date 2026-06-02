@@ -32,120 +32,54 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowDownLeft, ArrowUpRight, CheckCircle2, Clock, Copy, CreditCard, Download, RefreshCcw, Search } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  Clock,
+  Copy,
+  CreditCard,
+  Download,
+  Loader2,
+  RefreshCcw,
+  Search,
+} from "lucide-react";
 import { useState } from "react";
-
-type TransactionType = "top_up" | "subscribe" | "buy_stock" | "withdrawal";
-
-interface Transaction {
-  id: string;
-  type: TransactionType;
-  amount: string;
-  date: string;
-  status: "Completed" | "Processing" | "Failed";
-  desc: string;
-  details?: {
-    method?: string;
-    reference?: string;
-    item_name?: string;
-    license_type?: string;
-    plan_name?: string;
-    billing_cycle?: string;
-  };
-}
-
-const transactions: Transaction[] = [
-  {
-    id: "TXN-001",
-    type: "top_up",
-    amount: "+$50.00",
-    date: "Feb 14, 2026",
-    status: "Completed",
-    desc: "Wallet Top Up",
-    details: { method: "Credit Card (**** 4242)", reference: "REF123456789" },
-  },
-  {
-    id: "TXN-002",
-    type: "buy_stock",
-    amount: "-$12.50",
-    date: "Feb 12, 2026",
-    status: "Completed",
-    desc: "Purchase: Abstract Waves",
-    details: {
-      item_name: "Abstract Waves Vector",
-      license_type: "Standard License",
-      reference: "INV-987654321",
-    },
-  },
-  {
-    id: "TXN-003",
-    type: "subscribe",
-    amount: "-$9.00",
-    date: "Feb 01, 2026",
-    status: "Completed",
-    desc: "Premium Monthly Subscription",
-    details: {
-      plan_name: "Premium Plan",
-      billing_cycle: "Monthly",
-      reference: "SUB-456123789",
-    },
-  },
-  {
-    id: "TXN-004",
-    type: "withdrawal",
-    amount: "-$150.00",
-    date: "Jan 28, 2026",
-    status: "Processing",
-    desc: "Payout to PayPal",
-    details: {
-      method: "PayPal (user@example.com)",
-      reference: "PAYOUT-789456123",
-    },
-  },
-  {
-    id: "TXN-005",
-    type: "buy_stock",
-    amount: "-$5.00",
-    date: "Jan 20, 2026",
-    status: "Completed",
-    desc: "Purchase: Business Icon Set",
-    details: {
-      item_name: "Business Icon Set",
-      license_type: "Standard License",
-      reference: "INV-321654987",
-    },
-  },
-  {
-    id: "TXN-006",
-    type: "top_up",
-    amount: "+$100.00",
-    date: "Jan 15, 2026",
-    status: "Completed",
-    desc: "Wallet Top Up",
-    details: { method: "Bank Transfer", reference: "REF987654321" },
-  },
-];
+import { useGetUserTransactions } from "@/hooks/use-transactions";
+import { TransactionItem } from "../../../../../types/transaction";
+import { format } from "date-fns";
 
 const TransactionsPage = () => {
   const [filter, setFilter] = useState<string>("all");
   const [selectedTransaction, setSelectedTransaction] =
-    useState<Transaction | null>(null);
+    useState<TransactionItem | null>(null);
   const [open, setOpen] = useState(false);
 
-  const handleRowClick = (txn: Transaction) => {
+  // You can also add pagination state here if you want
+  const { data: response, isLoading } = useGetUserTransactions({
+    limit: 50, // Get last 50 transactions for now
+    type: filter === "all" ? undefined : filter,
+  });
+
+  const transactions = response?.transactions || [];
+
+  const handleRowClick = (txn: TransactionItem) => {
     setSelectedTransaction(txn);
     setOpen(true);
   };
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "top_up":
+      case "TOPUP_CREDIT":
+      case "EARNING_ASSET":
+      case "POOL_EARNING":
+      case "DONATION": // assuming donation received
         return <ArrowDownLeft className="h-4 w-4 text-green-500" />;
-      case "withdrawal":
+      case "WITHDRAWAL":
         return <ArrowUpRight className="h-4 w-4 text-orange-500" />;
-      case "subscribe":
+      case "SUBSCRIPTION":
         return <RefreshCcw className="h-4 w-4 text-blue-500" />;
-      case "buy_stock":
+      case "BUY_ASSET":
         return <Download className="h-4 w-4 text-purple-500" />;
       default:
         return <CreditCard className="h-4 w-4 text-muted-foreground" />;
@@ -154,23 +88,74 @@ const TransactionsPage = () => {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case "top_up":
+      case "TOPUP_CREDIT":
         return "Top Up Credits";
-      case "withdrawal":
+      case "WITHDRAWAL":
         return "Withdrawal";
-      case "subscribe":
+      case "SUBSCRIPTION":
         return "Subscribe Plan";
-      case "buy_stock":
+      case "BUY_ASSET":
         return "Buy Stock";
+      case "EARNING_ASSET":
+        return "Direct Sale";
+      case "POOL_EARNING":
+        return "Pool Share";
+      case "DONATION":
+        return "Donation";
       default:
         return type;
     }
   };
 
-  const filteredTransactions =
-    filter === "all"
-      ? transactions
-      : transactions.filter((t) => t.type === filter);
+  const getDesc = (txn: TransactionItem) => {
+    switch (txn.type) {
+      case "TOPUP_CREDIT":
+        return "Wallet Top Up";
+      case "WITHDRAWAL":
+        return "Payout to Bank Account";
+      case "SUBSCRIPTION":
+        return `Subscribe: ${txn.plan?.name || "Premium"}`;
+      case "BUY_ASSET":
+        return `Purchase: ${txn.stock?.title || "Asset"}`;
+      case "EARNING_ASSET":
+        return `Sale: ${txn.stock?.title || "Asset"}`;
+      case "POOL_EARNING":
+        return "Monthly Pool Distribution";
+      case "DONATION":
+        return `Donation from ${txn.targetUser?.name || "User"}`;
+      default:
+        return "Transaction";
+    }
+  };
+
+  const getAmountDisplay = (txn: TransactionItem) => {
+    let sign = "";
+    let prefix = "";
+    let value = "0";
+
+    // Income
+    if (
+      txn.type === "TOPUP_CREDIT" ||
+      txn.type === "EARNING_ASSET" ||
+      txn.type === "POOL_EARNING" ||
+      txn.type === "DONATION"
+    ) {
+      sign = "+";
+    } else {
+      sign = "-"; // Expenses
+    }
+
+    if (txn.creditAmount && Number(txn.creditAmount) > 0) {
+      // Transaction using credits
+      value = Number(txn.creditAmount).toFixed(2);
+      return { text: `${sign} ${value} CR`, isCredit: true, sign };
+    } else {
+      // Transaction using IDR
+      prefix = "Rp ";
+      value = Number(txn.amount).toLocaleString("id-ID");
+      return { text: `${sign} ${prefix}${value}`, isCredit: false, sign };
+    }
+  };
 
   return (
     <FadeIn>
@@ -206,77 +191,98 @@ const TransactionsPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Transactions</SelectItem>
-                  <SelectItem value="top_up">Top Up Credits</SelectItem>
-                  <SelectItem value="subscribe">Subscribe Plan</SelectItem>
-                  <SelectItem value="buy_stock">Buy Stock</SelectItem>
-                  <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                  <SelectItem value="TOPUP_CREDIT">Top Up Credits</SelectItem>
+                  <SelectItem value="SUBSCRIPTION">Subscribe Plan</SelectItem>
+                  <SelectItem value="BUY_ASSET">Buy Stock</SelectItem>
+                  <SelectItem value="WITHDRAWAL">Withdrawal</SelectItem>
+                  <SelectItem value="EARNING_ASSET">Asset Sales</SelectItem>
+                  <SelectItem value="DONATION">Donations</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]"></TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.map((txn) => (
-                <TableRow
-                  key={txn.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleRowClick(txn)}
-                >
-                  <TableCell>
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                      {getIcon(txn.type)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {txn.desc}
-                    <div className="text-xs text-muted-foreground md:hidden">
-                      {txn.date}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10">
-                      {getTypeLabel(txn.type)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {txn.date}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                        txn.status === "Completed"
-                          ? "bg-green-50 text-green-700 ring-green-600/20"
-                          : txn.status === "Processing"
-                            ? "bg-yellow-50 text-yellow-800 ring-yellow-600/20"
-                            : "bg-red-50 text-red-700 ring-red-600/20"
-                      }`}
-                    >
-                      {txn.status}
-                    </span>
-                  </TableCell>
-                  <TableCell
-                    className={`text-right font-medium ${
-                      txn.amount.startsWith("+") ? "text-green-600" : ""
-                    }`}
-                  >
-                    {txn.amount}
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {transactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                      No transactions found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  transactions.map((txn: TransactionItem) => {
+                    const formattedDate = format(new Date(txn.createdAt), "MMM dd, yyyy");
+                    const amtInfo = getAmountDisplay(txn);
+
+                    return (
+                      <TableRow
+                        key={txn.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleRowClick(txn)}
+                      >
+                        <TableCell>
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                            {getIcon(txn.type)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {getDesc(txn)}
+                          <div className="text-xs text-muted-foreground md:hidden">
+                            {formattedDate}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10">
+                            {getTypeLabel(txn.type)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                          {formattedDate}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                              txn.status === "PAID"
+                                ? "bg-green-50 text-green-700 ring-green-600/20"
+                                : txn.status === "PENDING"
+                                  ? "bg-yellow-50 text-yellow-800 ring-yellow-600/20"
+                                  : "bg-red-50 text-red-700 ring-red-600/20"
+                            }`}
+                          >
+                            {txn.status === "PAID" ? "Completed" : txn.status}
+                          </span>
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-medium ${
+                            amtInfo.sign === "+" ? "text-green-600" : ""
+                          }`}
+                        >
+                          {amtInfo.text}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -296,12 +302,12 @@ const TransactionsPage = () => {
                   {getIcon(selectedTransaction.type)}
                 </div>
                 <span
-                  className={`text-2xl font-bold ${selectedTransaction.amount.startsWith("+") ? "text-green-600" : "text-foreground"}`}
+                  className={`text-2xl font-bold ${getAmountDisplay(selectedTransaction).sign === "+" ? "text-green-600" : "text-foreground"}`}
                 >
-                  {selectedTransaction.amount}
+                  {getAmountDisplay(selectedTransaction).text}
                 </span>
-                <span className="text-sm text-muted-foreground mt-1">
-                  {selectedTransaction.desc}
+                <span className="text-sm text-muted-foreground mt-1 text-center">
+                  {getDesc(selectedTransaction)}
                 </span>
               </div>
 
@@ -309,21 +315,21 @@ const TransactionsPage = () => {
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm text-muted-foreground">Status</span>
                   <div className="flex items-center gap-2">
-                    {selectedTransaction.status === "Completed" && (
+                    {selectedTransaction.status === "PAID" && (
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
                     )}
-                    {selectedTransaction.status === "Processing" && (
+                    {selectedTransaction.status === "PENDING" && (
                       <Clock className="h-4 w-4 text-yellow-500" />
                     )}
                     <span className="text-sm font-medium">
-                      {selectedTransaction.status}
+                      {selectedTransaction.status === "PAID" ? "Completed" : selectedTransaction.status}
                     </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm text-muted-foreground">Date</span>
                   <span className="text-sm font-medium">
-                    {selectedTransaction.date}
+                    {format(new Date(selectedTransaction.createdAt), "MMM dd, yyyy HH:mm")}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
@@ -333,44 +339,45 @@ const TransactionsPage = () => {
                   </span>
                 </div>
 
-                {/* Specific Details based on type */}
-                {selectedTransaction.details?.method && (
+                {selectedTransaction.paymentMethod && (
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-sm text-muted-foreground">
                       Payment Method
                     </span>
-                    <span className="text-sm font-medium">
-                      {selectedTransaction.details.method}
+                    <span className="text-sm font-medium uppercase">
+                      {selectedTransaction.paymentMethod.replace(/_/g, " ")}
                     </span>
                   </div>
                 )}
-                {selectedTransaction.details?.item_name && (
+                
+                {selectedTransaction.stock && (
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-sm text-muted-foreground">
                       Item Name
                     </span>
-                    <span className="text-sm font-medium">
-                      {selectedTransaction.details.item_name}
-                    </span>
-                  </div>
-                )}
-                {selectedTransaction.details?.plan_name && (
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-sm text-muted-foreground">Plan</span>
-                    <span className="text-sm font-medium">
-                      {selectedTransaction.details.plan_name}
+                    <span className="text-sm font-medium truncate max-w-[200px]" title={selectedTransaction.stock.title}>
+                      {selectedTransaction.stock.title}
                     </span>
                   </div>
                 )}
 
-                {selectedTransaction.details?.reference && (
+                {selectedTransaction.plan && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-sm text-muted-foreground">Plan</span>
+                    <span className="text-sm font-medium">
+                      {selectedTransaction.plan.name} {selectedTransaction.billingCycle ? `(${selectedTransaction.billingCycle})` : ""}
+                    </span>
+                  </div>
+                )}
+
+                {(selectedTransaction.externalId || selectedTransaction.snapToken) && (
                   <div className="flex justify-between items-center py-2">
                     <span className="text-sm text-muted-foreground">
                       Reference No.
                     </span>
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium font-mono">
-                        {selectedTransaction.details.reference}
+                      <span className="text-sm font-medium font-mono truncate max-w-[150px]" title={selectedTransaction.externalId || selectedTransaction.snapToken!}>
+                        {selectedTransaction.externalId || selectedTransaction.snapToken}
                       </span>
                       <Button variant="ghost" size="icon" className="h-6 w-6">
                         <Copy className="h-3 w-3 text-muted-foreground" />
@@ -386,7 +393,8 @@ const TransactionsPage = () => {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
-            <Button>Download Receipt</Button>
+            {/* If there's a receipt, we can implement download later */}
+            <Button disabled>Download Receipt</Button>
           </div>
         </DialogContent>
       </Dialog>
