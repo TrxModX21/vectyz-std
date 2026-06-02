@@ -3,6 +3,7 @@ import { asyncHandler } from "../middlewares/async-handler.middleware";
 import * as DownloadService from "../services/download.service";
 import { AppError } from "../utils/app-error";
 import { HTTPSTATUS } from "../utils/http.config";
+import { getMyDownloadHistorySchema } from "../validation/download.validation";
 
 export const downloadStockController = asyncHandler(
   async (req: Request, res: Response) => {
@@ -64,5 +65,24 @@ export const checkAccessController = asyncHandler(
     );
 
     return res.status(HTTPSTATUS.OK).json(result);
+  },
+);
+
+export const getDownloadHistoryController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const query = getMyDownloadHistorySchema.parse(req.query);
+    const userId: string = res.locals.user.id;
+
+    const { history, totalCount, totalPages, currentPage } =
+      await DownloadService.getDownloadHistoryService(userId, { ...query });
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Download history fetched successfully",
+      timestamp: new Date().toISOString(),
+      totalCount,
+      totalPages,
+      currentPage,
+      history,
+    });
   },
 );

@@ -154,7 +154,6 @@ export const columns: ColumnDef<UserStock>[] = [
       <span className="flex items-center justify-center">Date</span>
     ),
     cell: ({ row }) => {
-      console.log(row.original.createdAt);
       const date = row.original.createdAt;
       const formatted = format(new Date(date), "MMM dd, yyyy");
 

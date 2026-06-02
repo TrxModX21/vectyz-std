@@ -1,10 +1,27 @@
+"use client";
+
 import FadeIn from "@/components/common/fade-in";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, DollarSign, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, Loader2, TrendingUp } from "lucide-react";
+import { useGetEarningsOverview, useGetEarningsHistory } from "@/hooks/use-earnings";
+import { useState } from "react";
+import EarningsTable from "@/components/vectyzen/earnings/earnings-table";
+import PayoutDialog from "@/components/vectyzen/earnings/payout-dialog";
+import { format } from "date-fns";
 
 const EarningsPage = () => {
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  const { data: overviewData, isLoading: isLoadingOverview } = useGetEarningsOverview();
+  const { data: historyData, isLoading: isLoadingHistory } = useGetEarningsHistory({
+    page,
+    limit,
+  });
+
+  const overview = overviewData?.data;
+  const history = historyData?.history || [];
+
   return (
     <FadeIn>
       <div className="flex items-center justify-between mb-8">
@@ -14,7 +31,11 @@ const EarningsPage = () => {
             Track your revenue and withdrawal history.
           </p>
         </div>
-        <Button>Request Payout</Button>
+        {overview ? (
+          <PayoutDialog totalBalance={overview.totalBalance} />
+        ) : (
+          <div />
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -24,32 +45,60 @@ const EarningsPage = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$1,240.50</div>
-            <p className="text-xs text-muted-foreground">
-              Available for withdrawal
-            </p>
+            {isLoadingOverview ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {overview?.totalBalance?.toFixed(2)} CR
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ≈ Rp {(overview?.totalBalance! * 1000).toLocaleString("id-ID")}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$420.50</div>
-            <p className="text-xs text-muted-foreground">
-              +15% from last month
-            </p>
+            {isLoadingOverview ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  +{overview?.thisMonthEarnings?.toFixed(2)} CR
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Direct Sales & Donations
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Next Payout</CardTitle>
+            <CardTitle className="text-sm font-medium">Est. Pool Earning</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Mar 01, 2026</div>
-            <p className="text-xs text-muted-foreground">Estimated</p>
+            {isLoadingOverview ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  +{overview?.estimatedPoolShare?.toFixed(2)} CR
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Distributed on {overview?.nextPayoutDate ? format(new Date(overview.nextPayoutDate), "MMM dd, yyyy") : ""}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -60,52 +109,18 @@ const EarningsPage = () => {
           <CardDescription>Recent earnings and payouts.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">
-                  Monthly Earnings - Jan
-                </TableCell>
-                <TableCell>Credit</TableCell>
-                <TableCell>Feb 01, 2026</TableCell>
-                <TableCell className="text-right text-green-600">
-                  +$420.50
-                </TableCell>
-                <TableCell className="text-right">Completed</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">
-                  Withdrawal to PayPal
-                </TableCell>
-                <TableCell>Payout</TableCell>
-                <TableCell>Jan 15, 2026</TableCell>
-                <TableCell className="text-right text-foreground">
-                  -$800.00
-                </TableCell>
-                <TableCell className="text-right">Completed</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">
-                  Monthly Earnings - Dec
-                </TableCell>
-                <TableCell>Credit</TableCell>
-                <TableCell>Jan 01, 2026</TableCell>
-                <TableCell className="text-right text-green-600">
-                  +$380.00
-                </TableCell>
-                <TableCell className="text-right">Completed</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <EarningsTable
+            isLoading={isLoadingHistory}
+            transactions={history}
+            totalCount={historyData?.totalCount || 0}
+            page={page}
+            limit={limit}
+            onPageChange={setPage}
+            onPageSizeChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
         </CardContent>
       </Card>
     </FadeIn>

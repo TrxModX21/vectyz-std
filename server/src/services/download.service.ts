@@ -1,4 +1,8 @@
-import { TransactionType, PaymentStatus } from "../generated/prisma/client";
+import {
+  TransactionType,
+  PaymentStatus,
+  Prisma,
+} from "../generated/prisma/client";
 import prisma from "../lib/prisma";
 import {
   AppError,
@@ -8,6 +12,7 @@ import {
 import { getFileStream } from "../lib/r2";
 // @ts-ignore
 import archiver from "archiver";
+import { GetMyDownloadHistorySchema } from "../validation/download.validation";
 
 export const validateDownloadAccess = async (
   userId: string,
@@ -25,6 +30,19 @@ export const validateDownloadAccess = async (
 
   if (!user || !stock) {
     throw new NotFoundException("User or Stock not found");
+  }
+
+  // 0. Cek apakah user sudah pernah mendownload aset ini
+  const downloadHistory = await prisma.downloadHistory.findFirst({
+    where: { stockId, userId },
+  });
+
+  if (downloadHistory) {
+    return {
+      allowed: true,
+      quotaDeduction: false,
+      reason: "PREVIOUSLY_DOWNLOADED",
+    };
   }
 
   // 0. Admin & Reviewer Bypass
@@ -88,7 +106,6 @@ export const validateDownloadAccess = async (
       status: PaymentStatus.PAID,
     },
   });
-
   if (hasPurchased) {
     return { allowed: true, quotaDeduction: false, reason: "PURCHASED" };
   }
@@ -182,6 +199,12 @@ export const recordDownloadHistory = async (
   });
 
   // Jika sudah pernah download hari ini, skip recording & deduction
+  // Jika sudah pernah download, tidak perlu memotong kuota dan menambah history
+  if (reason === "PREVIOUSLY_DOWNLOADED") {
+    return;
+  }
+
+  // Jika sudah pernah download hari ini (dari check sebelumnya yang lolos), skip recording & deduction
   if (existingHistory) {
     return;
   }
@@ -304,4 +327,74 @@ export const checkStockAccess = async (userId: string, stockId: string) => {
   }
 
   return { allowed: false, reason: "Access denied", code: 403 };
+};
+
+export const getDownloadHistoryService = async (
+  userId: string,
+  input: GetMyDownloadHistorySchema,
+) => {
+  const { page, limit, search } = input;
+
+  const where: Prisma.DownloadHistoryWhereInput = { userId };
+
+  if (search) {
+    where.stock = {
+      OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        { slug: { contains: search, mode: "insensitive" } },
+        { keywords: { has: search } },
+      ],
+    };
+  }
+
+  const [history, totalCount] = await Promise.all([
+    prisma.downloadHistory.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: {
+        downloadDate: "desc",
+      },
+      include: {
+        stock: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            isPremium: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            deletedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                image: true,
+              },
+            },
+            files: {
+              select: {
+                id: true,
+                url: true,
+                purpose: true,
+                publicId: true,
+                format: true,
+                bytes: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.downloadHistory.count({ where }),
+  ]);
+
+  return {
+    history,
+    totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+  };
 };

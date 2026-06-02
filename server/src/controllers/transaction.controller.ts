@@ -13,6 +13,9 @@ import {
   findUserTransactions,
   handlePaymentNotification,
   processDirectPurchaseWithCredit,
+  getEarningsOverviewService,
+  getEarningsHistoryService,
+  requestPayoutService,
 } from "../services/transaction.service";
 
 export const createTopupController = asyncHandler(
@@ -214,6 +217,59 @@ export const getTransactionDetailController = asyncHandler(
       message: "Transaction detail retrieved successfully",
       timestamp: new Date().toISOString(),
       data: transaction,
+    });
+  },
+);
+
+export const getEarningsOverviewController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = res.locals.user?.id;
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
+    }
+
+    // Dynamic import to avoid missing schema issue at top if not imported
+    const result = await getEarningsOverviewService(userId);
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Earnings overview retrieved successfully",
+      timestamp: new Date().toISOString(),
+      data: result,
+    });
+  },
+);
+
+export const getEarningsHistoryController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = res.locals.user?.id;
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
+    }
+    const { getEarningsHistorySchema } = require("../validation/transaction.validation");
+    const query = getEarningsHistorySchema.parse(req.query);
+
+    const result = await getEarningsHistoryService(userId, query);
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Earnings history retrieved successfully",
+      timestamp: new Date().toISOString(),
+      ...result,
+    });
+  },
+);
+
+export const requestPayoutController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = res.locals.user?.id;
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
+    }
+    const { requestPayoutSchema } = require("../validation/transaction.validation");
+    const data = requestPayoutSchema.parse(req.body);
+
+    const result = await requestPayoutService(userId, data);
+    return res.status(HTTPSTATUS.CREATED).json({
+      message: "Payout requested successfully",
+      timestamp: new Date().toISOString(),
+      data: result,
     });
   },
 );

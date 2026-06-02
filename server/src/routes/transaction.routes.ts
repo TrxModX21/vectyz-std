@@ -11,6 +11,9 @@ import {
   getAllTransactionsController,
   getUserTransactionsController,
   getTransactionDetailController,
+  getEarningsOverviewController,
+  getEarningsHistoryController,
+  requestPayoutController,
 } from "../controllers/transaction.controller";
 
 
@@ -22,6 +25,11 @@ transactionRoutes.post("/subscribe", requireAuth, createSubscriptionController);
 transactionRoutes.post("/buy-asset/gateway", requireAuth, buyAssetDirectController);
 transactionRoutes.post("/buy-asset/credit", requireAuth, buyAssetWithCreditController);
 transactionRoutes.post("/donate/gateway", requireAuth, createDonationGatewayController);
+
+// Earnings & Payouts (Must be before /:id)
+transactionRoutes.get("/earnings/overview", requireAuth, getEarningsOverviewController);
+transactionRoutes.get("/earnings/history", requireAuth, getEarningsHistoryController);
+transactionRoutes.post("/payouts/request", requireAuth, requestPayoutController);
 
 // Webhook (Public, Midtrans will call this)
 transactionRoutes.post("/notification", paymentNotificationController);
