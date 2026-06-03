@@ -817,3 +817,10 @@ export const incrementView = async (
 
   return { viewed: true };
 };
+
+export const getStocksForSitemap = async () => {
+  return await prisma.stock.findMany({
+    where: { status: "APPROVED" },
+    select: { slug: true, updatedAt: true },
+  });
+};

@@ -27,15 +27,21 @@ export async function generateMetadata({
   } else if (color) {
     pageTitle = `${color} Themed Assets`;
   }
+  const canonicalUrl = `/explore/search${query ? `?search=${query}` : category ? `?category=${category}` : ""}`;
+
   return {
-    title: pageTitle, // Akan otomatis menjadi: "[pageTitle] | Vectolio" berkat layout.tsx
+    title: pageTitle,
     description: pageDesc,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: pageTitle,
       description: pageDesc,
     },
-    // Jika perlu, tambahkan robots: { index: false } jika search query-nya kosong,
-    // agar Google tidak mengindex halaman blank.
+    robots: {
+      index: !!(query || category || color),
+    },
   };
 }
 

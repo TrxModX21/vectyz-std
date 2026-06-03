@@ -22,7 +22,7 @@ export const FullImageDialog = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[90vw] max-h-[90vh] w-fit h-fit p-0 border-none shadow-none [&>button]:hidden flex items-center justify-center">
+      <DialogContent className="max-w-[90vw] max-h-[90vh] w-fit h-fit p-0 border-none shadow-none [&>button]:hidden flex items-center justify-center bg-transparent">
         <DialogHeader>
           <DialogTitle className="sr-only">{title}</DialogTitle>
           <DialogDescription className="sr-only">

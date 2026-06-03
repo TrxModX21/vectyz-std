@@ -30,7 +30,7 @@ export async function generateMetadata(
     // Cari file preview untuk dijadikan gambar thumbnail saat di-share
     const previewFile = stock?.files?.find((f: any) => f.purpose === "PREVIEW");
     const imageUrl = previewFile?.url || "/logo.png";
-    
+
     return {
       title: stock.title,
       description:
@@ -56,6 +56,7 @@ export async function generateMetadata(
         description: stock.description,
         images: [imageUrl],
       },
+      alternates: { canonical: `/stock/${slug}` },
     };
   } catch (error) {
     console.error("Error generating metadata for stock:", error);
@@ -63,7 +64,51 @@ export async function generateMetadata(
   }
 }
 
-// 2. Server Component utama hanya me-render Client Component
-export default function Page() {
-  return <StockClientPage />;
+export default async function Page({ params }: Props) {
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
+  
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3021/api/v1";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://vectolio.com";
+  
+  let jsonLd = null;
+  try {
+    const res = await fetch(`${baseUrl}/stocks/${slug}`, { next: { revalidate: 60 } });
+    if (res.ok) {
+      const data = await res.json();
+      const stock = data.stock;
+      const previewFile = stock?.files?.find((f: any) => f.purpose === "PREVIEW");
+      const imageUrl = previewFile?.url || `${appUrl}/logo.png`;
+
+      jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: stock.title,
+        description: stock.description,
+        image: imageUrl,
+        sku: stock.id,
+        offers: {
+          "@type": "Offer",
+          url: `${appUrl}/stock/${slug}`,
+          priceCurrency: "IDR",
+          price: stock.price,
+          availability: stock.status === "APPROVED" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        },
+      };
+    }
+  } catch (err) {
+    console.error("Failed to fetch stock for json-ld", err);
+  }
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <StockClientPage />
+    </>
+  );
 }

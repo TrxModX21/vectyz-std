@@ -17,6 +17,7 @@ import {
   toggleLikeController,
   incrementViewController,
   getStockByUserController,
+  getStocksSitemapController,
 } from "../controllers/stock.controller";
 
 const stockRoutes = Router();
@@ -29,6 +30,7 @@ stockRoutes.get(
   getPopularFreeVectorStocksController,
 );
 stockRoutes.get("/:id/related", optionalAuth, getRelatedStocksController);
+stockRoutes.get("/sitemap/all", getStocksSitemapController);
 stockRoutes.get("/:slug", optionalAuth, getStockByIdController);
 stockRoutes.get("/from-user/:userId", optionalAuth, getStockByUserController);
 stockRoutes.post("/:id/view", optionalAuth, incrementViewController);
