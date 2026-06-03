@@ -1,8 +1,11 @@
 import { MetadataRoute } from "next";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://vectolio.com";
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3021/api/v1";
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3021/api/v1";
 
   // 1. Static Routes
   const staticRoutes: MetadataRoute.Sitemap = [
