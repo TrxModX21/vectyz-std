@@ -20,6 +20,7 @@ import {
   toggleLike,
   incrementView,
   getStockFromUser,
+  getStocksForSitemap,
 } from "../services/stock.service";
 import { BadRequestException } from "../utils/app-error";
 
@@ -246,6 +247,16 @@ export const incrementViewController = asyncHandler(
     return res.status(HTTPSTATUS.OK).json({
       message: result.viewed ? "View counted" : "View processing skipped",
       ...result,
+    });
+  },
+);
+
+export const getStocksSitemapController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const stocks = await getStocksForSitemap();
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Sitemap data fetched successfully",
+      stocks,
     });
   },
 );
