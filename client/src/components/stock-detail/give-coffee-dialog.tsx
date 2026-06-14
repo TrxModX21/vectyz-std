@@ -26,7 +26,10 @@ import {
   donationSchema,
   DonationFormInputs,
 } from "@/validators/transaction.validation";
-import { useCreateDonationGateway, useCreateDonationCredit } from "@/hooks/use-transactions";
+import {
+  useCreateDonationGateway,
+  useCreateDonationCredit,
+} from "@/hooks/use-transactions";
 import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { Field, FieldError } from "../ui/field";
@@ -184,7 +187,11 @@ const GiveCoffeeDialog = ({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px] overflow-hidden border-0 p-0 rounded-2xl">
         <Script
-          src="https://app.sandbox.midtrans.com/snap/snap.js"
+          src={
+            process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
+              ? "https://app.midtrans.com/snap/snap.js"
+              : "https://app.sandbox.midtrans.com/snap/snap.js"
+          }
           data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
           strategy="lazyOnload"
         />

@@ -173,7 +173,11 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden gap-0 max-h-[90vh] flex flex-col">
         <Script
-          src="https://app.sandbox.midtrans.com/snap/snap.js"
+          src={
+            process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
+              ? "https://app.midtrans.com/snap/snap.js"
+              : "https://app.sandbox.midtrans.com/snap/snap.js"
+          }
           data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
           strategy="lazyOnload"
         />

@@ -86,7 +86,9 @@ const DirectBuyDialog = ({
 
       toast.success("Download started!");
     } catch (error: any) {
-      toast.error("Asset unlocked, but failed to start download automatically.");
+      toast.error(
+        "Asset unlocked, but failed to start download automatically.",
+      );
     }
   };
 
@@ -150,7 +152,11 @@ const DirectBuyDialog = ({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[800px] px-8 py-10 overflow-hidden border border-slate-200 bg-white text-slate-900 shadow-2xl">
         <Script
-          src="https://app.sandbox.midtrans.com/snap/snap.js"
+          src={
+            process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
+              ? "https://app.midtrans.com/snap/snap.js"
+              : "https://app.sandbox.midtrans.com/snap/snap.js"
+          }
           data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
           strategy="lazyOnload"
         />
@@ -195,98 +201,99 @@ const DirectBuyDialog = ({
                   <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
                   <h3 className="text-xl font-bold">Waiting for Payment</h3>
                   <p className="text-sm text-slate-500 text-center px-4">
-                    Please complete your payment in the secure popup. Do not close this window.
+                    Please complete your payment in the secure popup. Do not
+                    close this window.
                   </p>
                 </div>
               ) : (
                 <>
                   <div>
                     <h2 className="text-2xl font-bold mb-2 tracking-tight">
-                  Unlock this asset
-                </h2>
-                <p className="text-sm text-slate-500 leading-relaxed mb-6">
-                  This is a Premium asset. Purchase it directly to instantly
-                  unlock "{stock?.title}"
-                </p>
+                      Unlock this asset
+                    </h2>
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                      This is a Premium asset. Purchase it directly to instantly
+                      unlock "{stock?.title}"
+                    </p>
 
-                <div className="flex items-end mb-6">
-                  <span className="text-4xl font-extrabold tracking-tighter">
-                    {formatPrice(Number(stock?.price), currency, true)}
-                  </span>
-                  <span className="text-xs text-slate-600 ml-2 font-medium bg-slate-100 px-2 py-0.5 rounded-md mb-1.5 border border-slate-200">
-                    One-time payment
-                  </span>
-                </div>
+                    <div className="flex items-end mb-6">
+                      <span className="text-4xl font-extrabold tracking-tighter">
+                        {formatPrice(Number(stock?.price), currency, true)}
+                      </span>
+                      <span className="text-xs text-slate-600 ml-2 font-medium bg-slate-100 px-2 py-0.5 rounded-md mb-1.5 border border-slate-200">
+                        One-time payment
+                      </span>
+                    </div>
 
-                <div className="space-y-3 mb-8">
-                  <div className="flex items-start gap-2 text-sm text-slate-600">
-                    <Check className="h-5 w-5 text-blue-600 shrink-0" />
-                    <span>Full resolution & source files</span>
+                    <div className="space-y-3 mb-8">
+                      <div className="flex items-start gap-2 text-sm text-slate-600">
+                        <Check className="h-5 w-5 text-blue-600 shrink-0" />
+                        <span>Full resolution & source files</span>
+                      </div>
+                      <div className="flex items-start gap-2 text-sm text-slate-600">
+                        <Check className="h-5 w-5 text-indigo-500 shrink-0" />
+                        <span>Standard commercial license included</span>
+                      </div>
+                      <div className="flex items-start gap-2 text-sm text-slate-600">
+                        <Check className="h-5 w-5 text-indigo-500 shrink-0" />
+                        <span>
+                          No attribution required for personal or commercial use
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2 text-sm text-slate-600">
-                    <Check className="h-5 w-5 text-indigo-500 shrink-0" />
-                    <span>Standard commercial license included</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm text-slate-600">
-                    <Check className="h-5 w-5 text-indigo-500 shrink-0" />
-                    <span>
-                      No attribution required for personal or commercial use
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              <div className="mt-auto pt-6 border-t border-slate-100">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                  Select Payment Method
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    onClick={() => onSubmit("midtrans")}
-                    disabled={loadingMethod !== null}
-                    variant="outline"
-                    className="h-14 flex items-center justify-start px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group"
-                  >
-                    {loadingMethod === "midtrans" ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Smartphone className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
-                    )}
-                    <span className="font-semibold text-sm">Midtrans</span>
-                  </Button>
+                  <div className="mt-auto pt-6 border-t border-slate-100">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                      Select Payment Method
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        onClick={() => onSubmit("midtrans")}
+                        disabled={loadingMethod !== null}
+                        variant="outline"
+                        className="h-14 flex items-center justify-start px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group"
+                      >
+                        {loadingMethod === "midtrans" ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Smartphone className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
+                        )}
+                        <span className="font-semibold text-sm">Midtrans</span>
+                      </Button>
 
-                  <Button
-                    //   onClick={() => handleSimulatePayment("Card")}
-                    //   disabled={paymentState === "pending"}
-                    variant="outline"
-                    className="h-14 flex items-center justify-start px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group"
-                  >
-                    {/* {paymentState === "pending" ? (
+                      <Button
+                        //   onClick={() => handleSimulatePayment("Card")}
+                        //   disabled={paymentState === "pending"}
+                        variant="outline"
+                        className="h-14 flex items-center justify-start px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group"
+                      >
+                        {/* {paymentState === "pending" ? (
                     <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
                   ) : (
                     <CreditCard className="w-5 h-5 text-slate-500 group-hover:scale-110 transition-transform" />
                   )} */}
-                    <CreditCard className="w-5 h-5" />
-                    <span className="font-semibold text-sm">Card</span>
-                  </Button>
+                        <CreditCard className="w-5 h-5" />
+                        <span className="font-semibold text-sm">Card</span>
+                      </Button>
 
-                  <Button
-                    variant="outline"
-                    className="h-14 relative col-span-2 flex items-center justify-center gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] dark:text-[#00A9E0] rounded-xl shadow-sm hover:shadow-md transition-all group"
-                    disabled
-                  >
-                    <Wallet className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <span className="font-semibold text-sm leading-none">
-                      Pay with PayPal
-                    </span>
-                    <span className="absolute top-1 right-2 text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold uppercase">
-                      Soon
-                    </span>
-                  </Button>
-                </div>
-              </div>
-              </>
-             )}
+                      <Button
+                        variant="outline"
+                        className="h-14 relative col-span-2 flex items-center justify-center gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] dark:text-[#00A9E0] rounded-xl shadow-sm hover:shadow-md transition-all group"
+                        disabled
+                      >
+                        <Wallet className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold text-sm leading-none">
+                          Pay with PayPal
+                        </span>
+                        <span className="absolute top-1 right-2 text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold uppercase">
+                          Soon
+                        </span>
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Right Pane - Preview */}

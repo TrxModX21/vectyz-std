@@ -129,7 +129,7 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
     try {
       const billingCycle =
         plan?.durationDays! < 30 ? "ONE_TIME" : isAnnual ? "YEARLY" : "MONTHLY";
-      
+
       const paymentAmount = getCreditValue(finalPrice, currency);
 
       const payload = {
@@ -191,14 +191,20 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent 
+      <DialogContent
         className={cn(
           "p-0 gap-0 max-h-[90vh] flex flex-col md:h-auto",
-          isSuccess ? "sm:max-w-[500px] overflow-hidden justify-center" : "md:block max-w-5xl! overflow-y-scroll"
+          isSuccess
+            ? "sm:max-w-[500px] overflow-hidden justify-center"
+            : "md:block max-w-5xl! overflow-y-scroll",
         )}
       >
         <Script
-          src="https://app.sandbox.midtrans.com/snap/snap.js"
+          src={
+            process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
+              ? "https://app.midtrans.com/snap/snap.js"
+              : "https://app.sandbox.midtrans.com/snap/snap.js"
+          }
           data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
           strategy="lazyOnload"
         />
@@ -215,7 +221,8 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
               Welcome to Premium! 🎉
             </h2>
             <p className="text-center text-muted-foreground text-sm mb-8">
-              Your subscription is now active. Enjoy all the premium features and exclusive assets.
+              Your subscription is now active. Enjoy all the premium features
+              and exclusive assets.
             </p>
             <Button
               onClick={() => setIsOpen(false)}
@@ -225,133 +232,135 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
             </Button>
           </div>
         ) : (
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col md:flex-row h-full"
-        >
-          {/* Left column */}
-          <div className="flex-1 p-8">
-            <DialogHeader className="mb-6 text-left">
-              <DialogTitle className="text-3xl font-bold text-gray-800">
-                Get {planName}
-              </DialogTitle>
-              <DialogDescription className="text-base mt-2">
-                Complete your subscription to unlock premium features.
-              </DialogDescription>
-            </DialogHeader>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col md:flex-row h-full"
+          >
+            {/* Left column */}
+            <div className="flex-1 p-8">
+              <DialogHeader className="mb-6 text-left">
+                <DialogTitle className="text-3xl font-bold text-gray-800">
+                  Get {planName}
+                </DialogTitle>
+                <DialogDescription className="text-base mt-2">
+                  Complete your subscription to unlock premium features.
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="space-y-6">
-              {/* Billing Info */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">
-                  Billing information
-                </h3>
+              <div className="space-y-6">
+                {/* Billing Info */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-foreground">
+                    Billing information
+                  </h3>
 
-                <div className="grid gap-4">
-                  <Field className="grid gap-2">
-                    <FieldLabel htmlFor="name">Full Name</FieldLabel>
-                    <Input
-                      id="name"
-                      placeholder="Enter your full name"
-                      disabled={isSubmitting}
-                      {...register("name")}
-                    />
-                    <FieldError>{errors.name?.message}</FieldError>
-                  </Field>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid gap-4">
                     <Field className="grid gap-2">
-                      <FieldLabel htmlFor="email">Email</FieldLabel>
+                      <FieldLabel htmlFor="name">Full Name</FieldLabel>
                       <Input
-                        id="email"
-                        type="email"
-                        placeholder="john@doe.example"
+                        id="name"
+                        placeholder="Enter your full name"
                         disabled={isSubmitting}
-                        {...register("email")}
+                        {...register("name")}
                       />
-                      <FieldError>{errors.email?.message}</FieldError>
+                      <FieldError>{errors.name?.message}</FieldError>
                     </Field>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor="email">Email</FieldLabel>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="john@doe.example"
+                          disabled={isSubmitting}
+                          {...register("email")}
+                        />
+                        <FieldError>{errors.email?.message}</FieldError>
+                      </Field>
+
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor="phone">Phone</FieldLabel>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="+62 82238490219"
+                          disabled={isSubmitting}
+                          {...register("phone")}
+                        />
+                        <FieldError>{errors.phone?.message}</FieldError>
+                      </Field>
+                    </div>
+
                     <Field className="grid gap-2">
-                      <FieldLabel htmlFor="phone">Phone</FieldLabel>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+62 82238490219"
+                      <FieldLabel htmlFor="address">Address</FieldLabel>
+                      <Textarea
+                        id="address"
+                        placeholder="Street address"
+                        className="resize-none"
+                        maxLength={100}
                         disabled={isSubmitting}
-                        {...register("phone")}
+                        {...register("address")}
                       />
-                      <FieldError>{errors.phone?.message}</FieldError>
+                      <FieldError>{errors.address?.message}</FieldError>
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor="city">City</FieldLabel>
+                        <Input
+                          id="city"
+                          placeholder="City"
+                          disabled={isSubmitting}
+                          {...register("city")}
+                        />
+                        <FieldError>{errors.city?.message}</FieldError>
+                      </Field>
+
+                      <Field className="grid gap-2">
+                        <FieldLabel htmlFor="postalCode">
+                          Postal Code
+                        </FieldLabel>
+                        <Input
+                          id="postalCode"
+                          placeholder="12345"
+                          disabled={isSubmitting}
+                          {...register("postalCode")}
+                        />
+                        <FieldError>{errors.postalCode?.message}</FieldError>
+                      </Field>
+                    </div>
+
+                    <Field className="grid gap-2">
+                      <FieldLabel htmlFor="country">Country</FieldLabel>
+                      <Input
+                        id="country"
+                        placeholder="Indonesia"
+                        disabled={isSubmitting}
+                        {...register("country")}
+                      />
+                      <FieldError>{errors.country?.message}</FieldError>
                     </Field>
                   </div>
-
-                  <Field className="grid gap-2">
-                    <FieldLabel htmlFor="address">Address</FieldLabel>
-                    <Textarea
-                      id="address"
-                      placeholder="Street address"
-                      className="resize-none"
-                      maxLength={100}
-                      disabled={isSubmitting}
-                      {...register("address")}
-                    />
-                    <FieldError>{errors.address?.message}</FieldError>
-                  </Field>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field className="grid gap-2">
-                      <FieldLabel htmlFor="city">City</FieldLabel>
-                      <Input
-                        id="city"
-                        placeholder="City"
-                        disabled={isSubmitting}
-                        {...register("city")}
-                      />
-                      <FieldError>{errors.city?.message}</FieldError>
-                    </Field>
-
-                    <Field className="grid gap-2">
-                      <FieldLabel htmlFor="postalCode">Postal Code</FieldLabel>
-                      <Input
-                        id="postalCode"
-                        placeholder="12345"
-                        disabled={isSubmitting}
-                        {...register("postalCode")}
-                      />
-                      <FieldError>{errors.postalCode?.message}</FieldError>
-                    </Field>
-                  </div>
-
-                  <Field className="grid gap-2">
-                    <FieldLabel htmlFor="country">Country</FieldLabel>
-                    <Input
-                      id="country"
-                      placeholder="Indonesia"
-                      disabled={isSubmitting}
-                      {...register("country")}
-                    />
-                    <FieldError>{errors.country?.message}</FieldError>
-                  </Field>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Right column */}
-          <OrderSummary
-            plan={plan!}
-            isAnnual={isAnnual}
-            setIsAnnual={setIsAnnual}
-            planName={planName || ""}
-            currentPrice={currentPrice}
-            finalPrice={finalPrice}
-            durationLabel={durationLabel}
-            formattedExpireDate={formattedExpireDate}
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-            isSubmitting={isSubmitting}
-          />
-        </form>
+            {/* Right column */}
+            <OrderSummary
+              plan={plan!}
+              isAnnual={isAnnual}
+              setIsAnnual={setIsAnnual}
+              planName={planName || ""}
+              currentPrice={currentPrice}
+              finalPrice={finalPrice}
+              durationLabel={durationLabel}
+              formattedExpireDate={formattedExpireDate}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              isSubmitting={isSubmitting}
+            />
+          </form>
         )}
       </DialogContent>
     </Dialog>
