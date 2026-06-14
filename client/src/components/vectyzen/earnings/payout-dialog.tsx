@@ -15,10 +15,10 @@ import { useRequestPayout } from "@/hooks/use-earnings";
 import { Loader2, Wallet } from "lucide-react";
 
 interface PayoutDialogProps {
-  totalBalance: number;
+  withdrawableBalance: number;
 }
 
-const PayoutDialog = ({ totalBalance }: PayoutDialogProps) => {
+const PayoutDialog = ({ withdrawableBalance }: PayoutDialogProps) => {
   const [open, setOpen] = useState(false);
   const [amountCredit, setAmountCredit] = useState<string>("");
   const [bankName, setBankName] = useState("");
@@ -73,13 +73,13 @@ const PayoutDialog = ({ totalBalance }: PayoutDialogProps) => {
               id="amount"
               type="number"
               min={250}
-              max={totalBalance}
+              max={withdrawableBalance}
               value={amountCredit}
               onChange={(e) => setAmountCredit(e.target.value)}
               placeholder="e.g. 500"
             />
             <p className="text-xs text-muted-foreground">
-              Available balance: {totalBalance.toFixed(2)} Credits
+              Available balance: {withdrawableBalance.toFixed(2)} Credits
             </p>
           </div>
           <div className="grid gap-2">
@@ -116,7 +116,7 @@ const PayoutDialog = ({ totalBalance }: PayoutDialogProps) => {
             disabled={
               !amountCredit ||
               Number(amountCredit) < 250 ||
-              Number(amountCredit) > totalBalance ||
+              Number(amountCredit) > withdrawableBalance ||
               !bankName ||
               !accountNumber ||
               !accountHolder ||

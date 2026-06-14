@@ -48,8 +48,19 @@ import { useState } from "react";
 import { useGetUserTransactions } from "@/hooks/use-transactions";
 import { TransactionItem } from "../../../../../types/transaction";
 import { format } from "date-fns";
+import Script from "next/script";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { launchConfettiFrame } from "@/lib/utils";
+
+declare global {
+  interface Window {
+    snap: any;
+  }
+}
 
 const TransactionsPage = () => {
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<string>("all");
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionItem | null>(null);
@@ -73,9 +84,10 @@ const TransactionsPage = () => {
       case "TOPUP_CREDIT":
       case "EARNING_ASSET":
       case "POOL_EARNING":
-      case "DONATION": // assuming donation received
+      case "EARNING_DONATION":
         return <ArrowDownLeft className="h-4 w-4 text-green-500" />;
       case "WITHDRAWAL":
+      case "DONATION":
         return <ArrowUpRight className="h-4 w-4 text-orange-500" />;
       case "SUBSCRIPTION":
         return <RefreshCcw className="h-4 w-4 text-blue-500" />;
@@ -101,7 +113,9 @@ const TransactionsPage = () => {
       case "POOL_EARNING":
         return "Pool Share";
       case "DONATION":
-        return "Donation";
+        return "Sent Coffee";
+      case "EARNING_DONATION":
+        return "Received Coffee";
       default:
         return type;
     }
@@ -122,7 +136,9 @@ const TransactionsPage = () => {
       case "POOL_EARNING":
         return "Monthly Pool Distribution";
       case "DONATION":
-        return `Donation from ${txn.targetUser?.name || "User"}`;
+        return `Sent Coffee to ${txn.targetUser?.name || "User"}`;
+      case "EARNING_DONATION":
+        return `Received Coffee from ${txn.targetUser?.name || "User"}`;
       default:
         return "Transaction";
     }
@@ -138,7 +154,7 @@ const TransactionsPage = () => {
       txn.type === "TOPUP_CREDIT" ||
       txn.type === "EARNING_ASSET" ||
       txn.type === "POOL_EARNING" ||
-      txn.type === "DONATION"
+      txn.type === "EARNING_DONATION"
     ) {
       sign = "+";
     } else {
@@ -157,8 +173,51 @@ const TransactionsPage = () => {
     }
   };
 
+  const handleResumePayment = () => {
+    if (!selectedTransaction?.snapToken || !window.snap) {
+      toast.error("Payment token is not available or expired.");
+      return;
+    }
+
+    setOpen(false);
+
+    window.snap.pay(selectedTransaction.snapToken, {
+      onSuccess: function (result: any) {
+        setOpen(true);
+        const duration = 1.5 * 1000;
+        const end = Date.now() + duration;
+        launchConfettiFrame(end);
+        queryClient.invalidateQueries({ queryKey: ["user-transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["authUser"] });
+        toast.success("Payment completed successfully!");
+      },
+      onPending: function (result: any) {
+        toast.info("Waiting for your payment.");
+      },
+      onError: function (result: any) {
+        toast.error("Payment failed. Please try again.");
+      },
+      onClose: function () {
+        toast.error("Payment cancelled or not completed.");
+      },
+    });
+  };
+
+  const handleDownloadReceipt = () => {
+    if (!selectedTransaction?.id) return;
+    window.open(
+      `/vectyzen/transactions/receipt/${selectedTransaction.id}`,
+      "_blank",
+    );
+  };
+
   return (
     <FadeIn>
+      <Script
+        src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
+        strategy="lazyOnload"
+      />
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Transactions</h1>
@@ -196,7 +255,10 @@ const TransactionsPage = () => {
                   <SelectItem value="BUY_ASSET">Buy Stock</SelectItem>
                   <SelectItem value="WITHDRAWAL">Withdrawal</SelectItem>
                   <SelectItem value="EARNING_ASSET">Asset Sales</SelectItem>
-                  <SelectItem value="DONATION">Donations</SelectItem>
+                  <SelectItem value="DONATION">Sent Coffee</SelectItem>
+                  <SelectItem value="EARNING_DONATION">
+                    Received Coffee
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -222,13 +284,19 @@ const TransactionsPage = () => {
               <TableBody>
                 {transactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-6 text-muted-foreground"
+                    >
                       No transactions found.
                     </TableCell>
                   </TableRow>
                 ) : (
                   transactions.map((txn: TransactionItem) => {
-                    const formattedDate = format(new Date(txn.createdAt), "MMM dd, yyyy");
+                    const formattedDate = format(
+                      new Date(txn.createdAt),
+                      "MMM dd, yyyy",
+                    );
                     const amtInfo = getAmountDisplay(txn);
 
                     return (
@@ -271,7 +339,11 @@ const TransactionsPage = () => {
                         </TableCell>
                         <TableCell
                           className={`text-right font-medium ${
-                            amtInfo.sign === "+" ? "text-green-600" : ""
+                            amtInfo.sign === "+"
+                              ? "text-green-600"
+                              : amtInfo.sign === "-"
+                                ? "text-red-600"
+                                : ""
                           }`}
                         >
                           {amtInfo.text}
@@ -322,14 +394,19 @@ const TransactionsPage = () => {
                       <Clock className="h-4 w-4 text-yellow-500" />
                     )}
                     <span className="text-sm font-medium">
-                      {selectedTransaction.status === "PAID" ? "Completed" : selectedTransaction.status}
+                      {selectedTransaction.status === "PAID"
+                        ? "Completed"
+                        : selectedTransaction.status}
                     </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm text-muted-foreground">Date</span>
                   <span className="text-sm font-medium">
-                    {format(new Date(selectedTransaction.createdAt), "MMM dd, yyyy HH:mm")}
+                    {format(
+                      new Date(selectedTransaction.createdAt),
+                      "MMM dd, yyyy HH:mm",
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
@@ -349,13 +426,16 @@ const TransactionsPage = () => {
                     </span>
                   </div>
                 )}
-                
+
                 {selectedTransaction.stock && (
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-sm text-muted-foreground">
                       Item Name
                     </span>
-                    <span className="text-sm font-medium truncate max-w-[200px]" title={selectedTransaction.stock.title}>
+                    <span
+                      className="text-sm font-medium truncate max-w-[200px]"
+                      title={selectedTransaction.stock.title}
+                    >
                       {selectedTransaction.stock.title}
                     </span>
                   </div>
@@ -365,19 +445,30 @@ const TransactionsPage = () => {
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-sm text-muted-foreground">Plan</span>
                     <span className="text-sm font-medium">
-                      {selectedTransaction.plan.name} {selectedTransaction.billingCycle ? `(${selectedTransaction.billingCycle})` : ""}
+                      {selectedTransaction.plan.name}{" "}
+                      {selectedTransaction.billingCycle
+                        ? `(${selectedTransaction.billingCycle})`
+                        : ""}
                     </span>
                   </div>
                 )}
 
-                {(selectedTransaction.externalId || selectedTransaction.snapToken) && (
+                {(selectedTransaction.externalId ||
+                  selectedTransaction.snapToken) && (
                   <div className="flex justify-between items-center py-2">
                     <span className="text-sm text-muted-foreground">
                       Reference No.
                     </span>
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium font-mono truncate max-w-[150px]" title={selectedTransaction.externalId || selectedTransaction.snapToken!}>
-                        {selectedTransaction.externalId || selectedTransaction.snapToken}
+                      <span
+                        className="text-sm font-medium font-mono truncate max-w-[150px]"
+                        title={
+                          selectedTransaction.externalId ||
+                          selectedTransaction.snapToken!
+                        }
+                      >
+                        {selectedTransaction.externalId ||
+                          selectedTransaction.snapToken}
                       </span>
                       <Button variant="ghost" size="icon" className="h-6 w-6">
                         <Copy className="h-3 w-3 text-muted-foreground" />
@@ -393,8 +484,19 @@ const TransactionsPage = () => {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
-            {/* If there's a receipt, we can implement download later */}
-            <Button disabled>Download Receipt</Button>
+            {selectedTransaction?.status === "PENDING" &&
+            selectedTransaction.snapToken ? (
+              <Button
+                onClick={handleResumePayment}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Pay Now
+              </Button>
+            ) : selectedTransaction?.status === "PAID" ? (
+              <Button onClick={handleDownloadReceipt}>Download Receipt</Button>
+            ) : (
+              <Button disabled>Download Receipt</Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

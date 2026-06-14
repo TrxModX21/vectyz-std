@@ -234,10 +234,10 @@ export const incrementViewController = asyncHandler(
     const stockId = req.params.id as string;
 
     // Get IP Address
-    const ipAddress =
-      (req.headers["x-forwarded-for"] as string) ||
-      req.socket.remoteAddress ||
-      "";
+    const forwardedFor = req.headers["x-forwarded-for"] as string;
+    const ipAddress = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : req.socket.remoteAddress || "";
 
     // Get User ID if logged in (optional)
     const user = res.locals.user;

@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useGetCategories } from "@/hooks/use-categories";
 import { useGetFileTypes } from "@/hooks/use-file-type";
 import { useCreateStock } from "@/hooks/use-stock";
-import { copyToClipboard, uploadToCloudinary, uploadToR2 } from "@/lib/helpers";
+import { copyToClipboard, uploadToCloudinary, uploadToR2, formatPrice } from "@/lib/helpers";
 import { cn } from "@/lib/utils";
 import { addWatermark } from "@/lib/watermark";
 import { AddStockSchema, addStockSchema } from "@/validators/stock.validator";
@@ -40,6 +40,7 @@ import {
   Trash2,
   UploadCloud,
   X,
+  Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -63,8 +64,7 @@ const CreateStockPage = () => {
       keywords: [],
       colors: [],
       isPremium: false,
-      price: 10000,
-      currency: "IDR",
+      price: 10,
       files: [],
     },
   });
@@ -138,7 +138,6 @@ const CreateStockPage = () => {
         colors: values.colors,
         isPremium: values.isPremium,
         price: values.price,
-        currency: values.currency,
         files: filesPayload,
       };
 
@@ -288,11 +287,11 @@ const CreateStockPage = () => {
               {isPremium && (
                 <Field>
                   <FieldLabel htmlFor="price" className="gap-0">
-                    Price (IDR) <span className="text-red-500">*</span>
+                    Price (Credits) <span className="text-red-500">*</span>
                   </FieldLabel>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">
-                      Rp
+                    <span className="absolute left-3 top-2.5 text-sm text-muted-foreground flex items-center justify-center">
+                      <Zap className="h-4 w-4 text-primary fill-primary/20" />
                     </span>
                     <Input
                       className="pl-9"
@@ -307,6 +306,9 @@ const CreateStockPage = () => {
                       {form.formState.errors.price.message}
                     </FieldError>
                   )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Estimated selling price: {formatPrice(form.watch("price") || 0, "IDR")} / {formatPrice(form.watch("price") || 0, "USD", true)}
+                  </p>
                 </Field>
               )}
             </div>

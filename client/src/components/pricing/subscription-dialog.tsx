@@ -1,6 +1,11 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Script from "next/script";
+import { BadgeCheck } from "lucide-react";
+import { Button } from "../ui/button";
+import { cn, launchConfettiFrame } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -19,10 +24,18 @@ import { addDays, format } from "date-fns";
 import { useCreateSubscription } from "@/hooks/use-transactions";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { getCreditValue } from "@/lib/helpers";
+import { useCurrency } from "@/store/use-currency";
 import {
   subscriptionSchema,
   SubscriptionFormInputs,
 } from "@/validators/transaction.validation";
+
+declare global {
+  interface Window {
+    snap: any;
+  }
+}
 
 interface SubscriptionDialogProps {
   planId: string;
@@ -35,9 +48,22 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
     useCreateSubscription();
   const { data: userProfileResponse } = useAuth(); // Hook to get current user data
   const user = userProfileResponse?.user;
+  const { currency } = useCurrency();
+  const queryClient = useQueryClient();
 
   const [paymentMethod, setPaymentMethod] = useState("midtrans");
   const [isAnnual, setIsAnnual] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      const timeout = setTimeout(() => {
+        setIsSuccess(false);
+      }, 300);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen]);
 
   // Form Hook
   const form = useForm<SubscriptionFormInputs>({
@@ -103,10 +129,14 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
     try {
       const billingCycle =
         plan?.durationDays! < 30 ? "ONE_TIME" : isAnnual ? "YEARLY" : "MONTHLY";
+      
+      const paymentAmount = getCreditValue(finalPrice, currency);
 
       const payload = {
         planId,
         billingCycle,
+        amount: paymentAmount,
+        currency: currency,
         phone: formData.phone,
         billingAddress: {
           first_name: formData.name.split(" ")[0],
@@ -120,14 +150,37 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
       } as any;
 
       const result = await createSubscription(payload);
+      const snapToken = result?.data?.snapToken || result?.snapToken;
 
-      if (result?.data?.redirectUrl) {
-        window.location.href = result.data.redirectUrl;
-      } else {
-        toast.success(
-          "Subscription initiated! Check your email or notifications.",
-        );
+      if (!snapToken) {
+        toast.error("Failed to get payment token from server.");
+        return;
       }
+
+      setIsOpen(false);
+
+      window.snap.pay(snapToken, {
+        onSuccess: function (result: any) {
+          setTimeout(() => {
+            setIsOpen(true);
+            setIsSuccess(true);
+            const duration = 1.5 * 1000;
+            const end = Date.now() + duration;
+
+            launchConfettiFrame(end);
+            queryClient.invalidateQueries({ queryKey: ["authUser"] });
+          }, 500);
+        },
+        onPending: function (result: any) {
+          toast.info("Waiting for your payment.");
+        },
+        onError: function (result: any) {
+          toast.error("Payment failed. Please try again.");
+        },
+        onClose: function () {
+          toast.error("Payment cancelled or not completed.");
+        },
+      });
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Failed to create subscription",
@@ -136,9 +189,42 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
   };
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="p-0 overflow-y-scroll gap-0 md:h-auto max-h-[90vh] flex flex-col md:block max-w-5xl!">
+      <DialogContent 
+        className={cn(
+          "p-0 gap-0 max-h-[90vh] flex flex-col md:h-auto",
+          isSuccess ? "sm:max-w-[500px] overflow-hidden justify-center" : "md:block max-w-5xl! overflow-y-scroll"
+        )}
+      >
+        <Script
+          src="https://app.sandbox.midtrans.com/snap/snap.js"
+          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
+          strategy="lazyOnload"
+        />
+
+        {isSuccess ? (
+          <div className="flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 px-8 py-12">
+            <div className="w-24 h-24 bg-green-100/50 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-6 shadow-sm ring-8 ring-green-50 dark:ring-green-900/10">
+              <BadgeCheck
+                size={48}
+                className="text-green-600 dark:text-green-500"
+              />
+            </div>
+            <h2 className="text-2xl text-center font-bold mb-2">
+              Welcome to Premium! 🎉
+            </h2>
+            <p className="text-center text-muted-foreground text-sm mb-8">
+              Your subscription is now active. Enjoy all the premium features and exclusive assets.
+            </p>
+            <Button
+              onClick={() => setIsOpen(false)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-12 rounded-xl"
+            >
+              Start Exploring
+            </Button>
+          </div>
+        ) : (
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col md:flex-row h-full"
@@ -266,6 +352,7 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
             isSubmitting={isSubmitting}
           />
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

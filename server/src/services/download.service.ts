@@ -32,6 +32,60 @@ export const validateDownloadAccess = async (
     throw new NotFoundException("User or Stock not found");
   }
 
+  const now = new Date();
+
+  // --- LAZY EVALUATION: PLAN EXPIRY ---
+  if (
+    user.isPremium &&
+    user.subscriptionExpiresAt &&
+    user.subscriptionExpiresAt < now
+  ) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { isPremium: false },
+    });
+    user.isPremium = false;
+  }
+
+  // --- LAZY EVALUATION: DAILY FREE QUOTA RESET ---
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+
+  if (!user.lastDownloadDate || user.lastDownloadDate < todayStart) {
+    if (user.dailyFreeDownloadCount > 0) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { dailyFreeDownloadCount: 0, lastDownloadDate: now },
+      });
+    }
+    user.dailyFreeDownloadCount = 0;
+    user.lastDownloadDate = now;
+  }
+
+  // --- LAZY EVALUATION: PREMIUM QUOTA RESET ---
+  if (
+    user.isPremium &&
+    user.premiumQuotaResetDate &&
+    user.premiumQuotaResetDate < now &&
+    user.plan
+  ) {
+    const nextReset = new Date(user.premiumQuotaResetDate);
+    // Advance to next valid month
+    while (nextReset < now) {
+      nextReset.setMonth(nextReset.getMonth() + 1);
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        premiumQuota: user.plan.premiumQuota,
+        premiumQuotaResetDate: nextReset,
+      },
+    });
+    user.premiumQuota = user.plan.premiumQuota;
+    user.premiumQuotaResetDate = nextReset;
+  }
+
   // 0. Cek apakah user sudah pernah mendownload aset ini
   const downloadHistory = await prisma.downloadHistory.findFirst({
     where: { stockId, userId },
@@ -84,11 +138,9 @@ export const validateDownloadAccess = async (
     });
 
     const remainingLimit = Math.max(0, 3 - downloadCount);
-
     if (downloadCount >= 3) {
       throw new ForbiddenException("ANONYMOUS_LIMIT_REACHED");
     }
-
     return {
       allowed: true,
       quotaDeduction: false,
@@ -220,16 +272,28 @@ export const recordDownloadHistory = async (
 
   // Transaction untuk History & Deduksi
   await prisma.$transaction(async (tx) => {
-    // 1. Deduksi Kuota / Limit
+    // 1. Deduksi Kuota / Limit & Update lastDownloadDate
     if (reason === "FREE_DAILY_QUOTA") {
       await tx.user.update({
         where: { id: userId },
-        data: { dailyFreeDownloadCount: { increment: 1 } },
+        data: {
+          dailyFreeDownloadCount: { increment: 1 },
+          lastDownloadDate: new Date(),
+        },
       });
     } else if (reason === "PREMIUM_QUOTA") {
       await tx.user.update({
         where: { id: userId },
-        data: { premiumQuota: { decrement: 1 } },
+        data: {
+          premiumQuota: { decrement: 1 },
+          lastDownloadDate: new Date(),
+        },
+      });
+    } else {
+      // Even if unlimited or anonymous, update lastDownloadDate for tracking
+      await tx.user.update({
+        where: { id: userId },
+        data: { lastDownloadDate: new Date() },
       });
     }
 

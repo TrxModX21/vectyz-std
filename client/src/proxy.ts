@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { geolocation } from '@vercel/functions';
 
 const authRoutes = [
   "/auth/sign-in",
@@ -22,7 +23,7 @@ const protectedRoutes = [
   "/vectyzen/create-stock",
 ];
 
-export async function proxy(request: NextRequest) {
+async function handleProxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow API routes to pass through (Better Auth handles its own auth)
@@ -128,6 +129,29 @@ export async function proxy(request: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+export async function proxy(request: NextRequest) {
+  // Execute auth routing logic
+  const response = await handleProxy(request);
+
+  // -- CURRENCY GEO-DETECTION --
+  const currencyCookie = request.cookies.get("USER_CURRENCY");
+  
+  if (!currencyCookie) {
+    // req.geo is available on Vercel Edge. On localhost it might be undefined.
+    const { country } = geolocation(request); 
+    
+    // Default to IDR unless specifically detected as another country
+    const defaultCurrency = (country && country !== "ID") ? "USD" : "IDR";
+    
+    response.cookies.set("USER_CURRENCY", defaultCurrency, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+    });
+  }
+
+  return response;
 }
 
 export const config = {

@@ -27,6 +27,8 @@ import { toast } from "sonner";
 import Script from "next/script";
 import { cn, launchConfettiFrame } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatPrice } from "@/lib/helpers";
+import { useCurrency } from "@/store/use-currency";
 
 declare global {
   interface Window {
@@ -64,23 +66,13 @@ const creditPackages = [
   },
 ];
 
-const formatRupiah = (amount: number) => {
-  return `Rp ${(amount / 1000).toFixed(0)}K`;
-};
-
-const formatFullRupiah = (amount: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
-
 const TopUpDialog = ({ children }: { children: ReactNode }) => {
   const [selectedPackage, setSelectedPackage] = useState(creditPackages[1].id);
   const [customCredits, setCustomCredits] = useState("100");
   const [isOpen, setIsOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const { currency } = useCurrency();
 
   const queryClient = useQueryClient();
 
@@ -100,19 +92,15 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
   const getSelectedDetails = () => {
     if (isCustom) {
       const credits = parseInt(customCredits) || 0;
-      return {
-        credits,
-        price: credits * 1000,
-      };
+      return { credits };
     }
     const pkg = creditPackages.find((p) => p.id === selectedPackage);
-    return pkg
-      ? { credits: pkg.credits, price: pkg.price }
-      : { credits: 0, price: 0 };
+    return pkg ? { credits: pkg.credits } : { credits: 0 };
   };
 
-  const { price, credits: selectedCredits } = getSelectedDetails();
+  const { credits: selectedCredits } = getSelectedDetails();
   const isValidCustomAmount = isCustom ? selectedCredits >= 10 : true;
+  console.log(selectedCredits);
 
   const handleCustomCreditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow numbers
@@ -122,11 +110,11 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
 
   const handleMidtransPayment = () => {
     if (!isValidCustomAmount) {
-      toast.error("Minimum custom top up is 10 Credits (Rp 10.000)");
+      toast.error("Minimum custom top up is 10 Credits");
       return;
     }
 
-    topupCredit(price, {
+    topupCredit(selectedCredits, {
       onSuccess: (data) => {
         // data contains the result from backend
         // Assume data contains { snapToken } based on API response structure
@@ -269,7 +257,7 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                       </div>
                       <div className="text-right">
                         <span className="block font-bold text-xl">
-                          {formatRupiah(pkg.price)}
+                          {formatPrice(pkg.credits, currency, true)}
                         </span>
                       </div>
                     </Label>
@@ -297,7 +285,7 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                             Custom Amount
                           </span>
                           <span className="text-sm text-muted-foreground font-normal">
-                            Enter amount (Rp 1.000/credit)
+                            Enter amount ({formatPrice(1, currency)}/credit)
                           </span>
                         </div>
                       </div>
@@ -317,8 +305,9 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                         />
                         <span className="font-semibold whitespace-nowrap">
                           ={" "}
-                          {formatFullRupiah(
-                            parseInt(customCredits || "0") * 1000,
+                          {formatPrice(
+                            parseInt(customCredits || "0"),
+                            currency,
                           )}
                         </span>
                       </div>
@@ -339,7 +328,8 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                   Total to pay
                 </span>
                 <span className="text-3xl font-bold">
-                  {formatRupiah(price)}
+                  {/* {formatRupiah(price)} */}
+                  {formatPrice(selectedCredits, currency, true)}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3 pb-2 pt-2">
@@ -389,10 +379,16 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                   </span>
                 </Button>
               </div>
-              <p className="text-center text-xs text-muted-foreground">
-                Secured by Midtrans. By continuing, you agree to our Terms of
-                Service.
-              </p>
+              <div className="space-y-2">
+                <p className="text-center text-xs text-muted-foreground">
+                  Purchased credits are added to your shopping balance. They
+                  cannot be withdrawn and are exclusively for platform usage.
+                </p>
+                <p className="text-center text-xs text-muted-foreground/60">
+                  Secured by Midtrans. By continuing, you agree to our Terms of
+                  Service.
+                </p>
+              </div>
             </div>
           </div>
         )}

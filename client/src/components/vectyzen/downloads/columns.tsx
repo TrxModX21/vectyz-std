@@ -49,15 +49,16 @@ export const columns: ColumnDef<History>[] = [
             <div className="flex flex-col">
               <span className="max-w-[220px] truncate font-medium flex items-center gap-2">
                 {row.original.stock.title}
-                {row.original.stock.status !== "DELETED" && (
-                  <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                    Removed
-                  </Badge>
-                )}
               </span>
-              <span className="max-w-[220px] truncate text-xs text-muted-foreground">
-                {row.original.stock.id}
-              </span>
+              {row.original.stock.status === "DELETED" ? (
+                <Badge variant="destructive" className="text-[10px] h-4 px-1">
+                  Removed
+                </Badge>
+              ) : (
+                <span className="max-w-[220px] truncate text-xs text-muted-foreground">
+                  {row.original.stock.id}
+                </span>
+              )}
             </div>
           </TooltipTrigger>
           <TooltipContent>

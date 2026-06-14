@@ -11,6 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import VectyzLogo from "@/components/common/vectyz-logo";
 import {
   Bell,
@@ -26,8 +39,12 @@ import {
   Settings,
   Ticket,
   Zap,
+  Banknote,
+  Wallet,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import MobileNav from "../common/mobile-nav";
@@ -36,8 +53,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ImpersonateMode from "../impersonate-mode";
 import TopUpDialog from "../common/top-up-dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useCurrency } from "@/store/use-currency";
 
 const Header = () => {
+  const router = useRouter();
+  const { currency, setCurrency } = useCurrency();
   const [mounted, setMounted] = useState(false);
   const isLargeDevice = useMediaQuery("(min-width: 1024px)");
 
@@ -85,18 +105,41 @@ const Header = () => {
 
               {user ? (
                 <>
-                  <TopUpDialog>
-                    <Button
-                      variant="outline"
-                      className="hidden md:flex h-9 gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary"
-                    >
-                      <Zap className="h-4 w-4 text-primary fill-primary/20" />
-                      <span className="font-semibold">
-                        {user?.creditBalance || 0}
-                      </span>
-                      <Plus className="h-3 w-3 ml-1 opacity-50" />
-                    </Button>
-                  </TopUpDialog>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <TopUpDialog>
+                            <Button
+                              variant="outline"
+                              className="hidden md:flex h-9 gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary"
+                            >
+                              <Zap className="h-4 w-4 text-primary fill-primary/20" />
+                              <span className="font-semibold">
+                                {Number(user?.creditBalance || 0)}
+                              </span>
+                              <Plus className="h-3 w-3 ml-1 opacity-50" />
+                            </Button>
+                          </TopUpDialog>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="p-3 gap-2 flex flex-col w-48">
+                        <p className="font-semibold text-center border-b pb-2 mb-1">Credit Balance</p>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-muted-foreground flex items-center gap-1">
+                            <Wallet className="h-3 w-3" /> Purchased:
+                          </span>
+                          <span className="font-mono font-medium">{Number(user?.purchasedCredit || 0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-muted-foreground flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" /> Earned:
+                          </span>
+                          <span className="font-mono font-medium">{Number(user?.earnedCredit || 0)}</span>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -138,9 +181,11 @@ const Header = () => {
                       </div>
 
                       <div className="p-2 flex flex-col gap-2">
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-                          Get a plan
-                        </Button>
+                        <Link href="/pricing">
+                          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                            Get a plan
+                          </Button>
+                        </Link>
                         <Link href="/vectyzen">
                           <Button
                             variant="outline"
@@ -183,14 +228,42 @@ const Header = () => {
                       <DropdownMenuGroup className="mt-2">
                         <div className="flex items-center justify-between px-2 py-1.5 text-sm">
                           <div className="flex items-center gap-2">
+                            <Banknote className="size-4" />
+                            Currency
+                          </div>
+                          <Select
+                            value={currency}
+                            onValueChange={(val) => {
+                              setCurrency(val as "IDR" | "USD");
+                              router.refresh();
+                            }}
+                          >
+                            <SelectTrigger className="w-[70px] h-[26px] px-2 py-1 text-xs">
+                              <SelectValue placeholder="Currency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="IDR">IDR</SelectItem>
+                              <SelectItem value="USD">USD</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex items-center justify-between px-2 py-1.5 text-sm">
+                          <div className="flex items-center gap-2">
                             <Languages className="size-4" />
                             Language
                           </div>
-                          <div className="flex items-center gap-2 border rounded-md px-2 py-1 text-xs">
-                            English
-                            <ChevronDown className="size-3" />
-                          </div>
+                          <Select value="EN" disabled={true}>
+                            <SelectTrigger className="w-[100px] h-[26px] px-2 py-1 text-xs">
+                              <SelectValue placeholder="Language" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="EN">English</SelectItem>
+                              <SelectItem value="ID">Indonesia</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
+
                         {/* <div className="flex items-center justify-between px-2 py-1.5 text-sm">
                           <div className="flex items-center gap-2">
                             <Moon className="size-4" />

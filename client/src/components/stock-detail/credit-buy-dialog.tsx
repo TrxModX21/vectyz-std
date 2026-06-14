@@ -42,7 +42,7 @@ const CreditPayDialog = ({
   }, [isOpen]);
 
   const previewFile = stock?.files.find((f) => f.purpose === "PREVIEW");
-  const priceInCredit = Math.ceil(Number(stock?.price) / 1000);
+  const priceInCredit = Number(stock?.price) || 0;
   const isUserHaveCredit = Number(user?.creditBalance) >= priceInCredit;
 
   const handlePay = () => {

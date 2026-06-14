@@ -60,7 +60,7 @@ const DashboardPage = () => {
     <FadeIn>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Link href="/vectyzen/stocks/upload">
+        <Link href="/vectyzen/create-stock">
           <Button>
             <Upload className="mr-2 h-4 w-4" /> Upload New Asset
           </Button>

@@ -10,7 +10,7 @@ export const columns: ColumnDef<TransactionHistoryItem>[] = [
     cell: ({ row }) => {
       const type = row.original.type;
       const stockTitle = row.original.stock?.title;
-      const userName = row.original.user?.name;
+      const userName = row.original.targetUser?.name;
 
       let description = "Transaction";
 
@@ -21,8 +21,8 @@ export const columns: ColumnDef<TransactionHistoryItem>[] = [
         case "POOL_EARNING":
           description = "Monthly Pool Share";
           break;
-        case "DONATION":
-          description = `Donation from ${userName || "User"}`;
+        case "EARNING_DONATION":
+          description = `Coffee from ${userName || "User"}`;
           break;
         case "WITHDRAWAL":
           description = "Withdrawal to Bank Account";
@@ -44,7 +44,7 @@ export const columns: ColumnDef<TransactionHistoryItem>[] = [
       switch (type) {
         case "EARNING_ASSET":
         case "POOL_EARNING":
-        case "DONATION":
+        case "EARNING_DONATION":
           label = "Credit";
           variant = "secondary";
           break;

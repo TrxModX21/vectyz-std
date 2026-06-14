@@ -4,6 +4,7 @@ export type TransactionType =
   | "BUY_ASSET"
   | "WITHDRAWAL"
   | "DONATION"
+  | "EARNING_DONATION"
   | "EARNING_ASSET"
   | "POOL_EARNING";
 

@@ -115,6 +115,45 @@ export const priceToCredit = (amount: number) => {
   return Math.ceil(amount / 1000);
 };
 
+// Getting raw number from credit convertion
+export const getCreditValue = (
+  creditAmount: number,
+  currency: "IDR" | "USD",
+) => {
+  return currency === "IDR" ? creditAmount * 1000 : creditAmount * 0.05;
+};
+
+// Credit to currency convertion
+export function formatPrice(
+  creditAmount: number,
+  currency: "IDR" | "USD",
+  compact: boolean = false,
+) {
+  if (currency === "IDR") {
+    const value = creditAmount * 1000;
+    if (compact) {
+      if (value >= 1000000) {
+        return `Rp ${(value / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
+      } else if (value >= 1000) {
+        return `Rp ${(value / 1000).toFixed(0)}K`;
+      }
+      return `Rp ${value}`;
+    }
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(value);
+  } else {
+    const value = creditAmount * 0.05;
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      ...(compact && { notation: "compact", maximumFractionDigits: 1 }),
+    }).format(value);
+  }
+}
+
 export const formatNumber = (num: number) => {
   return new Intl.NumberFormat("id-ID").format(num);
 };

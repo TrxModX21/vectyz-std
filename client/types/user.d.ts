@@ -21,6 +21,8 @@ interface User {
   totalFollowers: number;
   totalFollowing: number;
   creditBalance: string;
+  purchasedCredit: string;
+  earnedCredit: string;
   isPremium: boolean;
   planId: string;
   subscriptionExpiresAt: string;
