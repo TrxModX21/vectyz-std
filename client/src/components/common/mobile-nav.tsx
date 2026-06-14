@@ -21,24 +21,20 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import VectyzLogo from "@/components/common/vectyz-logo";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Users, CircleIcon, CircleCheckIcon } from "lucide-react";
 import { useState } from "react";
-
-const dummyMenu = [
-  "item 1",
-  "item 2",
-  "item 3",
-  "item 4",
-  "item 5",
-  "item 6",
-  "item 7",
-  "item 8",
-  "item 9",
-  "item 10",
-];
+import { useGetFileTypes } from "@/hooks/use-file-type";
+import Link from "next/link";
 
 const MobileNav = () => {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
+
+  const { data: fileTypeResponse } = useGetFileTypes({
+    sort: "asc",
+    includeCategories: true,
+    limit: 20,
+  });
+  const fileTypes = fileTypeResponse?.fileTypes ?? [];
 
   return (
     <Drawer
@@ -70,138 +66,99 @@ const MobileNav = () => {
 
         <ScrollArea className="w-full max-h-[80vh]">
           <Accordion type="multiple" className="w-full px-4">
-            <AccordionItem value="item-1">
+            <AccordionItem value="explore">
               <AccordionTrigger>Explore</AccordionTrigger>
               <AccordionContent>
-                <ul className="flex flex-col gap-3 text-balance pl-4">
+                <ul className="flex flex-col gap-4 text-balance pl-4 pt-2">
                   <li className="flex items-center gap-2">
-                    <Menu />
-                    <Label>Members</Label>
+                    <Users className="size-4" />
+                    <Link href="/members" onClick={() => setIsMobileNavOpen(false)}>
+                      <Label className="cursor-pointer">Vectyzen</Label>
+                    </Link>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Menu />
-                    <Label>Collections</Label>
+                    <CircleIcon className="size-4" />
+                    <Link href="#" onClick={() => setIsMobileNavOpen(false)}>
+                      <Label className="cursor-pointer">Collections</Label>
+                    </Link>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Menu />
-                    <Label>Premium</Label>
+                    <CircleCheckIcon className="size-4" />
+                    <Link href="#" onClick={() => setIsMobileNavOpen(false)}>
+                      <Label className="cursor-pointer">Premium</Label>
+                    </Link>
                   </li>
 
                   <Separator />
 
                   <li>
-                    <Label>Featured</Label>
+                    <Link href="#" onClick={() => setIsMobileNavOpen(false)}>
+                      <Label className="cursor-pointer">Featured</Label>
+                    </Link>
                   </li>
                   <li>
-                    <Label>Popular</Label>
+                    <Link href="#" onClick={() => setIsMobileNavOpen(false)}>
+                      <Label className="cursor-pointer">Popular</Label>
+                    </Link>
                   </li>
                   <li>
-                    <Label>Most downloads</Label>
+                    <Link href="#" onClick={() => setIsMobileNavOpen(false)}>
+                      <Label className="cursor-pointer">Most downloads</Label>
+                    </Link>
                   </li>
                 </ul>
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="item-2">
-              <AccordionTrigger>Photos</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-3 text-balance pl-4">
-                <div className="flex flex-col gap-1">
-                  <Label>Category Name</Label>
-                  <Separator className="w-20!" />
-                </div>
+            {fileTypes.map((fileType) => (
+              <AccordionItem key={fileType.id} value={fileType.id}>
+                <AccordionTrigger>{fileType.name}</AccordionTrigger>
+                <AccordionContent className="flex flex-col gap-3 text-balance pl-4">
+                  <div className="flex flex-col gap-1 pt-2">
+                    <Label>{fileType.name} Categories</Label>
+                    <Separator className="w-20!" />
+                  </div>
 
-                {dummyMenu.map((menu, index) => (
-                  <li key={index} className="list-none">
-                    <Label>{menu}</Label>
-                  </li>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-3">
-              <AccordionTrigger>Vector</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-3 text-balance pl-4">
-                <div className="flex flex-col gap-1">
-                  <Label>Category Name</Label>
-                  <Separator className="w-20!" />
-                </div>
-
-                {dummyMenu.map((menu, index) => (
-                  <li key={index} className="list-none">
-                    <Label>{menu}</Label>
-                  </li>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-4">
-              <AccordionTrigger>Slide</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-3 text-balance pl-4">
-                <div className="flex flex-col gap-1">
-                  <Label>Category Name</Label>
-                  <Separator className="w-20!" />
-                </div>
-
-                {dummyMenu.map((menu, index) => (
-                  <li key={index} className="list-none">
-                    <Label>{menu}</Label>
-                  </li>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-5">
-              <AccordionTrigger>AI</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-3 text-balance pl-4">
-                <div className="flex flex-col gap-1">
-                  <Label>Category Name</Label>
-                  <Separator className="w-20!" />
-                </div>
-
-                {dummyMenu.map((menu, index) => (
-                  <li key={index} className="list-none">
-                    <Label>{menu}</Label>
-                  </li>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-6">
-              <AccordionTrigger>UI/UX</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-3 text-balance pl-4">
-                <div className="flex flex-col gap-1">
-                  <Label>Category Name</Label>
-                  <Separator className="w-20!" />
-                </div>
-
-                {dummyMenu.map((menu, index) => (
-                  <li key={index} className="list-none">
-                    <Label>{menu}</Label>
-                  </li>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-7">
-              <AccordionTrigger>PNGs</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-3 text-balance pl-4">
-                <div className="flex flex-col gap-1">
-                  <Label>Category Name</Label>
-                  <Separator className="w-20!" />
-                </div>
-
-                {dummyMenu.map((menu, index) => (
-                  <li key={index} className="list-none">
-                    <Label>{menu}</Label>
-                  </li>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
+                  <ul className="flex flex-col gap-3">
+                    {fileType.categories && fileType.categories.length > 0 ? (
+                      <>
+                        {fileType.categories.map((category: any) => (
+                          <li key={category.id} className="list-none">
+                            <Link 
+                              href={`/explore/${fileType.slug}/${category.slug}`} 
+                              onClick={() => setIsMobileNavOpen(false)}
+                            >
+                              <Label className="cursor-pointer text-muted-foreground">{category.name}</Label>
+                            </Link>
+                          </li>
+                        ))}
+                        <li className="list-none">
+                          <Link 
+                            href={`/explore/${fileType.slug}`} 
+                            onClick={() => setIsMobileNavOpen(false)}
+                          >
+                            <Label className="cursor-pointer text-primary font-semibold">See all...</Label>
+                          </Link>
+                        </li>
+                      </>
+                    ) : (
+                      <div className="text-sm text-muted-foreground py-2">
+                        No categories found.
+                      </div>
+                    )}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
 
           <div className="flex flex-col gap-4 px-4 mt-8">
-            <Button>Plans</Button>
-            <Button variant="secondary">Sign in</Button>
+            <Button asChild onClick={() => setIsMobileNavOpen(false)}>
+              <Link href="/pricing">Plans</Link>
+            </Button>
+            <Button variant="secondary" asChild onClick={() => setIsMobileNavOpen(false)}>
+              <Link href="/auth/sign-in">Sign in</Link>
+            </Button>
           </div>
         </ScrollArea>
 

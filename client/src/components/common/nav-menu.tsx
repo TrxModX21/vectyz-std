@@ -25,7 +25,9 @@ const HeaderNavigationMenu = () => {
     <NavigationMenu viewport={false} className="hidden xl:block">
       <NavigationMenuList className="flex-wrap">
         <NavigationMenuItem className="hidden md:block">
-          <NavigationMenuTrigger useIcon={false}>Explore</NavigationMenuTrigger>
+          <NavigationMenuTrigger useIcon={false} className="bg-transparent">
+            Explore
+          </NavigationMenuTrigger>
           <NavigationMenuContent className="bg-background!">
             <ul className="grid w-[200px] gap-4">
               <li>
@@ -68,7 +70,7 @@ const HeaderNavigationMenu = () => {
 
         {fileTypes.map((fileType) => (
           <NavigationMenuItem key={fileType.id}>
-            <NavigationMenuTrigger useIcon={false}>
+            <NavigationMenuTrigger useIcon={false} className="bg-transparent">
               {fileType.name}
             </NavigationMenuTrigger>
             <NavigationMenuContent className="bg-background!">

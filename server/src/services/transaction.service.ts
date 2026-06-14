@@ -8,26 +8,29 @@ import {
   PayoutStatus,
 } from "../generated/prisma/client";
 import { config } from "../utils/app.config";
+import { getCreditValue } from "../utils/helper";
 
 // 1. TOPUP CREDIT
 export const createTopupTransaction = async (
   userId: string,
-  amount: number,
+  creditAmount: number,
 ) => {
-  if (amount < 10000) {
-    throw new BadRequestException("Minimum topup is Rp 10.000");
+  if (creditAmount < 10) {
+    throw new BadRequestException("Minimum topup is 10 Credits");
   }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new NotFoundException("User not found");
+
+  const amountRupiah = getCreditValue(creditAmount, "IDR");
 
   // Create Transaction Record (Pending)
   const transaction = await prisma.transaction.create({
     data: {
       userId,
       type: TransactionType.TOPUP_CREDIT,
-      amount: amount,
-      creditAmount: amount / 1000, // 1 Credit = Rp 1.000
+      amount: amountRupiah,
+      creditAmount: creditAmount,
       status: PaymentStatus.PENDING,
     },
   });
@@ -35,7 +38,7 @@ export const createTopupTransaction = async (
   // Get Snap Token
   const snap = await createSnapTransaction({
     order_id: transaction.id,
-    gross_amount: amount,
+    gross_amount: amountRupiah,
     customer_details: {
       first_name: user.name,
       email: user.email,
@@ -43,9 +46,9 @@ export const createTopupTransaction = async (
     item_details: [
       {
         id: "TOPUP-CREDIT",
-        price: amount,
+        price: amountRupiah,
         quantity: 1,
-        name: `${amount / 1000} Credits`,
+        name: `${creditAmount} Credits`,
       },
     ],
   });
@@ -86,21 +89,25 @@ export const createSubscriptionTransaction = async (
   if (!plan) throw new NotFoundException("Plan not found");
 
   // Determine Price & Period based on Cycle
-  let amount = plan.price;
+  let amount = getCreditValue(plan.price, "IDR");
+  let creditAmount = plan.price;
   let periodDays = 30; // Default Monthly
   let itemName = `${plan.name} Subscription (Monthly)`;
 
   if (billingCycle === "YEARLY") {
     if (plan.priceInYear) {
-      amount = plan.priceInYear;
+      amount = getCreditValue(plan.priceInYear, "IDR");
+      creditAmount = plan.priceInYear;
     } else {
       // Fallback if priceInYear not set: 12 * price (or handle error)
-      amount = plan.price * 12;
+      amount = getCreditValue(plan.price * 12, "IDR");
+      creditAmount = plan.price * 12;
     }
     periodDays = 365;
     itemName = `${plan.name} Subscription (Yearly)`;
   } else if (billingCycle === "ONE_TIME") {
-    amount = plan.price;
+    amount = getCreditValue(plan.price, "IDR");
+    creditAmount = plan.price;
     periodDays = plan.durationDays; // Use plan duration (e.g. 2 days)
     itemName = `${plan.name} (One Time Pass)`;
   }
@@ -111,6 +118,7 @@ export const createSubscriptionTransaction = async (
       userId,
       type: TransactionType.SUBSCRIPTION,
       amount: amount,
+      creditAmount: creditAmount,
       planId: plan.id,
       status: PaymentStatus.PENDING,
       billingCycle: billingCycle,
@@ -161,21 +169,23 @@ export const createDirectPurchaseTransaction = async (
   if (!user) throw new NotFoundException("User not found");
   if (!stock) throw new NotFoundException("Stock not found");
 
+  let amount = getCreditValue(Number(stock.price), "IDR");
+
   // Create Transaction Record
   const transaction = await prisma.transaction.create({
     data: {
       userId,
-      type: TransactionType.BUY_ASSET,
-      amount: Number(stock.price),
       stockId: stock.id,
+      type: TransactionType.BUY_ASSET,
       status: PaymentStatus.PENDING,
+      amount: amount,
     },
   });
 
   // Get Snap Token
   const snap = await createSnapTransaction({
     order_id: transaction.id,
-    gross_amount: Number(stock.price),
+    gross_amount: amount,
     customer_details: {
       first_name: user.name,
       email: user.email,
@@ -183,7 +193,7 @@ export const createDirectPurchaseTransaction = async (
     item_details: [
       {
         id: stock.id,
-        price: Number(stock.price),
+        price: amount,
         quantity: 1,
         name: `Asset: ${stock.title.substring(0, 20)}...`,
       },
@@ -218,8 +228,8 @@ export const createDonationTransactionGateway = async (
   if (!user) throw new NotFoundException("User not found");
   if (!targetUser) throw new NotFoundException("Target user not found");
   if (!stock) throw new NotFoundException("Stock not found");
-  if (amount < 11000)
-    throw new BadRequestException("Minimum donation is Rp 11.000");
+  if (amount < 10000)
+    throw new BadRequestException("Minimum donation is Rp 10.000");
 
   // Create Transaction Record
   const transaction = await prisma.transaction.create({
@@ -263,6 +273,129 @@ export const createDonationTransactionGateway = async (
   };
 };
 
+// 3b. DONATION (Internal Credit)
+export const processDonationWithCredit = async (
+  userId: string,
+  stockId: string,
+  targetUserId: string,
+  amountInRupiah: number,
+) => {
+  return await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    const targetUser = await tx.user.findUnique({
+      where: { id: targetUserId },
+    });
+    const stock = await tx.stock.findUnique({ where: { id: stockId } });
+
+    if (!user) throw new NotFoundException("User not found");
+    if (!targetUser) throw new NotFoundException("Target user not found");
+    if (!stock) throw new NotFoundException("Stock not found");
+    if (amountInRupiah < 11000)
+      throw new BadRequestException("Minimum donation is Rp 11.000");
+
+    if (userId === targetUserId) {
+      throw new BadRequestException("You cannot donate to yourself");
+    }
+
+    const amountInCredit = amountInRupiah / 1000;
+
+    if (user.creditBalance.lt(amountInCredit)) {
+      throw new BadRequestException("Insufficient credit balance");
+    }
+
+    // 1. Potong Credit User
+    const userPurchased = Number(user.purchasedCredit);
+    let deductPurchased = 0;
+    let deductEarned = 0;
+
+    if (userPurchased >= amountInCredit) {
+      deductPurchased = amountInCredit;
+    } else {
+      deductPurchased = userPurchased;
+      deductEarned = amountInCredit - userPurchased;
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        creditBalance: { decrement: amountInCredit },
+        purchasedCredit: { decrement: deductPurchased },
+        earnedCredit: { decrement: deductEarned },
+      },
+    });
+
+    // 2. Distribusi Revenue (95% Creator, 5% Platform)
+    const creatorShareRupiah = amountInRupiah * 0.95;
+    const rawCredit = creatorShareRupiah / 1000;
+    const creatorShare = Math.floor(rawCredit * 100) / 100;
+    const platformShare = amountInCredit - creatorShare;
+
+    // Tambah Saldo Creator
+    await tx.user.update({
+      where: { id: targetUserId },
+      data: {
+        creditBalance: { increment: creatorShare },
+        earnedCredit: { increment: creatorShare },
+      },
+    });
+
+    if (config.PLATFORM_FEE_USER_ID) {
+      await tx.user.update({
+        where: { id: config.PLATFORM_FEE_USER_ID },
+        data: {
+          creditBalance: { increment: platformShare },
+          earnedCredit: { increment: platformShare },
+        },
+      });
+    }
+
+    // 3. Catat Transaksi Pembeli
+    const transaction = await tx.transaction.create({
+      data: {
+        userId,
+        targetUserId,
+        stockId: stock.id,
+        type: TransactionType.DONATION,
+        status: PaymentStatus.PAID,
+        amount: amountInRupiah,
+        creditAmount: amountInCredit, // User keluar credit
+        paymentMethod: "CREDIT_BALANCE",
+      },
+    });
+
+    // 4. Catat Transaksi EARNING_DONATION & PLATFORM_FEE
+    await tx.transaction.create({
+      data: {
+        userId: targetUserId,
+        targetUserId: userId,
+        stockId: stock.id,
+        type: TransactionType.EARNING_DONATION,
+        status: PaymentStatus.PAID,
+        amount: amountInRupiah,
+        creditAmount: creatorShare,
+        paymentMethod: "SYSTEM",
+      },
+    });
+
+    if (config.PLATFORM_FEE_USER_ID) {
+      await tx.transaction.create({
+        data: {
+          userId: config.PLATFORM_FEE_USER_ID,
+          targetUserId,
+          stockId: stock.id,
+          type: TransactionType.PLATFORM_FEE,
+          status: PaymentStatus.PAID,
+          amount: amountInRupiah,
+          creditAmount: platformShare,
+          paymentMethod: "SYSTEM",
+        },
+      });
+    }
+
+    return transaction;
+  });
+};
+
 // 4. DIRECT PURCHASE (Internal Credit)
 export const processDirectPurchaseWithCredit = async (
   userId: string,
@@ -289,24 +422,39 @@ export const processDirectPurchaseWithCredit = async (
         status: PaymentStatus.PAID,
       },
     });
-
     if (existingPurchase) {
       throw new BadRequestException("You already own this asset");
     }
 
     // Calculate Price in Credits (Asumsi stock.price masih dalam rupiah, perlu konversi atau pakai field khusus credit)
     // Untuk simplifikasi, kita anggap stock.price adalah Rupiah, konversi ke Credit / 1000.
-    const priceInRupiah = Number(stock.price);
-    const priceInCredit = Math.ceil(priceInRupiah / 1000);
+
+    const priceInCredit = Number(stock.price);
+    const priceInRupiah = priceInCredit * 1000;
 
     if (user.creditBalance.lt(priceInCredit)) {
       throw new BadRequestException("Insufficient credit balance");
     }
 
     // 1. Potong Credit User
+    const userPurchased = Number(user.purchasedCredit);
+    let deductPurchased = 0;
+    let deductEarned = 0;
+
+    if (userPurchased >= priceInCredit) {
+      deductPurchased = priceInCredit;
+    } else {
+      deductPurchased = userPurchased;
+      deductEarned = priceInCredit - userPurchased;
+    }
+
     await tx.user.update({
       where: { id: userId },
-      data: { creditBalance: { decrement: priceInCredit } },
+      data: {
+        creditBalance: { decrement: priceInCredit },
+        purchasedCredit: { decrement: deductPurchased },
+        earnedCredit: { decrement: deductEarned },
+      },
     });
 
     // 2. Distribusi Revenue (75% Creator, 25% Platform)
@@ -316,13 +464,19 @@ export const processDirectPurchaseWithCredit = async (
     // Tambah Saldo Creator
     await tx.user.update({
       where: { id: stock.userId },
-      data: { creditBalance: { increment: creatorShare } },
+      data: {
+        creditBalance: { increment: creatorShare },
+        earnedCredit: { increment: creatorShare },
+      },
     });
 
     if (config.PLATFORM_FEE_USER_ID) {
       await tx.user.update({
         where: { id: config.PLATFORM_FEE_USER_ID },
-        data: { creditBalance: { increment: platformShare } },
+        data: {
+          creditBalance: { increment: platformShare },
+          earnedCredit: { increment: platformShare },
+        },
       });
     }
 
@@ -334,7 +488,7 @@ export const processDirectPurchaseWithCredit = async (
         type: TransactionType.BUY_ASSET,
         status: PaymentStatus.PAID,
         amount: priceInRupiah,
-        creditAmount: -priceInCredit, // User keluar credit
+        creditAmount: priceInCredit, // User keluar credit
         paymentMethod: "CREDIT_BALANCE",
       },
     });
@@ -448,7 +602,10 @@ export const handlePaymentNotification = async (notificationBody: any) => {
       ) {
         await tx.user.update({
           where: { id: user.id },
-          data: { creditBalance: { increment: transaction.creditAmount } },
+          data: {
+            creditBalance: { increment: transaction.creditAmount },
+            purchasedCredit: { increment: transaction.creditAmount },
+          },
         });
       }
 
@@ -488,7 +645,6 @@ export const handlePaymentNotification = async (notificationBody: any) => {
               isPremium: true,
               planId: plan.id,
               billingCycle: transaction.billingCycle || "MONTHLY",
-
               subscriptionExpiresAt: subscriptionExpiresAt,
               premiumQuota: plan.premiumQuota,
               premiumQuotaResetDate: nextQuotaReset,
@@ -497,9 +653,9 @@ export const handlePaymentNotification = async (notificationBody: any) => {
 
           // --- MONTHLY POOL DISTRIBUTION ---
           // 50% Premium Pool, 10% Free Pool
-          const amount = Number(transaction.amount); // Ensure number
-          const premiumShare = amount * 0.5;
-          const freeShare = amount * 0.1;
+          const baseCredit = Number(transaction.creditAmount || 0); // Use Credit
+          const premiumShare = baseCredit * 0.5;
+          const freeShare = baseCredit * 0.1;
 
           const currentMonth = now.getMonth() + 1; // 1-12
           const currentYear = now.getFullYear();
@@ -534,9 +690,10 @@ export const handlePaymentNotification = async (notificationBody: any) => {
         const stock = await tx.stock.findUnique({
           where: { id: transaction.stockId },
         });
+
         if (stock) {
-          const priceInRupiah = Number(stock.price);
-          const priceInCredit = Math.ceil(priceInRupiah / 1000);
+          const priceInCredit = Number(stock.price);
+          const priceInRupiah = priceInCredit * 1000;
 
           // Distribusi Creator & Platform
           const creatorShare = priceInCredit * 0.75;
@@ -544,13 +701,19 @@ export const handlePaymentNotification = async (notificationBody: any) => {
 
           await tx.user.update({
             where: { id: stock.userId },
-            data: { creditBalance: { increment: creatorShare } },
+            data: {
+              creditBalance: { increment: creatorShare },
+              earnedCredit: { increment: creatorShare },
+            },
           });
 
           if (config.PLATFORM_FEE_USER_ID) {
             await tx.user.update({
               where: { id: config.PLATFORM_FEE_USER_ID },
-              data: { creditBalance: { increment: platformShare } },
+              data: {
+                creditBalance: { increment: platformShare },
+                earnedCredit: { increment: platformShare },
+              },
             });
           }
 
@@ -610,8 +773,52 @@ export const handlePaymentNotification = async (notificationBody: any) => {
 
           await tx.user.update({
             where: { id: targetUser.id },
-            data: { creditBalance: { increment: finalCredit } },
+            data: {
+              creditBalance: { increment: finalCredit },
+              earnedCredit: { increment: finalCredit },
+            },
           });
+
+          // Catat Transaksi EARNING_DONATION
+          await tx.transaction.create({
+            data: {
+              userId: targetUser.id,
+              targetUserId: transaction.userId,
+              stockId: transaction.stockId,
+              type: TransactionType.EARNING_DONATION,
+              status: PaymentStatus.PAID,
+              amount: donationInRupiah,
+              creditAmount: finalCredit,
+              paymentMethod: notificationBody.payment_type || "SYSTEM",
+              externalId: transaction.externalId,
+            },
+          });
+
+          if (config.PLATFORM_FEE_USER_ID) {
+            const platformFeeCredit = donationInRupiah / 1000 - finalCredit;
+
+            await tx.user.update({
+              where: { id: config.PLATFORM_FEE_USER_ID },
+              data: {
+                creditBalance: { increment: platformFeeCredit },
+                earnedCredit: { increment: platformFeeCredit },
+              },
+            });
+
+            await tx.transaction.create({
+              data: {
+                userId: config.PLATFORM_FEE_USER_ID,
+                targetUserId: targetUser.id,
+                stockId: transaction.stockId,
+                type: TransactionType.PLATFORM_FEE,
+                status: PaymentStatus.PAID,
+                amount: donationInRupiah,
+                creditAmount: platformFeeCredit,
+                paymentMethod: notificationBody.payment_type || "SYSTEM",
+                externalId: transaction.externalId,
+              },
+            });
+          }
         }
       }
     }
@@ -707,7 +914,7 @@ export const findOneTransaction = async (transactionId: string) => {
 export const getEarningsOverviewService = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { creditBalance: true },
+    select: { creditBalance: true, earnedCredit: true },
   });
 
   if (!user) throw new NotFoundException("User not found");
@@ -730,9 +937,9 @@ export const getEarningsOverviewService = async (userId: string) => {
   // This Month Direct Earnings
   const thisMonthTransactions = await prisma.transaction.findMany({
     where: {
-      targetUserId: userId,
+      userId,
       type: {
-        in: [TransactionType.EARNING_ASSET, TransactionType.DONATION],
+        in: [TransactionType.EARNING_ASSET, TransactionType.EARNING_DONATION],
       },
       status: PaymentStatus.PAID,
       createdAt: {
@@ -818,6 +1025,7 @@ export const getEarningsOverviewService = async (userId: string) => {
 
   return {
     totalBalance: Number(user.creditBalance),
+    withdrawableBalance: Number(user.earnedCredit),
     thisMonthEarnings,
     estimatedPoolShare,
     nextPayoutDate: nextPayoutDate.toISOString(),
@@ -832,12 +1040,12 @@ export const getEarningsHistoryService = async (userId: string, query: any) => {
   const where: Prisma.TransactionWhereInput = {
     OR: [
       {
-        targetUserId: userId,
+        userId,
         type: {
           in: [
             TransactionType.EARNING_ASSET,
             TransactionType.POOL_EARNING,
-            TransactionType.DONATION,
+            TransactionType.EARNING_DONATION,
           ],
         },
       },
@@ -888,19 +1096,20 @@ export const requestPayoutService = async (
     const amountToWithdraw = Number(data.amountCredit);
 
     if (amountToWithdraw < 250) {
-      throw new BadRequestException(
-        "Minimum payout is 250 Credits (Rp 250.000)",
-      );
+      throw new BadRequestException("Minimum payout is 250 Credits");
     }
 
-    if (Number(user.creditBalance) < amountToWithdraw) {
-      throw new BadRequestException("Insufficient credit balance");
+    if (Number(user.earnedCredit) < amountToWithdraw) {
+      throw new BadRequestException("Insufficient withdrawable balance");
     }
 
     // 1. Potong saldo user
     await tx.user.update({
       where: { id: userId },
-      data: { creditBalance: { decrement: amountToWithdraw } },
+      data: {
+        creditBalance: { decrement: amountToWithdraw }, // Kurangi total saldo tampilan
+        earnedCredit: { decrement: amountToWithdraw }, // Kurangi saldo bisa ditarik
+      },
     });
 
     const exchangeRate = 1000;

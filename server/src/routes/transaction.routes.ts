@@ -7,6 +7,7 @@ import {
   buyAssetDirectController,
   buyAssetWithCreditController,
   createDonationGatewayController,
+  createDonationCreditController,
   paymentNotificationController,
   getAllTransactionsController,
   getUserTransactionsController,
@@ -25,6 +26,7 @@ transactionRoutes.post("/subscribe", requireAuth, createSubscriptionController);
 transactionRoutes.post("/buy-asset/gateway", requireAuth, buyAssetDirectController);
 transactionRoutes.post("/buy-asset/credit", requireAuth, buyAssetWithCreditController);
 transactionRoutes.post("/donate/gateway", requireAuth, createDonationGatewayController);
+transactionRoutes.post("/donate/credit", requireAuth, createDonationCreditController);
 
 // Earnings & Payouts (Must be before /:id)
 transactionRoutes.get("/earnings/overview", requireAuth, getEarningsOverviewController);

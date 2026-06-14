@@ -85,9 +85,9 @@ export const verifyPaymentNotification = async (notificationBody: any) => {
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
 
-    console.log(
-      `Transaction Check: ${orderId} -> ${transactionStatus} (${fraudStatus})`,
-    );
+    // console.log(
+    //   `Transaction Check: ${orderId} -> ${transactionStatus} (${fraudStatus})`,
+    // );
 
     let isPaid = false;
     let isCancelled = false;

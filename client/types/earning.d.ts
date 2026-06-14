@@ -1,5 +1,6 @@
 export interface EarningsOverview {
   totalBalance: number;
+  withdrawableBalance: number;
   thisMonthEarnings: number;
   estimatedPoolShare: number;
   nextPayoutDate: string;

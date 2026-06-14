@@ -13,25 +13,27 @@ import {
   findUserTransactions,
   handlePaymentNotification,
   processDirectPurchaseWithCredit,
+  processDonationWithCredit,
   getEarningsOverviewService,
   getEarningsHistoryService,
   requestPayoutService,
 } from "../services/transaction.service";
+import { getEarningsHistorySchema, requestPayoutSchema } from "../validation/transaction.validation";
 
 export const createTopupController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = res.locals.user?.id;
-    const { amount } = req.body;
+    const { creditAmount } = req.body;
 
     if (!userId) {
       throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
     }
 
-    if (!amount) {
-      throw new AppError("Amount is required", HTTPSTATUS.BAD_REQUEST);
+    if (!creditAmount) {
+      throw new AppError("Credit Amount is required", HTTPSTATUS.BAD_REQUEST);
     }
 
-    const result = await createTopupTransaction(userId, Number(amount));
+    const result = await createTopupTransaction(userId, Number(creditAmount));
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Topup transaction created",
@@ -54,7 +56,10 @@ export const createSubscriptionController = asyncHandler(
       throw new AppError("Plan ID is required", HTTPSTATUS.BAD_REQUEST);
     }
 
-    if (billingCycle && !["MONTHLY", "YEARLY", "ONE_TIME"].includes(billingCycle)) {
+    if (
+      billingCycle &&
+      !["MONTHLY", "YEARLY", "ONE_TIME"].includes(billingCycle)
+    ) {
       throw new AppError(
         "Invalid billing cycle. Must be MONTHLY, YEARLY or ONE_TIME",
         HTTPSTATUS.BAD_REQUEST,
@@ -118,7 +123,10 @@ export const createDonationGatewayController = asyncHandler(
     }
 
     if (!amount || Number(amount) < 11000) {
-      throw new AppError("Minimum donation amount is Rp 11.000", HTTPSTATUS.BAD_REQUEST);
+      throw new AppError(
+        "Minimum donation amount is Rp 11.000",
+        HTTPSTATUS.BAD_REQUEST,
+      );
     }
 
     const result = await createDonationTransactionGateway(
@@ -130,6 +138,45 @@ export const createDonationGatewayController = asyncHandler(
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Donation transaction created",
+      timestamp: new Date().toISOString(),
+      data: result,
+    });
+  },
+);
+
+export const createDonationCreditController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = res.locals.user?.id;
+    const { targetUserId, amount, stockId } = req.body;
+
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
+    }
+
+    if (!targetUserId) {
+      throw new AppError("Target user ID is required", HTTPSTATUS.BAD_REQUEST);
+    }
+
+    if (!stockId) {
+      throw new AppError("Stock ID is required", HTTPSTATUS.UNAUTHORIZED);
+    }
+
+    if (!amount || Number(amount) < 11000) {
+      throw new AppError(
+        "Minimum donation amount is Rp 11.000",
+        HTTPSTATUS.BAD_REQUEST,
+      );
+    }
+
+    const result = await processDonationWithCredit(
+      userId,
+      stockId,
+      targetUserId,
+      Number(amount),
+    );
+
+    return res.status(HTTPSTATUS.CREATED).json({
+      message: "Donation transaction via credit created",
       timestamp: new Date().toISOString(),
       data: result,
     });
@@ -244,7 +291,7 @@ export const getEarningsHistoryController = asyncHandler(
     if (!userId) {
       throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
     }
-    const { getEarningsHistorySchema } = require("../validation/transaction.validation");
+
     const query = getEarningsHistorySchema.parse(req.query);
 
     const result = await getEarningsHistoryService(userId, query);
@@ -262,7 +309,7 @@ export const requestPayoutController = asyncHandler(
     if (!userId) {
       throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
     }
-    const { requestPayoutSchema } = require("../validation/transaction.validation");
+
     const data = requestPayoutSchema.parse(req.body);
 
     const result = await requestPayoutService(userId, data);

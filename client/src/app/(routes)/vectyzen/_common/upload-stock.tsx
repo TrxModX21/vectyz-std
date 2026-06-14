@@ -69,8 +69,7 @@ const UploadStock = ({ open, onOpenChange }: Props) => {
       keywords: [],
       colors: [],
       isPremium: false,
-      price: 0,
-      currency: "IDR",
+      price: 0,      
       files: [],
     },
   });
@@ -163,7 +162,7 @@ const UploadStock = ({ open, onOpenChange }: Props) => {
         colors: values.colors,
         isPremium: values.isPremium,
         price: values.price,
-        currency: values.currency,
+        currency: 'IDR',
         files: filesPayload,
       };
 

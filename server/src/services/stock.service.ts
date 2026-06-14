@@ -459,13 +459,6 @@ export const getRelatedStocks = async (
 export const createStock = async (
   input: CreateStockSchema & { userId: string },
 ) => {
-  // 1. Currency Conversion
-  let finalPrice = input.price;
-  if (input.currency === "USD") {
-    // Convert to IDR
-    finalPrice = input.price * (config.EXCHANGE_RATE.USD || 16000);
-  }
-
   // 2. Generate Slug if not present (simple version)
   const slug = generateStockSlug(input.title);
 
@@ -483,7 +476,7 @@ export const createStock = async (
         keywords: input.keywords,
         colors: input.colors || [],
         isPremium: input.isPremium,
-        price: finalPrice, // Saved as IDR
+        price: input.isPremium ? input.price : 0, // Saved as Credit
         status: StockStatus.PENDING, // Always pending on upload
         files: {
           create: input.files.map((file) => ({

@@ -5,7 +5,8 @@ import { Switch } from "../ui/switch";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
-import { formatRupiah } from "@/lib/helpers";
+import { formatPrice } from "@/lib/helpers";
+import { useCurrency } from "@/store/use-currency";
 
 interface OrderSummaryProps {
   plan: Plan; // Or any specific type
@@ -34,6 +35,8 @@ const OrderSummary = ({
   setPaymentMethod,
   isSubmitting,
 }: OrderSummaryProps) => {
+  const { currency } = useCurrency();
+
   return (
     <div className="w-full md:w-[520px] bg-muted/40 p-8 border-l flex flex-col">
       <h3 className="font-semibold text-foreground mb-6 text-lg">Plan info</h3>
@@ -78,7 +81,7 @@ const OrderSummary = ({
               Subtotal ({durationLabel})
             </span>
 
-            <span>{formatRupiah(currentPrice)}</span>
+            <span>{formatPrice(currentPrice, currency)}</span>
           </div>
           {isAnnual && (
             <div className="flex justify-between text-xs text-green-600">
@@ -88,7 +91,7 @@ const OrderSummary = ({
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Tax (0%)</span>
-            <span>{formatRupiah(0)}</span>
+            <span>{formatPrice(0, currency)}</span>
           </div>
         </div>
 
@@ -104,7 +107,7 @@ const OrderSummary = ({
             </span>
           </div>
           <span className="text-2xl font-bold">
-            {formatRupiah(finalPrice)}
+            {formatPrice(finalPrice, currency)}
           </span>
         </div>
 

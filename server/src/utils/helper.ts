@@ -66,3 +66,11 @@ export function generateUsername(fullName: string) {
 
   return `${baseUsername}-${suffix}`;
 }
+
+// Getting raw number from credit convertion
+export const getCreditValue = (
+  creditAmount: number,
+  currency: "IDR" | "USD",
+) => {
+  return currency === "IDR" ? creditAmount * 1000 : creditAmount * 0.05;
+};

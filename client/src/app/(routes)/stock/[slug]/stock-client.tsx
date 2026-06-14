@@ -5,7 +5,8 @@ import Footer from "@/components/common/footer";
 import Header from "@/components/explore/file-type/header";
 import { useGetStockDetail } from "@/hooks/use-stock";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/axios";
 import StockDetailSkeleton from "@/components/stock-detail/stock-detail-skeleton";
 import { FullImageDialog } from "@/components/stock-detail/full-image-dialog";
 import StockPreview from "@/components/stock-detail/stock-preview";
@@ -21,6 +22,16 @@ const StockClientPage = () => {
 
   const { data, isLoading } = useGetStockDetail(params.slug as string);
   const stock = data?.stock;
+
+  useEffect(() => {
+    if (stock?.id) {
+      // Fire and forget view increment
+      api.post(`/stocks/${stock.id}/view`).catch((err) => {
+        // Silently ignore analytics errors to not disrupt UX
+        console.debug("Analytics view increment skipped/failed:", err.response?.data?.message || err.message);
+      });
+    }
+  }, [stock?.id]);
 
   const previewFile = stock?.files.find((f) => f.purpose === "PREVIEW");
 

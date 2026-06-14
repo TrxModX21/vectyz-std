@@ -52,7 +52,9 @@ model User {
   following      Follow[] @relation("UserFollowing")
 
   // -- BUSINESS MODEL FIELDS --
-  creditBalance Decimal @default(0) // Saldo Credit User (1 Credit = Rp 1.000)
+  creditBalance   Decimal @default(0) // Saldo Credit User (1 Credit = Rp 1.000)
+  purchasedCredit Decimal @default(0) // Credit dari Top Up (Non-withdrawable)
+  earnedCredit    Decimal @default(0) // Credit dari Penjualan/Donasi (Withdrawable)
 
   // Subscription Info
   isPremium             Boolean       @default(false)
@@ -377,7 +379,7 @@ model Plan {
   id           String  @id @default(cuid())
   name         String // "Ngecer", "Creator", "Professional", "Agency"
   slug         String  @unique // "ngecer-48h", "creator-monthly"
-  price        Int // Harga dalam Rupiah (Rp 25.000, dst)
+  price        Int // Harga dalam Credit 
   priceInYear  Int? // Harga subs dalam setahun
   saveWithYear String? // Text hemat
   currency     String  @default("IDR")
@@ -484,6 +486,7 @@ enum TransactionType {
   PLATFORM_FEE // Potongan sistem 25% (atau sesuai formula)
   POOL_EARNING // Hasil bagi hasil bulanan (Premium & Free)
   DONATION // Berikan kontributor donasi
+  EARNING_DONATION
 }
 
 enum PaymentStatus {

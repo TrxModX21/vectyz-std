@@ -18,17 +18,6 @@ export const useCheckAccess = (
   });
 };
 
-export const useGetTransactionDetail = (id: string) => {
-  return useQuery({
-    queryKey: ["transaction", id],
-    queryFn: async () => {
-      const { data } = await api.get(`/transactions/${id}`);
-      return data.data;
-    },
-    enabled: !!id,
-  });
-};
-
 export const useBuyAssetDirect = () => {
   return useMutation({
     mutationFn: async (stockId: string) => {
@@ -79,10 +68,23 @@ export const useCreateDonationGateway = () => {
   });
 };
 
+export const useCreateDonationCredit = () => {
+  return useMutation({
+    mutationFn: async (payload: {
+      targetUserId: string;
+      stockId: string;
+      amount: number;
+    }) => {
+      const { data } = await api.post("/transactions/donate/credit", payload);
+      return data;
+    },
+  });
+};
+
 export const useTopupCredit = () => {
   return useMutation({
-    mutationFn: async (amount: number) => {
-      const { data } = await api.post("/transactions/topup", { amount });
+    mutationFn: async (creditAmount: number) => {
+      const { data } = await api.post("/transactions/topup", { creditAmount });
       return data;
     },
   });
@@ -95,12 +97,26 @@ interface UseGetUserTransactionsParams {
   status?: string;
 }
 
-export const useGetUserTransactions = (params: UseGetUserTransactionsParams) => {
+export const useGetUserTransactions = (
+  params: UseGetUserTransactionsParams,
+) => {
   return useQuery({
     queryKey: ["user-transactions", params],
     queryFn: async () => {
       const res = await api.get("/transactions/me", { params });
       return res.data;
     },
+  });
+};
+
+export const useGetTransactionDetail = (id: string) => {
+  return useQuery({
+    queryKey: ["transaction-detail", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const res = await api.get(`/transactions/${id}`);
+      return res.data?.data;
+    },
+    enabled: !!id,
   });
 };

@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import FadeIn from "../common/fade-in";
 import { useGetAllPlans } from "@/hooks/use-plan";
 import SubscriptionDialog from "./subscription-dialog";
+import { useCurrency } from "@/store/use-currency";
+import { formatPrice } from "@/lib/helpers";
 
 interface TierListProps {
   billingCycle: "monthly" | "yearly";
@@ -12,6 +14,7 @@ interface TierListProps {
 
 const TierList = ({ billingCycle }: TierListProps) => {
   const { data, isLoading } = useGetAllPlans();
+  const { currency } = useCurrency();
 
   if (isLoading) {
     return <TierSkeleton />;
@@ -45,7 +48,7 @@ const TierList = ({ billingCycle }: TierListProps) => {
             </h3>
             <div className="mt-4 flex items-baseline text-zinc-900 dark:text-zinc-50">
               <span className="text-4xl font-bold tracking-tight">
-                Rp {(firstTire.price / 1000).toFixed(0) + "K"}
+                {formatPrice(firstTire.price, currency, true)}
               </span>
               <span className="ml-1 text-sm font-semibold text-zinc-500">
                 /48Hours
@@ -107,23 +110,19 @@ const TierList = ({ billingCycle }: TierListProps) => {
                 </h3>
                 <div className="mt-4 flex items-baseline text-zinc-900 dark:text-zinc-50">
                   <span className="text-4xl font-bold tracking-tight">
-                    Rp {(tier.price / 1000).toFixed(0) + "K"}
-                    {/* {billingCycle === "monthly"
-                    ? (tier.price / 1000).toFixed(0) + "K"
-                    : (Math.round((tier.priceInYear || 0) / 12) / 1000).toFixed(
-                        0,
-                      ) + "K"} */}
+                    {billingCycle === "monthly"
+                      ? formatPrice(tier.price, currency, true)
+                      : formatPrice(Math.round((tier.priceInYear || 0) / 12), currency, true)}
                   </span>
                   <span className="ml-1 text-sm font-semibold text-zinc-500">
                     /month
                   </span>
                 </div>
-                {/* {billingCycle === "yearly" && (
-                <p className="text-xs text-green-600 font-medium mt-1">
-                  Billed yearly (Rp{" "}
-                  {((tier.priceInYear || 0) / 1000).toFixed(0)}K)
-                </p>
-              )} */}
+                {billingCycle === "yearly" && (
+                  <p className="text-xs text-green-600 font-medium mt-1">
+                    Billed yearly ({formatPrice(tier.priceInYear || 0, currency, true)})
+                  </p>
+                )}
               </div>
 
               <SubscriptionDialog planId={tier.id}>

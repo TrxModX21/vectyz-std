@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { launchConfettiFrame } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
+import { formatPrice } from "@/lib/helpers";
+import { useCurrency } from "@/store/use-currency";
 
 declare global {
   interface Window {
@@ -46,6 +48,7 @@ const DirectBuyDialog = ({
     "midtrans" | "card" | null
   >(null);
 
+  const { currency } = useCurrency();
   const router = useRouter();
 
   useEffect(() => {
@@ -208,7 +211,7 @@ const DirectBuyDialog = ({
 
                 <div className="flex items-end mb-6">
                   <span className="text-4xl font-extrabold tracking-tighter">
-                    Rp {(Number(stock?.price) / 1000).toFixed(0) + "K"}
+                    {formatPrice(Number(stock?.price), currency, true)}
                   </span>
                   <span className="text-xs text-slate-600 ml-2 font-medium bg-slate-100 px-2 py-0.5 rounded-md mb-1.5 border border-slate-200">
                     One-time payment

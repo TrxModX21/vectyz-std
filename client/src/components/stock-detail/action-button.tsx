@@ -18,8 +18,11 @@ import GiveCoffeeDialog from "./give-coffee-dialog";
 import { cn } from "@/lib/utils";
 import DirectBuyDialog from "./direct-buy-dialog";
 import CreditPayDialog from "./credit-buy-dialog";
+import { formatPrice } from "@/lib/helpers";
+import { useCurrency } from "@/store/use-currency";
 
 const ActionButton = ({ stock }: { stock: Stock }) => {
+  const { currency } = useCurrency();
   const { data: userProfileResponse, isLoading } = useAuth();
   const user = userProfileResponse?.user;
   const { data: access, isLoading: checkingAccess } = useCheckAccess(
@@ -31,6 +34,9 @@ const ActionButton = ({ stock }: { stock: Stock }) => {
 
   const isFreeGuest = !user && !stock.isPremium;
   const hasAccess = access?.allowed || isFreeGuest;
+
+  const showDonation =
+    !stock.isPremium && stock.user.username !== user?.username;
 
   const router = useRouter();
 
@@ -105,9 +111,11 @@ const ActionButton = ({ stock }: { stock: Stock }) => {
             )}
             {access?.reason === "PURCHASED"
               ? "Download Again"
-              : isFreeGuest
-                ? "Download Free"
-                : "Download Now"}
+              : access?.reason === "PREVIOUSLY_DOWNLOADED"
+                ? "Download Again"
+                : isFreeGuest
+                  ? "Download Free"
+                  : "Download Now"}
           </Button>
 
           {access?.remainingLimit && (
@@ -156,14 +164,14 @@ const ActionButton = ({ stock }: { stock: Stock }) => {
                         variant="outline"
                         className="w-full h-11 text-base font-bold bg-primary hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 gap-2 border-0"
                       >
-                        Credit ({Math.ceil(Number(stock?.price) / 1000)})
+                        Credit ({Number(stock?.price)})
                       </Button>
                     </CreditPayDialog>
 
                     <DirectBuyDialog stock={stock} user={user}>
                       <Button className="w-full h-11 text-base font-bold bg-primary hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 gap-2 border-0">
-                        <CreditCard className="h-5 w-5" /> Buy for Rp{" "}
-                        {(Number(stock?.price) / 1000).toFixed(0) + "K"}
+                        <CreditCard className="h-5 w-5" /> Buy for{" "}
+                        {formatPrice(Number(stock?.price), currency, true)}
                       </Button>
                     </DirectBuyDialog>
                   </div>
@@ -176,7 +184,8 @@ const ActionButton = ({ stock }: { stock: Stock }) => {
           {stock.isPremium && !stock.isSubscriptionAccessible && (
             <>
               <Button className="w-full h-14 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 gap-2 border-0">
-                <CreditCard className="h-5 w-5" /> Buy for $15.00
+                <CreditCard className="h-5 w-5" /> Buy for{" "}
+                {formatPrice(Number(stock?.price), currency, true)}
               </Button>
 
               <div className="relative py-3">
@@ -191,7 +200,8 @@ const ActionButton = ({ stock }: { stock: Stock }) => {
               </div>
 
               <Button className="w-full h-14 text-lg font-bold bg-[#cdff00] hover:bg-[#bee400] text-gray-700 shadow-md shadow-[#cdff00]/20 gap-2 border-0">
-                <Layers className="h-5 w-5" /> Buy with 10 Credits
+                <Layers className="h-5 w-5" /> Buy with {Number(stock?.price)}{" "}
+                Credits
               </Button>
             </>
           )}
@@ -223,7 +233,7 @@ const ActionButton = ({ stock }: { stock: Stock }) => {
       )}
 
       {/* Give Coffee for Free Stock */}
-      {!stock.isPremium && (
+      {showDonation && (
         <div className="pt-2">
           <GiveCoffeeDialog
             user={user}

@@ -32,7 +32,7 @@ const EarningsPage = () => {
           </p>
         </div>
         {overview ? (
-          <PayoutDialog totalBalance={overview.totalBalance} />
+          <PayoutDialog withdrawableBalance={overview.withdrawableBalance} />
         ) : (
           <div />
         )}

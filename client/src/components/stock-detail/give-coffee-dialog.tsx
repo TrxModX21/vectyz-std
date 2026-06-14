@@ -26,7 +26,8 @@ import {
   donationSchema,
   DonationFormInputs,
 } from "@/validators/transaction.validation";
-import { useCreateDonationGateway } from "@/hooks/use-transactions";
+import { useCreateDonationGateway, useCreateDonationCredit } from "@/hooks/use-transactions";
+import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { Field, FieldError } from "../ui/field";
 import { launchConfettiFrame } from "@/lib/utils";
@@ -61,8 +62,9 @@ const GiveCoffeeDialog = ({
       return () => clearTimeout(timeout);
     }
   }, [isOpen]);
-
+  const queryClient = useQueryClient();
   const { mutateAsync: createDonation } = useCreateDonationGateway();
+  const { mutateAsync: createDonationCredit } = useCreateDonationCredit();
 
   const {
     register,
@@ -153,13 +155,27 @@ const GiveCoffeeDialog = ({
           toast.error("Failed to load payment gateway.");
           setLoadingMethod(null);
         }
-      } else {
-        toast.info("Credit payment wiring pending...");
+      } else if (method === "credit") {
+        await createDonationCredit({
+          targetUserId,
+          stockId,
+          amount: data.amount,
+        });
+
+        setIsSuccess(true);
+        const duration = 1.5 * 1000;
+        const end = Date.now() + duration;
+        launchConfettiFrame(end);
+
+        queryClient.invalidateQueries({ queryKey: ["authUser"] });
       }
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Something went wrong.");
-    } finally {
       setLoadingMethod(null);
+    } finally {
+      if (method === "credit") {
+        setLoadingMethod(null);
+      }
     }
   };
 
@@ -354,7 +370,7 @@ const GiveCoffeeDialog = ({
                       <>
                         <Layers className="w-5 h-5" />
                         <span className="font-semibold text-xs text-center leading-none">
-                          Credit
+                          Credit Balance
                         </span>
                       </>
                     )}
