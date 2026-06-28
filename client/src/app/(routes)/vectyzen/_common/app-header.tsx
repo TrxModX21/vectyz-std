@@ -2,6 +2,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import HeaderDateTime from "./header-datetime";
 import AppBreadcrumb from "./app-breadcrumb";
+import { NotificationDropdown } from "@/components/common/notification-dropdown";
 
 const AppHeader = () => {
   return (
@@ -17,6 +18,8 @@ const AppHeader = () => {
         <AppBreadcrumb />
 
         <div className="ml-auto flex items-center gap-4">
+          <NotificationDropdown className="flex" />
+
           <HeaderDateTime />
         </div>
       </div>

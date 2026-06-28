@@ -18,30 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import VectyzLogo from "@/components/common/vectyz-logo";
 import {
-  Bell,
-  ChevronDown,
   CreditCard,
   Folder,
   Globe,
   HelpCircle,
   Languages,
   LogOut,
-  Moon,
-  Plus,
   Settings,
-  Ticket,
-  Zap,
   Banknote,
-  Wallet,
-  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -51,9 +37,10 @@ import MobileNav from "../common/mobile-nav";
 import HeaderNavigationMenu from "../common/nav-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImpersonateMode from "../impersonate-mode";
-import TopUpDialog from "../common/top-up-dialog";
+import { NotificationDropdown } from "../common/notification-dropdown";
 import { useAuth } from "@/hooks/use-auth";
 import { useCurrency } from "@/store/use-currency";
+import CreditTopUp from "../common/credit-topup";
 
 const Header = () => {
   const router = useRouter();
@@ -80,7 +67,7 @@ const Header = () => {
         <div className="px-4 lg:px6">
           <div className="h-18 lg:h-20 flex justify-between items-center">
             <div className="flex items-center justify-center gap-2">
-              <MobileNav />
+              <MobileNav user={user} />
 
               <VectyzLogo
                 width={isLargeDevice ? 140 : 120}
@@ -91,13 +78,7 @@ const Header = () => {
             </div>
 
             <div className="flex items-center justify-center gap-2 lg:gap-4">
-              <Button
-                size="icon-lg"
-                variant="ghost"
-                className="hidden xl:block"
-              >
-                <Bell className="size-8 text-blue-900" />
-              </Button>
+              {user && <NotificationDropdown className="flex" />}
 
               <Link href="/pricing" className="hidden md:block">
                 <Button size={isLargeDevice ? "default" : "sm"}>Plans</Button>
@@ -105,41 +86,8 @@ const Header = () => {
 
               {user ? (
                 <>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <TopUpDialog>
-                            <Button
-                              variant="outline"
-                              className="hidden md:flex h-9 gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary"
-                            >
-                              <Zap className="h-4 w-4 text-primary fill-primary/20" />
-                              <span className="font-semibold">
-                                {Number(user?.creditBalance || 0)}
-                              </span>
-                              <Plus className="h-3 w-3 ml-1 opacity-50" />
-                            </Button>
-                          </TopUpDialog>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="p-3 gap-2 flex flex-col w-48">
-                        <p className="font-semibold text-center border-b pb-2 mb-1">Credit Balance</p>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <Wallet className="h-3 w-3" /> Purchased:
-                          </span>
-                          <span className="font-mono font-medium">{Number(user?.purchasedCredit || 0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <Sparkles className="h-3 w-3" /> Earned:
-                          </span>
-                          <span className="font-mono font-medium">{Number(user?.earnedCredit || 0)}</span>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <CreditTopUp user={user} />
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button

@@ -6,9 +6,11 @@ import {
   PaymentStatus,
   Prisma,
   PayoutStatus,
+  NotificationType,
 } from "../generated/prisma/client";
 import { config } from "../utils/app.config";
 import { getCreditValue } from "../utils/helper";
+import { createNotification } from "./notification.service";
 
 // 1. TOPUP CREDIT
 export const createTopupTransaction = async (
@@ -377,6 +379,17 @@ export const processDonationWithCredit = async (
       },
     });
 
+    // Notify the receiver
+    await createNotification({
+      userId: targetUserId,
+      type: NotificationType.DONATION_RECEIVED,
+      title: "You received a coffee! ☕",
+      message: `${user.name} just sent you ${creatorShare} credits.`,
+      sourceUserId: userId,
+      stockId: stockId,
+      recipientEmail: targetUser.email,
+    });
+
     if (config.PLATFORM_FEE_USER_ID) {
       await tx.transaction.create({
         data: {
@@ -505,6 +518,17 @@ export const processDirectPurchaseWithCredit = async (
         creditAmount: creatorShare,
         paymentMethod: "SYSTEM",
       },
+    });
+
+    // Notify the creator
+    await createNotification({
+      userId: stock.userId,
+      type: NotificationType.ASSET_SOLD,
+      title: "Asset Sold! 🎉",
+      message: `${user.name} just purchased "${stock.title}". You earned ${creatorShare} credits.`,
+      sourceUserId: userId,
+      stockId: stockId,
+      recipientEmail: stock.user.email,
     });
 
     if (config.PLATFORM_FEE_USER_ID) {
@@ -732,6 +756,18 @@ export const handlePaymentNotification = async (notificationBody: any) => {
             },
           });
 
+          // Notify the creator (We don't have the creator's email easily here without another query, so we skip email or fetch user)
+          const creator = await tx.user.findUnique({ where: { id: stock.userId } });
+          await createNotification({
+            userId: stock.userId,
+            type: NotificationType.ASSET_SOLD,
+            title: "Asset Sold! 🎉",
+            message: `Someone just purchased "${stock.title}". You earned ${creatorShare} credits.`,
+            sourceUserId: transaction.userId,
+            stockId: stock.id,
+            recipientEmail: creator?.email,
+          });
+
           if (config.PLATFORM_FEE_USER_ID) {
             await tx.transaction.create({
               data: {
@@ -792,6 +828,16 @@ export const handlePaymentNotification = async (notificationBody: any) => {
               paymentMethod: notificationBody.payment_type || "SYSTEM",
               externalId: transaction.externalId,
             },
+          });
+
+          await createNotification({
+            userId: targetUser.id,
+            type: NotificationType.DONATION_RECEIVED,
+            title: "You received a coffee! ☕",
+            message: `Someone just sent you ${finalCredit} credits.`,
+            sourceUserId: transaction.userId,
+            stockId: transaction.stockId || undefined,
+            recipientEmail: targetUser.email,
           });
 
           if (config.PLATFORM_FEE_USER_ID) {

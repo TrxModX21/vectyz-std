@@ -100,7 +100,6 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
 
   const { credits: selectedCredits } = getSelectedDetails();
   const isValidCustomAmount = isCustom ? selectedCredits >= 10 : true;
-  console.log(selectedCredits);
 
   const handleCustomCreditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow numbers

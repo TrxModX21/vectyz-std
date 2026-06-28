@@ -19,15 +19,17 @@ const HeaderDateTime = () => {
     day: "2-digit",
   });
 
-  const formattedTime = date.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).replace(":", ".");
+  const formattedTime = date
+    .toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+    .replace(":", ".");
 
   return (
     <p
-      className="text-muted-foreground hidden font-medium md:inline-block"
+      className="text-muted-foreground font-medium md:inline-block text-xs md:text-base"
       suppressHydrationWarning
     >
       {formattedDate} | {formattedTime}

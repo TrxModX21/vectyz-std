@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import ReactQueryProvider from "@/provider/react-query-provider";
+import ReactQueryProvider from "@/providers/react-query-provider";
 import DisableInspect from "@/components/common/disable-inspect";
+import { SocketProvider } from "@/providers/socket-provider";
 
 const montserrat = Montserrat({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -75,8 +76,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${montserrat.className} antialiased`}>
         <ReactQueryProvider>
-          <DisableInspect />
-          {children}
+          <SocketProvider>
+            <DisableInspect />
+            {children}
+          </SocketProvider>
         </ReactQueryProvider>
 
         <Toaster richColors position="top-center" theme="dark" />
