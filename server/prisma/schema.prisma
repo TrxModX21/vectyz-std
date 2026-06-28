@@ -77,6 +77,8 @@ model User {
   receivedTransactions Transaction[]     @relation("TargetUserTransactions")
   downloads            DownloadHistory[]
   payouts              Payout[]
+  notifications        Notification[] @relation("UserNotifications")
+  sentNotifications    Notification[] @relation("NotificationSourceUser")
 
   @@unique([email])
   @@map("user")
@@ -280,6 +282,7 @@ model Stock {
   views             StockView[]
   transactions      Transaction[]
   downloadHistories DownloadHistory[]
+  notifications     Notification[]
 
   @@map("stock")
 }
@@ -469,6 +472,35 @@ model MonthlyPool {
   createdAt     DateTime @default(now())
 
   @@unique([month, year])
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String // Penerima notifikasi
+  user   User   @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType // DONATION_RECEIVED, ASSET_SOLD, SYSTEM_ALERT, dll
+  title   String
+  message String
+  isRead  Boolean          @default(false)
+
+  // Relasi Opsional (Untuk navigasi saat notifikasi diklik)
+  sourceUserId String? // Siapa yang ngasih donasi/beli
+  sourceUser   User?   @relation("NotificationSourceUser", fields: [sourceUserId], references: [id], onDelete: SetNull)
+  stockId      String? // Aset apa yang dibeli
+  stock        Stock?  @relation(fields: [stockId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@map("notification")
+}
+
+enum NotificationType {
+  DONATION_RECEIVED
+  ASSET_SOLD
+  SYSTEM_ALERT
+  NEW_LIKE
+  NEW_FOLLOWER
 }
 
 // -- ENUMS (Tambahkan di bawah file) --

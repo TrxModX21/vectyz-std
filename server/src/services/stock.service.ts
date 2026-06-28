@@ -1,7 +1,8 @@
 import { StockWhereInput } from "./../generated/prisma/models/Stock";
 import prisma from "../lib/prisma";
-import { Prisma } from "../generated/prisma/client";
+import { Prisma, NotificationType } from "../generated/prisma/client";
 import { config } from "../utils/app.config";
+import { createNotification } from "./notification.service";
 import { StockStatus } from "../generated/prisma/enums";
 import {
   CreateStockSchema,
@@ -742,6 +743,23 @@ export const toggleLike = async (userId: string, stockId: string) => {
         },
       }),
     ]);
+
+    // Send notification
+    const liker = await prisma.user.findUnique({ where: { id: userId } });
+    const stockCreator = await prisma.user.findUnique({ where: { id: stock.userId } });
+
+    if (liker && stockCreator && liker.id !== stockCreator.id) {
+      await createNotification({
+        userId: stockCreator.id,
+        type: NotificationType.NEW_LIKE as any, // bypass TS error until generated
+        title: "New Like! ❤️",
+        message: `${liker.name} liked your asset "${stock.title}".`,
+        sourceUserId: liker.id,
+        stockId: stock.id,
+        recipientEmail: stockCreator.email,
+      });
+    }
+
     return { liked: true };
   }
 };

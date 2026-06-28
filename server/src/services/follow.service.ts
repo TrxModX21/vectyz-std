@@ -1,5 +1,7 @@
 import prisma from "../lib/prisma";
 import { BadRequestException } from "../utils/app-error";
+import { createNotification } from "./notification.service";
+import { NotificationType } from "../generated/prisma/client";
 
 export const followUserService = async (
   followerId: string,
@@ -40,6 +42,21 @@ export const followUserService = async (
       data: { totalFollowers: { increment: 1 } },
     }),
   ]);
+
+  // Notify the user being followed
+  const follower = await prisma.user.findUnique({ where: { id: followerId } });
+  const following = await prisma.user.findUnique({ where: { id: followingId } });
+  
+  if (follower && following) {
+    await createNotification({
+      userId: following.id,
+      type: NotificationType.NEW_FOLLOWER as any, // Bypass TS error until prisma generate
+      title: "New Follower! 🌟",
+      message: `${follower.name} is now following you.`,
+      sourceUserId: follower.id,
+      recipientEmail: following.email,
+    });
+  }
 
   return { followed: true };
 };

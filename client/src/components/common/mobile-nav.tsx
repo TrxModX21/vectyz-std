@@ -25,8 +25,10 @@ import { Menu, X, Users, CircleIcon, CircleCheckIcon } from "lucide-react";
 import { useState } from "react";
 import { useGetFileTypes } from "@/hooks/use-file-type";
 import Link from "next/link";
+import CreditTopUp from "./credit-topup";
+import { cn } from "@/lib/utils";
 
-const MobileNav = () => {
+const MobileNav = ({ user }: { user: User | undefined }) => {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
 
   const { data: fileTypeResponse } = useGetFileTypes({
@@ -72,7 +74,10 @@ const MobileNav = () => {
                 <ul className="flex flex-col gap-4 text-balance pl-4 pt-2">
                   <li className="flex items-center gap-2">
                     <Users className="size-4" />
-                    <Link href="/members" onClick={() => setIsMobileNavOpen(false)}>
+                    <Link
+                      href="/members"
+                      onClick={() => setIsMobileNavOpen(false)}
+                    >
                       <Label className="cursor-pointer">Vectyzen</Label>
                     </Link>
                   </li>
@@ -124,20 +129,24 @@ const MobileNav = () => {
                       <>
                         {fileType.categories.map((category: any) => (
                           <li key={category.id} className="list-none">
-                            <Link 
-                              href={`/explore/${fileType.slug}/${category.slug}`} 
+                            <Link
+                              href={`/explore/${fileType.slug}/${category.slug}`}
                               onClick={() => setIsMobileNavOpen(false)}
                             >
-                              <Label className="cursor-pointer text-muted-foreground">{category.name}</Label>
+                              <Label className="cursor-pointer text-muted-foreground">
+                                {category.name}
+                              </Label>
                             </Link>
                           </li>
                         ))}
                         <li className="list-none">
-                          <Link 
-                            href={`/explore/${fileType.slug}`} 
+                          <Link
+                            href={`/explore/${fileType.slug}`}
                             onClick={() => setIsMobileNavOpen(false)}
                           >
-                            <Label className="cursor-pointer text-primary font-semibold">See all...</Label>
+                            <Label className="cursor-pointer text-primary font-semibold">
+                              See all...
+                            </Label>
                           </Link>
                         </li>
                       </>
@@ -152,13 +161,21 @@ const MobileNav = () => {
             ))}
           </Accordion>
 
-          <div className="flex flex-col gap-4 px-4 mt-8">
+          <div className={cn("flex gap-4 px-4 mt-8 flex-col")}>
             <Button asChild onClick={() => setIsMobileNavOpen(false)}>
               <Link href="/pricing">Plans</Link>
             </Button>
-            <Button variant="secondary" asChild onClick={() => setIsMobileNavOpen(false)}>
-              <Link href="/auth/sign-in">Sign in</Link>
-            </Button>
+            {!user ? (
+              <Button
+                variant="secondary"
+                asChild
+                onClick={() => setIsMobileNavOpen(false)}
+              >
+                <Link href="/auth/sign-in">Sign in</Link>
+              </Button>
+            ) : (
+              <CreditTopUp user={user} className="flex w-full" />
+            )}
           </div>
         </ScrollArea>
 

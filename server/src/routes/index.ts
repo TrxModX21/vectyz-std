@@ -13,6 +13,7 @@ import transactionRoutes from "./transaction.routes";
 import profileRoutes from "./profile.routes";
 import userStocksRoutes from "./user-stock.routes";
 import dashboardRoutes from "./dashboard.routes";
+import notificationRoutes from "./notification.routes";
 
 const router = Router();
 
@@ -29,6 +30,7 @@ router.use("/plans", planRoutes);
 router.use("/downloads", downloadRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/notifications", notificationRoutes);
 router.use("/test", testRoutes);
 
 export default router;
