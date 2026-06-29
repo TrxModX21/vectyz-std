@@ -61,6 +61,7 @@ export const useCreateDonationGateway = () => {
       targetUserId: string;
       stockId: string;
       amount: number;
+      currency?: string;
     }) => {
       const { data } = await api.post("/transactions/donate/gateway", payload);
       return data;

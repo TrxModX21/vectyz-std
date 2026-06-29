@@ -17,8 +17,12 @@ import {
   getEarningsOverviewService,
   getEarningsHistoryService,
   requestPayoutService,
+  createPolarDonationCheckout,
 } from "../services/transaction.service";
-import { getEarningsHistorySchema, requestPayoutSchema } from "../validation/transaction.validation";
+import {
+  getEarningsHistorySchema,
+  requestPayoutSchema,
+} from "../validation/transaction.validation";
 
 export const createTopupController = asyncHandler(
   async (req: Request, res: Response) => {
@@ -108,7 +112,7 @@ export const buyAssetDirectController = asyncHandler(
 export const createDonationGatewayController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = res.locals.user?.id;
-    const { targetUserId, amount, stockId } = req.body;
+    const { targetUserId, amount, stockId, currency } = req.body;
 
     if (!userId) {
       throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
@@ -122,19 +126,44 @@ export const createDonationGatewayController = asyncHandler(
       throw new AppError("Stock ID is required", HTTPSTATUS.UNAUTHORIZED);
     }
 
-    if (!amount || Number(amount) < 11000) {
-      throw new AppError(
-        "Minimum donation amount is Rp 11.000",
-        HTTPSTATUS.BAD_REQUEST,
+    const forwardedFor = req.headers["x-forwarded-for"] as string;
+    const ipAddress = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : req.socket.remoteAddress || "";
+
+    const isUSD = currency === "USD";
+    let result;
+
+    if (isUSD) {
+      if (!amount || Number(amount) < 1) {
+        throw new AppError(
+          "Minimum donation amount is $1.00 USD",
+          HTTPSTATUS.BAD_REQUEST,
+        );
+      }
+
+      result = await createPolarDonationCheckout(
+        userId,
+        stockId,
+        targetUserId,
+        Number(amount),
+        ipAddress,
+      );
+    } else {
+      if (!amount || Number(amount) < 11000) {
+        throw new AppError(
+          "Minimum donation amount is Rp 11.000",
+          HTTPSTATUS.BAD_REQUEST,
+        );
+      }
+
+      result = await createDonationTransactionGateway(
+        userId,
+        stockId,
+        targetUserId,
+        Number(amount),
       );
     }
-
-    const result = await createDonationTransactionGateway(
-      userId,
-      stockId,
-      targetUserId,
-      Number(amount),
-    );
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Donation transaction created",

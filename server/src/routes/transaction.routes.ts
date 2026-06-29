@@ -1,5 +1,7 @@
-
 import { Router } from "express";
+import { Webhooks } from "@polar-sh/express";
+import { config } from "../utils/app.config";
+import { handlePolarWebhookEvent } from "../services/transaction.service";
 import { requireAuth, requireRole } from "../middlewares/auth.middleware";
 import {
   createTopupController,
@@ -35,6 +37,17 @@ transactionRoutes.post("/payouts/request", requireAuth, requestPayoutController)
 
 // Webhook (Public, Midtrans will call this)
 transactionRoutes.post("/notification", paymentNotificationController);
+
+// Polar Webhook (Public)
+transactionRoutes.post(
+  "/polar/notification",
+  Webhooks({
+    webhookSecret: config.POLAR_WEBHOOK_SECRET as string,
+    onPayload: async (payload) => {
+      await handlePolarWebhookEvent(payload);
+    },
+  })
+);
 
 // History & Detail
 transactionRoutes.get("/", requireAuth, requireRole(["admin"]), getAllTransactionsController); // Admin

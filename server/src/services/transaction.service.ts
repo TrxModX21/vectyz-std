@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { polar } from "../lib/polar";
 import { createSnapTransaction, verifySignatureKey } from "../lib/midtrans";
 import { NotFoundException, BadRequestException } from "../utils/app-error";
 import {
@@ -757,7 +758,9 @@ export const handlePaymentNotification = async (notificationBody: any) => {
           });
 
           // Notify the creator (We don't have the creator's email easily here without another query, so we skip email or fetch user)
-          const creator = await tx.user.findUnique({ where: { id: stock.userId } });
+          const creator = await tx.user.findUnique({
+            where: { id: stock.userId },
+          });
           await createNotification({
             userId: stock.userId,
             type: NotificationType.ASSET_SOLD,
@@ -807,6 +810,7 @@ export const handlePaymentNotification = async (notificationBody: any) => {
           const rawCredit = creatorShareRupiah / 1000;
           const finalCredit = Math.floor(rawCredit * 100) / 100;
 
+          // Add Credit to Target User
           await tx.user.update({
             where: { id: targetUser.id },
             data: {
@@ -1189,4 +1193,198 @@ export const requestPayoutService = async (
 
     return payout;
   });
+};
+
+// 7. POLAR DONATION (Checkout)
+export const createPolarDonationCheckout = async (
+  userId: string,
+  stockId: string | null,
+  targetUserId: string,
+  amountInUsd: number,
+  ipAddress: string,
+) => {
+  if (amountInUsd < 1) {
+    throw new BadRequestException("Minimum donation is $1.00 USD");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+  });
+
+  if (!user || !targetUser) throw new NotFoundException("User not found");
+
+  // Calculate equivalent Credits and IDR
+  // $0.05 USD = 1 Credit
+  const creditAmount = amountInUsd / 0.05;
+  const amountRupiah = creditAmount * 1000;
+
+  // Create Transaction Record (Pending)
+  const transaction = await prisma.transaction.create({
+    data: {
+      userId,
+      stockId: stockId || undefined,
+      targetUserId,
+      type: TransactionType.DONATION,
+      status: PaymentStatus.PENDING,
+      amount: amountRupiah,
+      creditAmount,
+      paymentMethod: "POLAR",
+    },
+  });
+
+  // Create Polar Custom Checkout
+  // productId from app.config.ts POLAR_DONATION_PRODUCT_ID
+  if (!config.POLAR_DONATION_PRODUCT_ID) {
+    throw new Error("POLAR_DONATION_PRODUCT_ID is not configured");
+  }
+
+  const checkout = await polar.checkouts.create({
+    products: [config.POLAR_DONATION_PRODUCT_ID as string],
+    amount: Math.round(amountInUsd * 100), // in cents
+    customerEmail: user.email,
+    customerName: user.name,
+    externalCustomerId: user.id,
+    embedOrigin: config.CLIENT_URL as string,
+    allowDiscountCodes: false,
+    customerIpAddress: ipAddress,
+    metadata: {
+      transactionId: transaction.id,
+    },
+  });
+
+  await prisma.transaction.update({
+    where: { id: transaction.id },
+    data: { externalId: checkout.id },
+  });
+
+  return {
+    transactionId: transaction.id,
+    checkoutUrl: checkout.url,
+  };
+};
+
+// 8. POLAR WEBHOOK HANDLER
+export const handlePolarWebhookEvent = async (payload: any) => {
+  const eventType = payload.type;
+  const data = payload.data;
+  // console.log(data);
+
+  // We only care about order.created for now
+  if (eventType === "order.created") {
+    const transactionId = data.metadata?.transactionId;
+
+    if (!transactionId) {
+      console.warn("Polar Webhook: No transactionId found in metadata");
+      return;
+    }
+
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!transaction || transaction.status === PaymentStatus.PAID) {
+      return; // Already processed or not found
+    }
+
+    // Process Donation Completion
+    await prisma.$transaction(async (tx) => {
+      // 1. Calculate actual USD paid from Polar webhook (subtotal is in cents)
+      const actualUsdCents = data.subtotalAmount || transaction.amount / 200; // fallback if missing
+      // console.log("actualUsdCents ", actualUsdCents);
+      const actualUsdPaid = actualUsdCents / 100;
+      // console.log("actualUsdPaid ", actualUsdPaid);
+
+      // Calculate equivalent IDR: $0.05 USD = 1 Credit => 1 USD = 20 Credits = Rp 20.000
+      const donationInRupiah = actualUsdPaid * 20000;
+      // console.log("donationInRupiah ", donationInRupiah);
+      const actualCreditAmount = actualUsdPaid / 0.05;
+      // console.log("actualCreditAmount ", actualCreditAmount);
+
+      // 2. Update Transaction to PAID and update amounts just in case they were modified at checkout
+      await tx.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: PaymentStatus.PAID,
+          amount: donationInRupiah,
+          creditAmount: actualCreditAmount,
+        },
+      });
+
+      // Calculate revenue with 12% platform fee for Polar (5% + 50 cents buffer)
+      // Potongan 12% platform fee, jadi kreator dapat 88%
+      const creatorShareRupiah = donationInRupiah * 0.88;
+      const rawCredit = creatorShareRupiah / 1000;
+      const finalCredit = Math.floor(rawCredit * 100) / 100;
+      const platformFeeCredit = donationInRupiah / 1000 - finalCredit;
+
+      // 2. Add Credit to Target User
+      await tx.user.update({
+        where: { id: transaction.targetUserId! },
+        data: {
+          creditBalance: { increment: finalCredit },
+          earnedCredit: { increment: finalCredit },
+        },
+      });
+
+      // 3. Platform Fee
+      if (config.PLATFORM_FEE_USER_ID) {
+        await tx.user.update({
+          where: { id: config.PLATFORM_FEE_USER_ID },
+          data: {
+            creditBalance: { increment: platformFeeCredit },
+            earnedCredit: { increment: platformFeeCredit },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            userId: config.PLATFORM_FEE_USER_ID,
+            targetUserId: transaction.targetUserId!,
+            stockId: transaction.stockId,
+            type: TransactionType.PLATFORM_FEE,
+            status: PaymentStatus.PAID,
+            amount: donationInRupiah,
+            creditAmount: platformFeeCredit,
+            paymentMethod: "SYSTEM",
+            externalId: transaction.externalId,
+          },
+        });
+      }
+
+      // 4. Earning Transaction for Creator
+      await tx.transaction.create({
+        data: {
+          userId: transaction.targetUserId!,
+          targetUserId: transaction.userId,
+          stockId: transaction.stockId,
+          type: TransactionType.EARNING_DONATION,
+          status: PaymentStatus.PAID,
+          amount: donationInRupiah,
+          creditAmount: finalCredit,
+          paymentMethod: "SYSTEM",
+          externalId: transaction.externalId,
+        },
+      });
+
+      const donator = await tx.user.findUnique({
+        where: { id: transaction.userId },
+      });
+      const targetUser = await tx.user.findUnique({
+        where: { id: transaction.targetUserId! },
+      });
+
+      // 5. Create Notification
+      if (donator && targetUser) {
+        await createNotification({
+          userId: transaction.targetUserId!,
+          type: NotificationType.DONATION_RECEIVED,
+          title: "New Coffee! ☕",
+          message: `${donator.name} gave you ${finalCredit} credits!`,
+          sourceUserId: donator.id,
+          recipientEmail: targetUser.email,
+        });
+      }
+    });
+  }
 };
