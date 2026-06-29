@@ -82,7 +82,7 @@ export default function RootLayout({
           </SocketProvider>
         </ReactQueryProvider>
 
-        <Toaster richColors position="top-center" theme="dark" />
+        <Toaster position="top-center" theme="dark" />
       </body>
     </html>
   );

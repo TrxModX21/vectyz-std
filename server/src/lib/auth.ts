@@ -31,7 +31,7 @@ export const auth = betterAuth({
     enabled: true,
     sendResetPassword: async ({ user, url, token }, request) => {
       // Construct manual link to frontend to avoid middleware/redirect issues
-      const resetLink = `${config.BETTER_AUTH_URL}/reset-password?token=${token}`;
+      const resetLink = `${config.CLIENT_URL}/reset-password?token=${token}`;
 
       await sendEmail({
         to: user.email,
@@ -76,7 +76,7 @@ export const auth = betterAuth({
   emailVerification: {
     sendVerificationEmail: async ({ user, url, token }) => {
       // Construct manual link to frontend
-      const verificationLink = `${config.BETTER_AUTH_URL}/verify-email?token=${token}`;
+      const verificationLink = `${config.CLIENT_URL}/verify-email?token=${token}`;
       await sendEmail({
         to: user.email,
         ...updateEmailTemplate(verificationLink),

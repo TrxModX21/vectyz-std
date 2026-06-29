@@ -2,16 +2,8 @@ import { ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Script from "next/script";
-import confetti from "canvas-confetti";
 import { toast } from "sonner";
-import {
-  Loader2,
-  Coffee,
-  CreditCard,
-  Layers,
-  Smartphone,
-  Wallet,
-} from "lucide-react";
+import { Loader2, Coffee, CreditCard, Layers, Smartphone } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +26,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { Field, FieldError } from "../ui/field";
 import { launchConfettiFrame } from "@/lib/utils";
+import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
+import { useCurrency } from "@/store/use-currency";
 
 declare global {
   interface Window {
@@ -56,6 +50,11 @@ const GiveCoffeeDialog = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [loadingMethod, setLoadingMethod] = useState<
+    "gateway" | "credit" | null
+  >(null);
+
+  const { currency } = useCurrency();
 
   useEffect(() => {
     if (!isOpen) {
@@ -65,6 +64,7 @@ const GiveCoffeeDialog = ({
       return () => clearTimeout(timeout);
     }
   }, [isOpen]);
+
   const queryClient = useQueryClient();
   const { mutateAsync: createDonation } = useCreateDonationGateway();
   const { mutateAsync: createDonationCredit } = useCreateDonationCredit();
@@ -79,101 +79,131 @@ const GiveCoffeeDialog = ({
     resolver: zodResolver(donationSchema) as any,
     defaultValues: { amount: 15000 },
   });
-
   const amountValue = watch("amount");
-  const [loadingMethod, setLoadingMethod] = useState<
-    "midtrans" | "credit" | null
-  >(null);
+
+  useEffect(() => {
+    setValue("amount", currency === "IDR" ? 15000 : 3, {
+      shouldValidate: true,
+    });
+  }, [currency, setValue]);
+
+  const handleAnonymousAccount = async () => {
+    try {
+      await authClient.signIn.anonymous();
+      return true;
+    } catch (err) {
+      toast.error("Failed to initialize session. Please try again.");
+      setLoadingMethod(null);
+      return false;
+    }
+  };
+
+  const validateAmount = (data: DonationFormInputs) => {
+    if (currency === "IDR" && data.amount < 11000) {
+      toast.error("Minimum donation is Rp 11.000");
+      return false;
+    }
+    if (currency === "USD" && data.amount < 1) {
+      toast.error("Minimum donation is $1.00 USD");
+      return false;
+    }
+    return true;
+  };
+
+  const handleMidtransGateway = (response: any) => {
+    window.snap.pay(response.data.snapToken, {
+      onSuccess: function (result: any) {
+        // Munculkan kembali dialog untuk menampilkan UI Success
+        setIsOpen(true);
+        setIsSuccess(true);
+        const duration = 1.5 * 1000;
+        const end = Date.now() + duration;
+
+        launchConfettiFrame(end);
+      },
+      onPending: function (result: any) {
+        toast.info("One more step! Please complete your payment.");
+      },
+      onError: function (result: any) {
+        toast.error("Payment failed. Please try another method.");
+      },
+      onClose: function () {
+        toast.error("Payment cancelled or not completed.");
+      },
+    });
+  };
+
+  const handlePolarGateway = (response: any) => {
+    PolarEmbedCheckout.create(response.data.checkoutUrl, {
+      theme: "light",
+    }).then((checkout) => {
+      checkout.addEventListener("success", () => {
+        setIsOpen(true);
+        setIsSuccess(true);
+        setLoadingMethod(null);
+        const duration = 1.5 * 1000;
+        const end = Date.now() + duration;
+        launchConfettiFrame(end);
+      });
+    });
+  };
+
+  const handleCreditGateway = async (data: DonationFormInputs) => {
+    await createDonationCredit({
+      targetUserId,
+      stockId,
+      amount: data.amount,
+    });
+
+    setIsSuccess(true);
+    const duration = 1.5 * 1000;
+    const end = Date.now() + duration;
+    launchConfettiFrame(end);
+
+    queryClient.invalidateQueries({ queryKey: ["authUser"] });
+  };
 
   const onSubmit = async (
     data: DonationFormInputs,
-    method: "midtrans" | "credit",
+    method: "gateway" | "credit",
   ) => {
     try {
       setLoadingMethod(method);
 
       if (!user) {
-        try {
-          await authClient.signIn.anonymous();
-        } catch (err) {
-          toast.error("Failed to initialize session. Please try again.");
-          setLoadingMethod(null);
-          return;
-        }
+        const success = await handleAnonymousAccount();
+        if (!success) return;
       }
 
-      if (method === "midtrans") {
+      if (!validateAmount(data)) {
+        setLoadingMethod(null);
+        return;
+      }
+
+      if (method === "gateway") {
         const response = await createDonation({
           targetUserId,
           stockId,
           amount: data.amount,
+          currency: currency,
         });
 
-        if (response?.data?.snapToken && window.snap) {
+        if (currency === "IDR" && response?.data?.snapToken && window.snap) {
           // Tutup dialog utama agar tidak menimpa / memblock Midtrans iframe
           setIsOpen(false);
-
-          window.snap.pay(response.data.snapToken, {
-            onSuccess: function (result: any) {
-              // Munculkan kembali dialog untuk menampilkan UI Success
-              setIsOpen(true);
-              setIsSuccess(true);
-              const duration = 1.5 * 1000;
-              const end = Date.now() + duration;
-
-              // const frame = () => {
-              //   confetti({
-              //     particleCount: 5,
-              //     angle: 60,
-              //     spread: 55,
-              //     origin: { x: 0 },
-              //     colors: ["#A3FF12", "#009CDE", "#ffffff", "#f59e0b"],
-              //   });
-              //   confetti({
-              //     particleCount: 5,
-              //     angle: 120,
-              //     spread: 55,
-              //     origin: { x: 1 },
-              //     colors: ["#A3FF12", "#009CDE", "#ffffff", "#f59e0b"],
-              //   });
-
-              //   if (Date.now() < end) {
-              //     requestAnimationFrame(frame);
-              //   }
-              // };
-              // frame();
-              launchConfettiFrame(end);
-            },
-            onPending: function (result: any) {
-              toast.info("One more step! Please complete your payment.");
-            },
-            onError: function (result: any) {
-              toast.error("Payment failed. Please try another method.");
-            },
-            onClose: function () {
-              toast.error("Payment cancelled or not completed.");
-            },
-          });
+          handleMidtransGateway(response);
+        } else if (currency === "USD" && response?.data?.checkoutUrl) {
+          setIsOpen(false);
+          handlePolarGateway(response);
         } else {
           toast.error("Failed to load payment gateway.");
           setLoadingMethod(null);
         }
       } else if (method === "credit") {
-        await createDonationCredit({
-          targetUserId,
-          stockId,
-          amount: data.amount,
-        });
-
-        setIsSuccess(true);
-        const duration = 1.5 * 1000;
-        const end = Date.now() + duration;
-        launchConfettiFrame(end);
-
-        queryClient.invalidateQueries({ queryKey: ["authUser"] });
+        handleCreditGateway(data);
       }
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Something went wrong.");
+      toast.error(error?.response?.data?.message || error.message || "Something went wrong.");
       setLoadingMethod(null);
     } finally {
       if (method === "credit") {
@@ -246,60 +276,102 @@ const GiveCoffeeDialog = ({
               </DialogHeader>
 
               <form className="mt-8 space-y-4">
+                {/* <div className="flex justify-center mb-4">
+                  <div className="bg-muted p-1 rounded-full flex gap-1 items-center">
+                    <button
+                      type="button"
+                      onClick={() => setCurrency("IDR")}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${currency === "IDR" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      IDR (Rp)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrency("USD")}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${currency === "USD" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      USD ($)
+                    </button>
+                  </div>
+                </div> */}
+
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-2">
                     <Button
                       type="button"
-                      variant={amountValue === 15000 ? "default" : "outline"}
+                      variant={
+                        amountValue === (currency === "IDR" ? 15000 : 1)
+                          ? "default"
+                          : "outline"
+                      }
                       className={
-                        amountValue === 15000
+                        amountValue === (currency === "IDR" ? 15000 : 1)
                           ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm"
                           : "text-muted-foreground font-bold active:scale-95 transition-all"
                       }
                       onClick={() =>
-                        setValue("amount", 15000, { shouldValidate: true })
+                        setValue("amount", currency === "IDR" ? 15000 : 1, {
+                          shouldValidate: true,
+                        })
                       }
                     >
-                      <Coffee className="w-4 h-4 mr-1.5 opacity-80" /> 15k
+                      <Coffee className="w-4 h-4 mr-1.5 opacity-80" />{" "}
+                      {currency === "IDR" ? "15k" : "$1"}
                     </Button>
                     <Button
                       type="button"
-                      variant={amountValue === 30000 ? "default" : "outline"}
+                      variant={
+                        amountValue === (currency === "IDR" ? 30000 : 3)
+                          ? "default"
+                          : "outline"
+                      }
                       className={
-                        amountValue === 30000
+                        amountValue === (currency === "IDR" ? 30000 : 3)
                           ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm"
                           : "text-muted-foreground font-bold active:scale-95 transition-all"
                       }
                       onClick={() =>
-                        setValue("amount", 30000, { shouldValidate: true })
+                        setValue("amount", currency === "IDR" ? 30000 : 3, {
+                          shouldValidate: true,
+                        })
                       }
                     >
-                      Rp 30k
+                      {currency === "IDR" ? "Rp 30k" : "$3"}
                     </Button>
                     <Button
                       type="button"
-                      variant={amountValue === 50000 ? "default" : "outline"}
+                      variant={
+                        amountValue === (currency === "IDR" ? 50000 : 5)
+                          ? "default"
+                          : "outline"
+                      }
                       className={
-                        amountValue === 50000
+                        amountValue === (currency === "IDR" ? 50000 : 5)
                           ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm"
                           : "text-muted-foreground font-bold active:scale-95 transition-all"
                       }
                       onClick={() =>
-                        setValue("amount", 50000, { shouldValidate: true })
+                        setValue("amount", currency === "IDR" ? 50000 : 5, {
+                          shouldValidate: true,
+                        })
                       }
                     >
-                      Rp 50k
+                      {currency === "IDR" ? "Rp 50k" : "$5"}
                     </Button>
                   </div>
 
                   <Field>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-600">
-                        Rp
+                        {currency === "IDR" ? "Rp" : "$"}
                       </span>
                       <Input
                         type="number"
-                        placeholder="Manual input (min. 11000)"
+                        placeholder={
+                          currency === "IDR"
+                            ? "Manual input (min. 11000)"
+                            : "Manual input (min. 1)"
+                        }
                         className={`pl-11 h-12 font-medium bg-background shadow-xs transition-colors ${errors.amount ? "border-red-500 focus-visible:ring-red-500" : "border-amber-500 ring-1 ring-amber-500/30"}`}
                         {...register("amount")}
                       />
@@ -323,46 +395,30 @@ const GiveCoffeeDialog = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="grid grid-cols-1 gap-3 mt-4">
                   <Button
                     type="button"
                     disabled={loadingMethod !== null}
-                    onClick={handleSubmit((d: any) => onSubmit(d, "midtrans"))}
+                    onClick={handleSubmit((d: any) => onSubmit(d, "gateway"))}
                     variant="outline"
                     className="h-16 flex-col items-center justify-center gap-1.5 border-lime-300 hover:border-lime-500 hover:bg-lime-50/50 dark:border-lime-900/30 dark:hover:bg-lime-900/20 text-lime-700 dark:text-lime-500 rounded-xl shadow-sm hover:shadow-md transition-all relative overflow-hidden"
                   >
-                    {loadingMethod === "midtrans" ? (
+                    {loadingMethod === "gateway" ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
-                        <Smartphone className="w-5 h-5" />
-                        <span className="font-semibold text-xs">Midtrans</span>
+                        {currency === "IDR" ? (
+                          <Smartphone className="w-5 h-5" />
+                        ) : (
+                          <CreditCard className="w-5 h-5" />
+                        )}
+                        <span className="font-semibold text-xs text-center leading-none">
+                          {currency === "IDR"
+                            ? "Midtrans Gateway"
+                            : "Polar Gateway"}
+                        </span>
                       </>
                     )}
-                  </Button>
-                  <Button
-                    type="button"
-                    disabled={loadingMethod !== null}
-                    onClick={handleSubmit((d: any) => onSubmit(d, "midtrans"))}
-                    variant="outline"
-                    className="h-16 flex-col items-center justify-center gap-1.5 border-lime-300 hover:border-lime-500 hover:bg-lime-50/50 dark:border-lime-900/30 dark:hover:bg-lime-900/20 text-lime-700 dark:text-lime-500 rounded-xl shadow-sm hover:shadow-md transition-all relative overflow-hidden"
-                  >
-                    <CreditCard className="w-5 h-5" />
-                    <span className="font-semibold text-xs">Card</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    disabled
-                    variant="outline"
-                    className="h-16 flex-col items-center justify-center gap-1.5 border-gray-200 dark:border-gray-800 text-gray-400 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl relative overflow-hidden opacity-75"
-                  >
-                    <Wallet className="w-5 h-5" />
-                    <span className="font-semibold text-xs text-center leading-none">
-                      PayPal
-                    </span>
-                    <span className="absolute top-1 right-2 text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold uppercase">
-                      Soon
-                    </span>
                   </Button>
                   <Button
                     type="button"
@@ -383,6 +439,17 @@ const GiveCoffeeDialog = ({
                     )}
                   </Button>
                 </div>
+                {currency === "USD" ? (
+                  <p className="text-[11px] font-bold text-foreground text-center mt-3 leading-tight">
+                    * Note: Polar may apply additional VAT/Sales Tax depending
+                    on your region.
+                  </p>
+                ) : (
+                  <p className="text-[11px] font-bold text-foreground text-center mt-3 leading-tight">
+                    * Note: Midtrans currently only supports payments within
+                    Indonesia.
+                  </p>
+                )}
               </form>
             </>
           )}
