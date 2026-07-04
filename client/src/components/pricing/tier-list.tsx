@@ -106,13 +106,18 @@ const TierList = ({ billingCycle }: TierListProps) => {
 
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                  {tier.name}
+                  {tier.name}{" "}
+                  {billingCycle === "monthly" ? "(Monthly)" : "(Yearly)"}
                 </h3>
                 <div className="mt-4 flex items-baseline text-zinc-900 dark:text-zinc-50">
                   <span className="text-4xl font-bold tracking-tight">
                     {billingCycle === "monthly"
                       ? formatPrice(tier.price, currency, true)
-                      : formatPrice(Math.round((tier.priceInYear || 0) / 12), currency, true)}
+                      : formatPrice(
+                          Math.round((tier.priceInYear || 0) / 12),
+                          currency,
+                          true,
+                        )}
                   </span>
                   <span className="ml-1 text-sm font-semibold text-zinc-500">
                     /month
@@ -120,12 +125,13 @@ const TierList = ({ billingCycle }: TierListProps) => {
                 </div>
                 {billingCycle === "yearly" && (
                   <p className="text-xs text-green-600 font-medium mt-1">
-                    Billed yearly ({formatPrice(tier.priceInYear || 0, currency, true)})
+                    Billed yearly (
+                    {formatPrice(tier.priceInYear || 0, currency, true)})
                   </p>
                 )}
               </div>
 
-              <SubscriptionDialog planId={tier.id}>
+              <SubscriptionDialog planId={tier.id} initialIsAnnual={billingCycle === "yearly"}>
                 <Button
                   className={cn(
                     "w-full mb-8 font-semibold h-11",

@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Script from "next/script";
+import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import { BadgeCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn, launchConfettiFrame } from "@/lib/utils";
@@ -39,10 +40,11 @@ declare global {
 
 interface SubscriptionDialogProps {
   planId: string;
+  initialIsAnnual?: boolean;
   children?: ReactNode;
 }
 
-const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
+const SubscriptionDialog = ({ planId, initialIsAnnual = false, children }: SubscriptionDialogProps) => {
   const { data, isLoading } = useGetPlanDetail(planId);
   const { mutateAsync: createSubscription, isPending: isSubmitting } =
     useCreateSubscription();
@@ -52,9 +54,23 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
   const queryClient = useQueryClient();
 
   const [paymentMethod, setPaymentMethod] = useState("midtrans");
-  const [isAnnual, setIsAnnual] = useState(false);
+  const [isAnnual, setIsAnnual] = useState(initialIsAnnual);
   const [isOpen, setIsOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    if (currency === "USD") {
+      setPaymentMethod("card");
+    } else {
+      setPaymentMethod("midtrans");
+    }
+  }, [currency]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsAnnual(initialIsAnnual);
+    }
+  }, [isOpen, initialIsAnnual]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -116,7 +132,8 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
 
   // Logic Date
   const today = new Date();
-  const expireDate = addDays(today, plan?.durationDays || 30);
+  const daysToAdd = isAnnual ? 365 : (plan?.durationDays || 30);
+  const expireDate = addDays(today, daysToAdd);
   const formattedExpireDate = format(expireDate, "dd/MM/yyyy");
   const durationLabel =
     plan?.durationDays! < 30
@@ -131,12 +148,14 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
         plan?.durationDays! < 30 ? "ONE_TIME" : isAnnual ? "YEARLY" : "MONTHLY";
 
       const paymentAmount = getCreditValue(finalPrice, currency);
+      const gateway = currency === "USD" ? "polar" : "midtrans";
 
       const payload = {
         planId,
         billingCycle,
         amount: paymentAmount,
         currency: currency,
+        gateway: gateway,
         phone: formData.phone,
         billingAddress: {
           first_name: formData.name.split(" ")[0],
@@ -150,6 +169,26 @@ const SubscriptionDialog = ({ planId, children }: SubscriptionDialogProps) => {
       } as any;
 
       const result = await createSubscription(payload);
+
+      // Handle Polar Checkout
+      if (gateway === "polar" && result?.data?.polarCheckoutUrl) {
+        setIsOpen(false);
+        PolarEmbedCheckout.create(result.data.polarCheckoutUrl, {
+          theme: "dark",
+        }).then((checkout) => {
+          checkout.addEventListener("success", () => {
+            setIsOpen(true);
+            setIsSuccess(true);
+            const duration = 1.5 * 1000;
+            const end = Date.now() + duration;
+            launchConfettiFrame(end);
+            queryClient.invalidateQueries({ queryKey: ["authUser"] });
+          });
+        });
+        return;
+      }
+
+      // Handle Midtrans Checkout
       const snapToken = result?.data?.snapToken || result?.snapToken;
 
       if (!snapToken) {

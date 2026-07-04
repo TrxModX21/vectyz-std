@@ -50,7 +50,8 @@ export const createTopupController = asyncHandler(
 export const createSubscriptionController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = res.locals.user?.id;
-    const { planId, billingCycle, billingAddress, phone } = req.body;
+    const { planId, billingCycle, billingAddress, phone, gateway, currency } =
+      req.body;
 
     if (!userId) {
       throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
@@ -70,12 +71,20 @@ export const createSubscriptionController = asyncHandler(
       );
     }
 
+    const forwardedFor = req.headers["x-forwarded-for"] as string;
+    const ipAddress = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : req.socket.remoteAddress || "";
+
     const result = await createSubscriptionTransaction(
       userId,
       planId,
       billingCycle || "MONTHLY",
+      ipAddress,
       billingAddress,
       phone,
+      gateway,
+      currency,
     );
 
     return res.status(HTTPSTATUS.CREATED).json({

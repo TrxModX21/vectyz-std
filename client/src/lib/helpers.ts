@@ -149,7 +149,7 @@ export function formatPrice(
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      ...(compact && { notation: "compact", maximumFractionDigits: 1 }),
+      ...(compact && { notation: "compact", maximumFractionDigits: 2 }),
     }).format(value);
   }
 }
