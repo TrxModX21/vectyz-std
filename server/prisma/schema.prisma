@@ -77,8 +77,8 @@ model User {
   receivedTransactions Transaction[]     @relation("TargetUserTransactions")
   downloads            DownloadHistory[]
   payouts              Payout[]
-  notifications        Notification[] @relation("UserNotifications")
-  sentNotifications    Notification[] @relation("NotificationSourceUser")
+  notifications        Notification[]    @relation("UserNotifications")
+  sentNotifications    Notification[]    @relation("NotificationSourceUser")
 
   @@unique([email])
   @@map("user")
@@ -399,6 +399,11 @@ model Plan {
   licenseType   LicenseType @default(STANDARD) // STANDARD / EXTENDED
   maxDevices    Int         @default(1) // 1, 2, 5
   downloadSpeed String      @default("STANDARD") // "STANDARD", "HIGH"
+
+  // Khusus untuk Ngecer (One Time), kita simpan ID-nya di polarMonthlyProductId saja, 
+  // karena toh tidak ada versi tahunannya.
+  polarMonthlyProductId String? // Isi dengan ID "Creator Plan (Monthly)" dll
+  polarYearlyProductId  String? // Isi dengan ID "Creator Plan (Yearly)" dll  
 
   // Relations
   users        User[]

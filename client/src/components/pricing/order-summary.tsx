@@ -90,8 +90,10 @@ const OrderSummary = ({
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Tax (0%)</span>
-            <span>{formatPrice(0, currency)}</span>
+            <span className="text-muted-foreground">Tax</span>
+            <span className={currency === "USD" ? "text-xs font-semibold text-amber-600" : ""}>
+              {currency === "USD" ? "Calculated at checkout" : formatPrice(0, currency)}
+            </span>
           </div>
         </div>
 
@@ -119,47 +121,54 @@ const OrderSummary = ({
           <RadioGroup
             value={paymentMethod}
             onValueChange={setPaymentMethod}
-            className="grid grid-cols-3 gap-4"
+            className={`grid gap-4 ${currency === "USD" ? "grid-cols-2" : "grid-cols-1 md:grid-cols-3"}`}
             disabled={isSubmitting}
           >
-            <div>
-              <RadioGroupItem value="card" id="card" className="peer sr-only" />
-              <Label
-                htmlFor="card"
-                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-24"
-              >
-                <CreditCard className="mb-2 h-6 w-6" />
-                <span className="text-sm font-medium">Card</span>
-              </Label>
-            </div>
-            <div>
-              <RadioGroupItem
-                value="paypal"
-                id="paypal"
-                className="peer sr-only"
-              />
-              <Label
-                htmlFor="paypal"
-                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-24"
-              >
-                <Globe className="mb-2 h-6 w-6" />
-                <span className="text-sm font-medium">Paypal</span>
-              </Label>
-            </div>
-            <div>
-              <RadioGroupItem
-                value="midtrans"
-                id="midtrans"
-                className="peer sr-only"
-              />
-              <Label
-                htmlFor="midtrans"
-                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-24"
-              >
-                <ShieldCheck className="mb-2 h-6 w-6" />
-                <span className="text-sm font-medium">Midtrans</span>
-              </Label>
-            </div>
+            {currency === "USD" && (
+              <>
+                <div>
+                  <RadioGroupItem value="card" id="card" className="peer sr-only" />
+                  <Label
+                    htmlFor="card"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-24"
+                  >
+                    <CreditCard className="mb-2 h-6 w-6" />
+                    <span className="text-sm font-medium">Card</span>
+                  </Label>
+                </div>
+                {/* <div>
+                  <RadioGroupItem
+                    value="paypal"
+                    id="paypal"
+                    className="peer sr-only"
+                  />
+                  <Label
+                    htmlFor="paypal"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-24"
+                  >
+                    <Globe className="mb-2 h-6 w-6" />
+                    <span className="text-sm font-medium">Paypal</span>
+                  </Label>
+                </div> */}
+              </>
+            )}
+
+            {currency === "IDR" && (
+              <div>
+                <RadioGroupItem
+                  value="midtrans"
+                  id="midtrans"
+                  className="peer sr-only"
+                />
+                <Label
+                  htmlFor="midtrans"
+                  className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-24"
+                >
+                  <ShieldCheck className="mb-2 h-6 w-6" />
+                  <span className="text-sm font-medium">Midtrans</span>
+                </Label>
+              </div>
+            )}
           </RadioGroup>
 
           {/* Secure Payment Note */}
@@ -167,6 +176,16 @@ const OrderSummary = ({
             <Lock className="h-3 w-3" />
             <span>Secure payment with SSL Encryption</span>
           </div>
+
+          {currency === "USD" ? (
+            <p className="text-[11px] font-bold text-foreground mt-3 leading-tight">
+              * Note: Polar may apply additional VAT/Sales Tax depending on your region.
+            </p>
+          ) : (
+            <p className="text-[11px] font-bold text-foreground mt-3 leading-tight">
+              * Note: Midtrans currently only supports payments within Indonesia.
+            </p>
+          )}
         </div>
       </div>
 

@@ -74,6 +74,7 @@ export const createSubscriptionTransaction = async (
   userId: string,
   planId: string,
   billingCycle: "MONTHLY" | "YEARLY" | "ONE_TIME",
+  ipAddress: string,
   billingAddress?: {
     first_name?: string;
     email?: string;
@@ -84,6 +85,8 @@ export const createSubscriptionTransaction = async (
     country_code?: string;
   },
   phone?: string,
+  gateway: "midtrans" | "polar" = "midtrans",
+  currency: "IDR" | "USD" = "IDR",
 ) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   const plan = await prisma.plan.findUnique({ where: { id: planId } });
@@ -128,6 +131,43 @@ export const createSubscriptionTransaction = async (
       periodDays: periodDays,
     },
   });
+
+  if (gateway === "polar") {
+    const productId =
+      billingCycle === "YEARLY"
+        ? plan.polarYearlyProductId
+        : plan.polarMonthlyProductId;
+
+    if (!productId) {
+      throw new BadRequestException(
+        `Polar product ID for ${billingCycle} is not configured for this plan.`,
+      );
+    }
+
+    const checkout = await polar.checkouts.create({
+      products: [productId],
+      customerEmail: billingAddress?.email || user.email,
+      customerName: billingAddress?.first_name || user.name,
+      externalCustomerId: user.id,
+      embedOrigin: config.CLIENT_URL as string,
+      allowDiscountCodes: false,
+      customerIpAddress: ipAddress,
+      metadata: {
+        transactionId: transaction.id,
+      },
+      successUrl: `${config.CLIENT_URL}/pricing?success=true`,
+    });
+
+    await prisma.transaction.update({
+      where: { id: transaction.id },
+      data: { externalId: checkout.id },
+    });
+
+    return {
+      transactionId: transaction.id,
+      polarCheckoutUrl: checkout.url,
+    };
+  }
 
   // Get Snap Token
   const snap = await createSnapTransaction({
@@ -659,10 +699,12 @@ export const handlePaymentNotification = async (notificationBody: any) => {
             subscriptionExpiresAt.setDate(now.getDate() + activeDays);
           }
 
-          // 2. Calculate Next Quota Reset (Always Monthly for Quota)
-          // Even for Yearly plan, quota resets every month
-          const nextQuotaReset = new Date(now);
+          // 2. Calculate Next Quota Reset (Always Monthly for Quota, but capped at expiry)
+          let nextQuotaReset = new Date(now);
           nextQuotaReset.setMonth(now.getMonth() + 1);
+          if (nextQuotaReset > subscriptionExpiresAt) {
+            nextQuotaReset = new Date(subscriptionExpiresAt);
+          }
 
           await tx.user.update({
             where: { id: user.id },
@@ -1281,108 +1323,206 @@ export const handlePolarWebhookEvent = async (payload: any) => {
 
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
+      include: { user: true, plan: true },
     });
 
-    if (!transaction || transaction.status === PaymentStatus.PAID) {
+    if (!transaction) return;
+
+    if (
+      transaction.status === PaymentStatus.PAID &&
+      data.billing_reason !== "subscription_cycle"
+    ) {
       return; // Already processed or not found
     }
 
-    // Process Donation Completion
     await prisma.$transaction(async (tx) => {
-      // 1. Calculate actual USD paid from Polar webhook (subtotal is in cents)
-      const actualUsdCents = data.subtotalAmount || transaction.amount / 200; // fallback if missing
-      // console.log("actualUsdCents ", actualUsdCents);
-      const actualUsdPaid = actualUsdCents / 100;
-      // console.log("actualUsdPaid ", actualUsdPaid);
+      if (transaction.type === TransactionType.DONATION) {
+        // 1. Calculate actual USD paid from Polar webhook (subtotal is in cents)
+        const actualUsdCents = data.subtotalAmount || transaction.amount / 200; // fallback if missing
+        const actualUsdPaid = actualUsdCents / 100;
 
-      // Calculate equivalent IDR: $0.05 USD = 1 Credit => 1 USD = 20 Credits = Rp 20.000
-      const donationInRupiah = actualUsdPaid * 20000;
-      // console.log("donationInRupiah ", donationInRupiah);
-      const actualCreditAmount = actualUsdPaid / 0.05;
-      // console.log("actualCreditAmount ", actualCreditAmount);
+        // Calculate equivalent IDR: $0.05 USD = 1 Credit => 1 USD = 20 Credits = Rp 20.000
+        const donationInRupiah = actualUsdPaid * 20000;
+        const actualCreditAmount = actualUsdPaid / 0.05;
 
-      // 2. Update Transaction to PAID and update amounts just in case they were modified at checkout
-      await tx.transaction.update({
-        where: { id: transaction.id },
-        data: {
-          status: PaymentStatus.PAID,
-          amount: donationInRupiah,
-          creditAmount: actualCreditAmount,
-        },
-      });
-
-      // Calculate revenue with 12% platform fee for Polar (5% + 50 cents buffer)
-      // Potongan 12% platform fee, jadi kreator dapat 88%
-      const creatorShareRupiah = donationInRupiah * 0.88;
-      const rawCredit = creatorShareRupiah / 1000;
-      const finalCredit = Math.floor(rawCredit * 100) / 100;
-      const platformFeeCredit = donationInRupiah / 1000 - finalCredit;
-
-      // 2. Add Credit to Target User
-      await tx.user.update({
-        where: { id: transaction.targetUserId! },
-        data: {
-          creditBalance: { increment: finalCredit },
-          earnedCredit: { increment: finalCredit },
-        },
-      });
-
-      // 3. Platform Fee
-      if (config.PLATFORM_FEE_USER_ID) {
-        await tx.user.update({
-          where: { id: config.PLATFORM_FEE_USER_ID },
+        // 2. Update Transaction to PAID and update amounts just in case they were modified at checkout
+        await tx.transaction.update({
+          where: { id: transaction.id },
           data: {
-            creditBalance: { increment: platformFeeCredit },
-            earnedCredit: { increment: platformFeeCredit },
+            status: PaymentStatus.PAID,
+            amount: donationInRupiah,
+            creditAmount: actualCreditAmount,
+            paymentMethod: "polar",
           },
         });
 
+        // Calculate revenue with 12% platform fee for Polar (5% + 50 cents buffer)
+        // Potongan 12% platform fee, jadi kreator dapat 88%
+        const creatorShareRupiah = donationInRupiah * 0.88;
+        const rawCredit = creatorShareRupiah / 1000;
+        const finalCredit = Math.floor(rawCredit * 100) / 100;
+        const platformFeeCredit = donationInRupiah / 1000 - finalCredit;
+
+        // 2. Add Credit to Target User
+        await tx.user.update({
+          where: { id: transaction.targetUserId! },
+          data: {
+            creditBalance: { increment: finalCredit },
+            earnedCredit: { increment: finalCredit },
+          },
+        });
+
+        // 3. Platform Fee
+        if (config.PLATFORM_FEE_USER_ID) {
+          await tx.user.update({
+            where: { id: config.PLATFORM_FEE_USER_ID },
+            data: {
+              creditBalance: { increment: platformFeeCredit },
+              earnedCredit: { increment: platformFeeCredit },
+            },
+          });
+
+          await tx.transaction.create({
+            data: {
+              userId: config.PLATFORM_FEE_USER_ID,
+              targetUserId: transaction.targetUserId!,
+              stockId: transaction.stockId,
+              type: TransactionType.PLATFORM_FEE,
+              status: PaymentStatus.PAID,
+              amount: donationInRupiah,
+              creditAmount: platformFeeCredit,
+              paymentMethod: "SYSTEM",
+              externalId: transaction.externalId,
+            },
+          });
+        }
+
+        // 4. Earning Transaction for Creator
         await tx.transaction.create({
           data: {
-            userId: config.PLATFORM_FEE_USER_ID,
-            targetUserId: transaction.targetUserId!,
+            userId: transaction.targetUserId!,
+            targetUserId: transaction.userId,
             stockId: transaction.stockId,
-            type: TransactionType.PLATFORM_FEE,
+            type: TransactionType.EARNING_DONATION,
             status: PaymentStatus.PAID,
             amount: donationInRupiah,
-            creditAmount: platformFeeCredit,
+            creditAmount: finalCredit,
             paymentMethod: "SYSTEM",
             externalId: transaction.externalId,
           },
         });
-      }
 
-      // 4. Earning Transaction for Creator
-      await tx.transaction.create({
-        data: {
-          userId: transaction.targetUserId!,
-          targetUserId: transaction.userId,
-          stockId: transaction.stockId,
-          type: TransactionType.EARNING_DONATION,
-          status: PaymentStatus.PAID,
-          amount: donationInRupiah,
-          creditAmount: finalCredit,
-          paymentMethod: "SYSTEM",
-          externalId: transaction.externalId,
-        },
-      });
+        const donator = await tx.user.findUnique({
+          where: { id: transaction.userId },
+        });
+        const targetUser = await tx.user.findUnique({
+          where: { id: transaction.targetUserId! },
+        });
 
-      const donator = await tx.user.findUnique({
-        where: { id: transaction.userId },
-      });
-      const targetUser = await tx.user.findUnique({
-        where: { id: transaction.targetUserId! },
-      });
+        // 5. Create Notification
+        if (donator && targetUser) {
+          await createNotification({
+            userId: transaction.targetUserId!,
+            type: NotificationType.DONATION_RECEIVED,
+            title: "New Coffee! ☕",
+            message: `${donator.name} gave you ${finalCredit} credits!`,
+            sourceUserId: donator.id,
+            recipientEmail: targetUser.email,
+          });
+        }
+      } else if (
+        transaction.type === TransactionType.SUBSCRIPTION &&
+        transaction.planId &&
+        transaction.user &&
+        transaction.plan
+      ) {
+        const user = transaction.user;
+        const plan = transaction.plan;
+        const now = new Date();
+        const activeDays = transaction.periodDays || 30; // Fallback 30
 
-      // 5. Create Notification
-      if (donator && targetUser) {
-        await createNotification({
-          userId: transaction.targetUserId!,
-          type: NotificationType.DONATION_RECEIVED,
-          title: "New Coffee! ☕",
-          message: `${donator.name} gave you ${finalCredit} credits!`,
-          sourceUserId: donator.id,
-          recipientEmail: targetUser.email,
+        if (data.billing_reason === "subscription_cycle") {
+          // Create a new transaction record for this month's renewal payment
+          await tx.transaction.create({
+            data: {
+              userId: transaction.userId,
+              type: TransactionType.SUBSCRIPTION,
+              amount: transaction.amount,
+              creditAmount: transaction.creditAmount,
+              planId: transaction.planId,
+              status: PaymentStatus.PAID,
+              billingCycle: transaction.billingCycle,
+              periodDays: transaction.periodDays,
+              paymentMethod: "polar",
+              externalId: data.id, // order id from polar
+            },
+          });
+        } else {
+          // Update initial transaction
+          await tx.transaction.update({
+            where: { id: transaction.id },
+            data: {
+              status: PaymentStatus.PAID,
+              paymentMethod: "polar",
+            },
+          });
+        }
+
+        // Calculate Expiry Date (Extend if active, Reset if expired)
+        let subscriptionExpiresAt = new Date(now);
+        if (user.subscriptionExpiresAt && user.subscriptionExpiresAt > now) {
+          subscriptionExpiresAt = new Date(user.subscriptionExpiresAt);
+          subscriptionExpiresAt.setDate(
+            subscriptionExpiresAt.getDate() + activeDays,
+          );
+        } else {
+          subscriptionExpiresAt.setDate(now.getDate() + activeDays);
+        }
+
+        // Calculate Next Quota Reset (Always Monthly for Quota, but capped at expiry)
+        let nextQuotaReset = new Date(now);
+        nextQuotaReset.setMonth(now.getMonth() + 1);
+        if (nextQuotaReset > subscriptionExpiresAt) {
+          nextQuotaReset = new Date(subscriptionExpiresAt);
+        }
+
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            isPremium: true,
+            planId: plan.id,
+            billingCycle: transaction.billingCycle || "MONTHLY",
+            subscriptionExpiresAt: subscriptionExpiresAt,
+            premiumQuota: plan.premiumQuota,
+            premiumQuotaResetDate: nextQuotaReset,
+          },
+        });
+
+        // --- MONTHLY POOL DISTRIBUTION ---
+        const baseCredit = Number(transaction.creditAmount || 0);
+        const premiumShare = baseCredit * 0.5;
+        const freeShare = baseCredit * 0.1;
+
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        await tx.monthlyPool.upsert({
+          where: {
+            month_year: {
+              month: currentMonth,
+              year: currentYear,
+            },
+          },
+          update: {
+            premiumPoolAmount: { increment: premiumShare },
+            freePoolAmount: { increment: freeShare },
+          },
+          create: {
+            month: currentMonth,
+            year: currentYear,
+            premiumPoolAmount: premiumShare,
+            freePoolAmount: freeShare,
+          },
         });
       }
     });
