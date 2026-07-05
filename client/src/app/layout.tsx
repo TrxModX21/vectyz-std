@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import ReactQueryProvider from "@/providers/react-query-provider";
 import DisableInspect from "@/components/common/disable-inspect";
 import { SocketProvider } from "@/providers/socket-provider";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const montserrat = Montserrat({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -93,6 +94,9 @@ export default function RootLayout({
           <SocketProvider>
             <DisableInspect />
             {children}
+            {process.env.NODE_ENV === "production" && (
+              <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID as string} />
+            )}
           </SocketProvider>
         </ReactQueryProvider>
 
