@@ -34,7 +34,8 @@ export const createTopupTransaction = async (
     data: {
       userId,
       type: TransactionType.TOPUP_CREDIT,
-      amount: gateway === "polar" ? Math.round(amountUsd * 16000) : amountRupiah,
+      amount:
+        gateway === "polar" ? Math.round(amountUsd * 16000) : amountRupiah,
       creditAmount: creditAmount,
       status: PaymentStatus.PENDING,
     },
@@ -42,7 +43,9 @@ export const createTopupTransaction = async (
 
   if (gateway === "polar") {
     if (!config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID) {
-      throw new Error("POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID is not configured");
+      throw new Error(
+        "POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID is not configured",
+      );
     }
 
     const checkout = await polar.checkouts.create({
@@ -51,6 +54,7 @@ export const createTopupTransaction = async (
       customerEmail: user.email,
       customerName: user.name,
       externalCustomerId: user.id,
+      allowDiscountCodes: false,
       metadata: {
         transactionId: transaction.id,
       },
@@ -234,6 +238,8 @@ export const createSubscriptionTransaction = async (
 export const createDirectPurchaseTransaction = async (
   userId: string,
   stockId: string,
+  gateway: "midtrans" | "polar" = "midtrans",
+  ipAddress: string,
 ) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   const stock = await prisma.stock.findUnique({ where: { id: stockId } });
@@ -241,7 +247,7 @@ export const createDirectPurchaseTransaction = async (
   if (!user) throw new NotFoundException("User not found");
   if (!stock) throw new NotFoundException("Stock not found");
 
-  let amount = getCreditValue(Number(stock.price), "IDR");
+  let amountIdr = getCreditValue(Number(stock.price), "IDR");
 
   // Create Transaction Record
   const transaction = await prisma.transaction.create({
@@ -250,14 +256,84 @@ export const createDirectPurchaseTransaction = async (
       stockId: stock.id,
       type: TransactionType.BUY_ASSET,
       status: PaymentStatus.PENDING,
-      amount: amount,
+      amount: amountIdr,
     },
   });
+
+  if (gateway === "polar") {
+    // 1 Credit = $0.05 => stock.price (in credits) * 5 cents
+    const priceInCents = Math.round(Number(stock.price) * 5);
+
+    let polarProductId = stock.polarProductId;
+
+    if (polarProductId) {
+      try {
+        const product = await polar.products.get({ id: polarProductId });
+        const prices = (product as any).prices || [];
+        const hasMatchingPrice = prices.some(
+          (p: any) =>
+            p.amountType === "fixed" && p.priceAmount === priceInCents,
+        );
+
+        if (!hasMatchingPrice) {
+          polarProductId = null; // force recreation with new price
+        }
+      } catch (error) {
+        console.error("Failed to fetch Polar product:", error);
+        polarProductId = null; // force recreation
+      }
+    }
+
+    if (!polarProductId) {
+      const newPolarProduct = await polar.products.create({
+        name: `Asset: ${stock.title}`,
+        visibility: "private",
+        description: stock.description,
+        prices: [
+          {
+            amountType: "fixed",
+            priceAmount: priceInCents,
+            priceCurrency: "usd",
+          },
+        ],
+      });
+
+      polarProductId = newPolarProduct.id;
+
+      await prisma.stock.update({
+        where: { id: stock.id },
+        data: { polarProductId },
+      });
+    }
+
+    const checkout = await polar.checkouts.create({
+      products: [polarProductId],
+      customerEmail: user.email,
+      customerName: user.name,
+      externalCustomerId: user.id,
+      embedOrigin: config.CLIENT_URL as string,
+      allowDiscountCodes: false,
+      customerIpAddress: ipAddress,
+      metadata: {
+        transactionId: transaction.id,
+      },
+    });
+
+    await prisma.transaction.update({
+      where: { id: transaction.id },
+      data: { externalId: checkout.id, paymentMethod: "POLAR" },
+    });
+
+    return {
+      transactionId: transaction.id,
+      polarCheckoutUrl: checkout.url,
+    };
+  }
 
   // Get Snap Token
   const snap = await createSnapTransaction({
     order_id: transaction.id,
-    gross_amount: amount,
+    gross_amount: amountIdr,
     customer_details: {
       first_name: user.name,
       email: user.email,
@@ -265,7 +341,7 @@ export const createDirectPurchaseTransaction = async (
     item_details: [
       {
         id: stock.id,
-        price: amount,
+        price: amountIdr,
         quantity: 1,
         name: `Asset: ${stock.title.substring(0, 20)}...`,
       },
@@ -1582,6 +1658,95 @@ export const handlePolarWebhookEvent = async (payload: any) => {
             freePoolAmount: freeShare,
           },
         });
+      } else if (
+        transaction.type === TransactionType.BUY_ASSET &&
+        transaction.stockId
+      ) {
+        const stock = await tx.stock.findUnique({
+          where: { id: transaction.stockId },
+        });
+
+        if (stock) {
+          const priceInCredit = Number(stock.price);
+          const priceInRupiah = priceInCredit * 1000;
+
+          // Update Transaction
+          await tx.transaction.update({
+            where: { id: transaction.id },
+            data: {
+              status: PaymentStatus.PAID,
+              paymentMethod: "polar",
+              amount: priceInRupiah,
+            },
+          });
+
+          // Distribusi Creator & Platform
+          const creatorShare = priceInCredit * 0.75;
+          const platformShare = priceInCredit - creatorShare;
+
+          await tx.user.update({
+            where: { id: stock.userId },
+            data: {
+              creditBalance: { increment: creatorShare },
+              earnedCredit: { increment: creatorShare },
+            },
+          });
+
+          if (config.PLATFORM_FEE_USER_ID) {
+            await tx.user.update({
+              where: { id: config.PLATFORM_FEE_USER_ID },
+              data: {
+                creditBalance: { increment: platformShare },
+                earnedCredit: { increment: platformShare },
+              },
+            });
+          }
+
+          // Catat Transaksi EARNING_ASSET
+          await tx.transaction.create({
+            data: {
+              userId: stock.userId,
+              targetUserId: transaction.userId,
+              stockId: stock.id,
+              type: TransactionType.EARNING_ASSET,
+              status: PaymentStatus.PAID,
+              amount: priceInRupiah,
+              creditAmount: creatorShare,
+              paymentMethod: "polar",
+              externalId: transaction.externalId,
+            },
+          });
+
+          const creator = await tx.user.findUnique({
+            where: { id: stock.userId },
+          });
+
+          await createNotification({
+            userId: stock.userId,
+            type: NotificationType.ASSET_SOLD,
+            title: "Asset Sold! 🎉",
+            message: `Someone just purchased "${stock.title}". You earned ${creatorShare} credits.`,
+            sourceUserId: transaction.userId,
+            stockId: stock.id,
+            recipientEmail: creator?.email,
+          });
+
+          if (config.PLATFORM_FEE_USER_ID) {
+            await tx.transaction.create({
+              data: {
+                userId: config.PLATFORM_FEE_USER_ID,
+                targetUserId: stock.userId,
+                stockId: stock.id,
+                type: TransactionType.PLATFORM_FEE,
+                status: PaymentStatus.PAID,
+                amount: priceInRupiah,
+                creditAmount: platformShare,
+                paymentMethod: "polar",
+                externalId: transaction.externalId,
+              },
+            });
+          }
+        }
       }
     });
   }

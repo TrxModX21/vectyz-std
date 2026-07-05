@@ -14,7 +14,6 @@ import {
   CreditCard,
   Loader2,
   Smartphone,
-  Wallet,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import Image from "next/image";
@@ -25,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
 import { formatPrice } from "@/lib/helpers";
 import { useCurrency } from "@/store/use-currency";
+import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 
 declare global {
   interface Window {
@@ -45,7 +45,7 @@ const DirectBuyDialog = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [isWaitingPayment, setIsWaitingPayment] = useState(false);
   const [loadingMethod, setLoadingMethod] = useState<
-    "midtrans" | "card" | null
+    "midtrans" | "polar" | "card" | null
   >(null);
 
   const { currency } = useCurrency();
@@ -92,25 +92,28 @@ const DirectBuyDialog = ({
     }
   };
 
-  const onSubmit = async (method: "midtrans" | "card") => {
+  const onSubmit = async () => {
     try {
-      setLoadingMethod(method);
+      const activeGateway = currency === "IDR" ? "midtrans" : "polar";
+      setLoadingMethod(activeGateway);
 
       if (!user) {
         router.push("/auth/sign-in");
+        return;
       }
 
-      if (method === "midtrans") {
-        const response = await purchaseAsset(stock?.id || "");
+      const response = await purchaseAsset({
+        stockId: stock?.id || "",
+        gateway: activeGateway,
+      });
 
+      if (activeGateway === "midtrans") {
         if (response?.data?.snapToken && window.snap) {
-          setIsOpen(false); // Tutup dialog agar midtrans memiliki layar penuhh
+          setIsOpen(false);
           setIsWaitingPayment(false);
 
           window.snap.pay(response.data.snapToken, {
             onSuccess: function (result: any) {
-              // Berikan jeda waktu agar DOM Click iframe Midtrans tuntas
-              // sehingga Dialog Radix tidak trigger onInteractOutside (ghost click)
               setTimeout(() => {
                 setIsOpen(true);
                 setIsSuccess(true);
@@ -137,12 +140,29 @@ const DirectBuyDialog = ({
           toast.error("Failed to load payment gateway.");
           setLoadingMethod(null);
         }
-      } else {
-        toast.info("Credit payment wiring pending...");
+      } else if (activeGateway === "polar") {
+        if (response?.data?.polarCheckoutUrl) {
+          setIsOpen(false);
+          PolarEmbedCheckout.create(response.data.polarCheckoutUrl, {
+            theme: "light",
+          }).then((checkout) => {
+            checkout.addEventListener("success", () => {
+              setIsOpen(true);
+              setIsSuccess(true);
+              setLoadingMethod(null);
+              const duration = 1.5 * 1000;
+              const end = Date.now() + duration;
+              launchConfettiFrame(end);
+              handleAutoDownload();
+            });
+          });
+        } else {
+          toast.error("Failed to load Polar gateway.");
+          setLoadingMethod(null);
+        }
       }
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Something went wrong.");
-    } finally {
       setLoadingMethod(null);
     }
   };
@@ -248,36 +268,41 @@ const DirectBuyDialog = ({
                       Select Payment Method
                     </p>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        onClick={() => onSubmit("midtrans")}
-                        disabled={loadingMethod !== null}
-                        variant="outline"
-                        className="h-14 flex items-center justify-start px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group"
-                      >
-                        {loadingMethod === "midtrans" ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <Smartphone className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
-                        )}
-                        <span className="font-semibold text-sm">Midtrans</span>
-                      </Button>
+                      {currency === "IDR" ? (
+                        <Button
+                          onClick={() => onSubmit()}
+                          disabled={loadingMethod !== null}
+                          variant="outline"
+                          className="h-14 flex items-center justify-start px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group col-span-2"
+                        >
+                          {loadingMethod === "midtrans" ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Smartphone className="w-5 h-5 text-[#0079C1] group-hover:scale-110 transition-transform" />
+                          )}
+                          <span className="font-semibold text-sm">
+                            Pay with Midtrans (QRIS/Transfer)
+                          </span>
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => onSubmit()}
+                          disabled={loadingMethod !== null}
+                          variant="outline"
+                          className="h-14 flex items-center justify-start px-4 gap-3 border-slate-300 hover:border-slate-800 hover:bg-slate-50 text-slate-700 dark:border-slate-700 dark:hover:border-white dark:text-slate-200 dark:hover:bg-slate-800 rounded-xl shadow-sm hover:shadow-md transition-all group col-span-2"
+                        >
+                          {loadingMethod === "polar" ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <CreditCard className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                          )}
+                          <span className="font-semibold text-sm">
+                            Pay with Polar
+                          </span>
+                        </Button>
+                      )}
 
-                      <Button
-                        //   onClick={() => handleSimulatePayment("Card")}
-                        //   disabled={paymentState === "pending"}
-                        variant="outline"
-                        className="h-14 flex items-center justify-start px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group"
-                      >
-                        {/* {paymentState === "pending" ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
-                  ) : (
-                    <CreditCard className="w-5 h-5 text-slate-500 group-hover:scale-110 transition-transform" />
-                  )} */}
-                        <CreditCard className="w-5 h-5" />
-                        <span className="font-semibold text-sm">Card</span>
-                      </Button>
-
-                      <Button
+                      {/* <Button
                         variant="outline"
                         className="h-14 relative col-span-2 flex items-center justify-center gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] dark:text-[#00A9E0] rounded-xl shadow-sm hover:shadow-md transition-all group"
                         disabled
@@ -289,7 +314,7 @@ const DirectBuyDialog = ({
                         <span className="absolute top-1 right-2 text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold uppercase">
                           Soon
                         </span>
-                      </Button>
+                      </Button> */}
                     </div>
                   </div>
                 </>
