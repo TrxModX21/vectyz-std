@@ -37,7 +37,11 @@ export const createTopupController = asyncHandler(
       throw new AppError("Credit Amount is required", HTTPSTATUS.BAD_REQUEST);
     }
 
-    const result = await createTopupTransaction(userId, Number(creditAmount), gateway);
+    const result = await createTopupTransaction(
+      userId,
+      Number(creditAmount),
+      gateway,
+    );
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Topup transaction created",
@@ -98,7 +102,7 @@ export const createSubscriptionController = asyncHandler(
 export const buyAssetDirectController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = res.locals.user?.id;
-    const { stockId } = req.body;
+    const { stockId, gateway = "midtrans" } = req.body;
 
     if (!userId) {
       throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
@@ -108,7 +112,17 @@ export const buyAssetDirectController = asyncHandler(
       throw new AppError("Stock ID is required", HTTPSTATUS.BAD_REQUEST);
     }
 
-    const result = await createDirectPurchaseTransaction(userId, stockId);
+    const forwardedFor = req.headers["x-forwarded-for"] as string;
+    const ipAddress = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : req.socket.remoteAddress || "";
+
+    const result = await createDirectPurchaseTransaction(
+      userId,
+      stockId,
+      gateway,
+      ipAddress,
+    );
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Purchase transaction created",

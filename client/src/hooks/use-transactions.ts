@@ -20,9 +20,10 @@ export const useCheckAccess = (
 
 export const useBuyAssetDirect = () => {
   return useMutation({
-    mutationFn: async (stockId: string) => {
+    mutationFn: async ({ stockId, gateway = "midtrans" }: { stockId: string; gateway?: "midtrans" | "polar" }) => {
       const { data } = await api.post("/transactions/buy-asset/gateway", {
         stockId,
+        gateway,
       });
       return data;
     },

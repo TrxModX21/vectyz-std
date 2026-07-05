@@ -121,7 +121,7 @@ const OrderSummary = ({
           <RadioGroup
             value={paymentMethod}
             onValueChange={setPaymentMethod}
-            className={`grid gap-4 ${currency === "USD" ? "grid-cols-2" : "grid-cols-1 md:grid-cols-3"}`}
+            className={`grid gap-4 ${currency === "USD" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-1"}`}
             disabled={isSubmitting}
           >
             {currency === "USD" && (

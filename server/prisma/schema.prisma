@@ -268,6 +268,7 @@ model Stock {
   isSubscriptionAccessible Boolean @default(true)
 
   price             Decimal           @default(0) @db.Decimal(28, 8)
+  polarProductId    String? // ID Produk di Polar (dibuat otomatis saat pembelian pertama)
   status            StockStatus       @default(PENDING)
   rejectionReason   String?           @db.Text
   totalDownloads    Int               @default(0)
