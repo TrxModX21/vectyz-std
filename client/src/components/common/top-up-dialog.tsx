@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Input } from "../ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { useTopupCredit } from "../../hooks/use-transactions";
+import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import { toast } from "sonner";
 import Script from "next/script";
 import { cn, launchConfettiFrame } from "@/lib/utils";
@@ -107,55 +108,75 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
     setCustomCredits(value);
   };
 
-  const handleMidtransPayment = () => {
+  const handlePayment = () => {
     if (!isValidCustomAmount) {
       toast.error("Minimum custom top up is 10 Credits");
       return;
     }
 
-    topupCredit(selectedCredits, {
-      onSuccess: (data) => {
-        // data contains the result from backend
-        // Assume data contains { snapToken } based on API response structure
-        const snapToken = data.data?.snapToken || data.snapToken;
+    const gateway = currency === "IDR" ? "midtrans" : "polar";
 
-        if (!snapToken) {
-          toast.error("Failed to get payment token from server.");
-          return;
-        }
+    topupCredit(
+      { creditAmount: selectedCredits, currency, gateway },
+      {
+        onSuccess: (data) => {
+          if (gateway === "polar" && data.data?.polarCheckoutUrl) {
+            setIsOpen(false);
+            PolarEmbedCheckout.create(data.data.polarCheckoutUrl, {
+              theme: "dark",
+            }).then((checkout) => {
+              checkout.addEventListener("success", () => {
+                setIsOpen(true);
+                setIsSuccess(true);
+                const duration = 1.5 * 1000;
+                const end = Date.now() + duration;
+                launchConfettiFrame(end);
+                queryClient.invalidateQueries({ queryKey: ["authUser"] });
+              });
+            });
+            return;
+          }
 
-        setIsOpen(false);
+          const snapToken = data.data?.snapToken || data.snapToken;
 
-        // Midtrans Snap Popup
-        window.snap.pay(snapToken, {
-          onSuccess: function (result: any) {
-            setTimeout(() => {
-              setIsOpen(true);
-              setIsSuccess(true);
-              const duration = 1.5 * 1000;
-              const end = Date.now() + duration;
+          if (!snapToken) {
+            toast.error("Failed to get payment token from server.");
+            return;
+          }
 
-              launchConfettiFrame(end);
-              queryClient.invalidateQueries({ queryKey: ["authUser"] });
-            }, 500);
-          },
-          onPending: function (result: any) {
-            toast.info("Waiting for your payment.");
-          },
-          onError: function (result: any) {
-            toast.error("Payment failed. Please try again.");
-          },
-          onClose: function () {
-            toast.error("Payment cancelled or not completed.");
-          },
-        });
+          setIsOpen(false);
+
+          // Midtrans Snap Popup
+          window.snap.pay(snapToken, {
+            onSuccess: function (result: any) {
+              setTimeout(() => {
+                setIsOpen(true);
+                setIsSuccess(true);
+                const duration = 1.5 * 1000;
+                const end = Date.now() + duration;
+
+                launchConfettiFrame(end);
+                queryClient.invalidateQueries({ queryKey: ["authUser"] });
+              }, 500);
+            },
+            onPending: function (result: any) {
+              toast.info("Waiting for your payment.");
+            },
+            onError: function (result: any) {
+              toast.error("Payment failed. Please try again.");
+            },
+            onClose: function () {
+              toast.error("Payment cancelled or not completed.");
+            },
+          });
+        },
+        onError: (error: any) => {
+          toast.error(
+            error.response?.data?.message || "Failed to create transaction",
+          );
+        },
       },
-      onError: (error: any) => {
-        toast.error(
-          error.response?.data?.message || "Failed to create transaction",
-        );
-      },
-    });
+    );
   };
 
   return (
@@ -335,61 +356,71 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                   {formatPrice(selectedCredits, currency, true)}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3 pb-2 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={handleMidtransPayment}
-                  disabled={isPending || !isValidCustomAmount}
-                  className="h-14 flex items-center justify-start px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
-                >
-                  {isPending ? (
-                    <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-500" />
-                  ) : (
-                    <>
-                      <Smartphone className="w-5 h-5 text-slate-500 group-hover:scale-110 transition-transform" />
-                      <span className="font-semibold text-sm">Midtrans</span>
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  disabled
-                  title="Coming Soon"
-                  className="h-14 flex items-center justify-start px-4 gap-3 border-slate-200 text-slate-400 rounded-xl bg-slate-50 opacity-80 cursor-not-allowed"
-                >
-                  <CreditCard className="w-5 h-5" />
-                  <span className="font-semibold text-sm flex-1 text-left">
-                    Card
-                  </span>
-                  <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md uppercase tracking-wider font-bold">
-                    Soon
-                  </span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  disabled
-                  title="Coming Soon"
-                  className="h-14 col-span-2 flex items-center justify-center gap-3 border-slate-200 text-slate-400 rounded-xl bg-slate-50 opacity-80 cursor-not-allowed relative"
-                >
-                  <Wallet className="w-5 h-5" />
-                  <span className="font-semibold text-sm leading-none">
-                    Pay with PayPal
-                  </span>
-                  <span className="absolute right-4 text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md uppercase tracking-wider font-bold">
-                    Soon
-                  </span>
-                </Button>
+              <div className="grid gap-3 pb-2 pt-2">
+                {currency === "IDR" ? (
+                  <Button
+                    variant="outline"
+                    onClick={handlePayment}
+                    disabled={isPending || !isValidCustomAmount}
+                    className="h-14 flex items-center justify-center px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-500" />
+                    ) : (
+                      <>
+                        <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold text-sm">
+                          Pay with Midtrans
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={handlePayment}
+                      disabled={isPending || !isValidCustomAmount}
+                      className="h-14 flex items-center justify-center px-4 gap-3 border-slate-200 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl shadow-sm transition-all"
+                    >
+                      {isPending ? (
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-500" />
+                      ) : (
+                        <>
+                          <CreditCard className="w-5 h-5" />
+                          <span className="font-semibold text-sm">
+                            Pay with Polar
+                          </span>
+                        </>
+                      )}
+                    </Button>
+                    {/* <Button
+                      variant="outline"
+                      onClick={handlePayment}
+                      disabled={isPending || !isValidCustomAmount}
+                      className="h-14 flex items-center justify-center px-4 gap-3 border-slate-200 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl shadow-sm transition-all"
+                    >
+                      {isPending ? (
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-500" />
+                      ) : (
+                        <>
+                          <Wallet className="w-5 h-5" />
+                          <span className="font-semibold text-sm">PayPal</span>
+                        </>
+                      )}
+                    </Button> */}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <p className="text-center text-xs text-muted-foreground">
                   Purchased credits are added to your shopping balance. They
                   cannot be withdrawn and are exclusively for platform usage.
                 </p>
-                <p className="text-center text-xs text-muted-foreground/60">
-                  Secured by Midtrans. By continuing, you agree to our Terms of
-                  Service.
+                <p className="text-[11px] font-bold text-foreground text-center mt-3 leading-tight">
+                  {currency === "USD"
+                    ? "Polar may apply additional VAT/Sales Tax depending on your region."
+                    : "Secured by Midtrans. By continuing, you agree to our Terms of Service."}
                 </p>
               </div>
             </div>

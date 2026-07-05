@@ -27,7 +27,7 @@ import {
 export const createTopupController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = res.locals.user?.id;
-    const { creditAmount } = req.body;
+    const { creditAmount, gateway } = req.body;
 
     if (!userId) {
       throw new AppError("User not authenticated", HTTPSTATUS.UNAUTHORIZED);
@@ -37,7 +37,7 @@ export const createTopupController = asyncHandler(
       throw new AppError("Credit Amount is required", HTTPSTATUS.BAD_REQUEST);
     }
 
-    const result = await createTopupTransaction(userId, Number(creditAmount));
+    const result = await createTopupTransaction(userId, Number(creditAmount), gateway);
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Topup transaction created",

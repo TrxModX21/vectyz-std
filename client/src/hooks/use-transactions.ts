@@ -84,8 +84,12 @@ export const useCreateDonationCredit = () => {
 
 export const useTopupCredit = () => {
   return useMutation({
-    mutationFn: async (creditAmount: number) => {
-      const { data } = await api.post("/transactions/topup", { creditAmount });
+    mutationFn: async (payload: {
+      creditAmount: number;
+      currency?: string;
+      gateway?: string;
+    }) => {
+      const { data } = await api.post("/transactions/topup", payload);
       return data;
     },
   });

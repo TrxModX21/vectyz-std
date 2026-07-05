@@ -17,6 +17,7 @@ import { createNotification } from "./notification.service";
 export const createTopupTransaction = async (
   userId: string,
   creditAmount: number,
+  gateway: string = "midtrans",
 ) => {
   if (creditAmount < 10) {
     throw new BadRequestException("Minimum topup is 10 Credits");
@@ -26,19 +27,47 @@ export const createTopupTransaction = async (
   if (!user) throw new NotFoundException("User not found");
 
   const amountRupiah = getCreditValue(creditAmount, "IDR");
+  const amountUsd = getCreditValue(creditAmount, "USD");
 
   // Create Transaction Record (Pending)
   const transaction = await prisma.transaction.create({
     data: {
       userId,
       type: TransactionType.TOPUP_CREDIT,
-      amount: amountRupiah,
+      amount: gateway === "polar" ? Math.round(amountUsd * 16000) : amountRupiah,
       creditAmount: creditAmount,
       status: PaymentStatus.PENDING,
     },
   });
 
-  // Get Snap Token
+  if (gateway === "polar") {
+    if (!config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID) {
+      throw new Error("POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID is not configured");
+    }
+
+    const checkout = await polar.checkouts.create({
+      products: [config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID as string],
+      amount: Math.round(amountUsd * 100), // in cents
+      customerEmail: user.email,
+      customerName: user.name,
+      externalCustomerId: user.id,
+      metadata: {
+        transactionId: transaction.id,
+      },
+    });
+
+    await prisma.transaction.update({
+      where: { id: transaction.id },
+      data: { externalId: checkout.id },
+    });
+
+    return {
+      transactionId: transaction.id,
+      polarCheckoutUrl: checkout.url,
+    };
+  }
+
+  // Get Snap Token (Midtrans)
   const snap = await createSnapTransaction({
     order_id: transaction.id,
     gross_amount: amountRupiah,
@@ -1277,12 +1306,12 @@ export const createPolarDonationCheckout = async (
 
   // Create Polar Custom Checkout
   // productId from app.config.ts POLAR_DONATION_PRODUCT_ID
-  if (!config.POLAR_DONATION_PRODUCT_ID) {
-    throw new Error("POLAR_DONATION_PRODUCT_ID is not configured");
+  if (!config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID) {
+    throw new Error("POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID is not configured");
   }
 
   const checkout = await polar.checkouts.create({
-    products: [config.POLAR_DONATION_PRODUCT_ID as string],
+    products: [config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID as string],
     amount: Math.round(amountInUsd * 100), // in cents
     customerEmail: user.email,
     customerName: user.name,
@@ -1430,6 +1459,35 @@ export const handlePolarWebhookEvent = async (payload: any) => {
             recipientEmail: targetUser.email,
           });
         }
+      } else if (transaction.type === TransactionType.TOPUP_CREDIT) {
+        // 1. Calculate actual USD paid from Polar webhook (subtotal is in cents)
+        const actualUsdCents = data.subtotalAmount || transaction.amount / 160; // fallback if missing
+        const actualUsdPaid = actualUsdCents / 100;
+
+        // Calculate equivalent IDR: $0.05 USD = 1 Credit => 1 USD = 20 Credits
+        const topupInRupiah = actualUsdPaid * 16000;
+        const actualCreditAmount = actualUsdPaid / 0.05;
+        const finalCredit = Math.floor(actualCreditAmount);
+
+        // 2. Update Transaction to PAID
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: PaymentStatus.PAID,
+            amount: topupInRupiah,
+            creditAmount: finalCredit,
+            paymentMethod: "polar",
+          },
+        });
+
+        // 3. Add Credit to User
+        await tx.user.update({
+          where: { id: transaction.userId },
+          data: {
+            creditBalance: { increment: finalCredit },
+            purchasedCredit: { increment: finalCredit },
+          },
+        });
       } else if (
         transaction.type === TransactionType.SUBSCRIPTION &&
         transaction.planId &&
