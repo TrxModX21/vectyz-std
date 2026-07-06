@@ -37,10 +37,16 @@ export const createTopupController = asyncHandler(
       throw new AppError("Credit Amount is required", HTTPSTATUS.BAD_REQUEST);
     }
 
+    const forwardedFor = req.headers["x-forwarded-for"] as string;
+    const ipAddress = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : req.socket.remoteAddress || "";
+
     const result = await createTopupTransaction(
       userId,
       Number(creditAmount),
       gateway,
+      ipAddress,
     );
 
     return res.status(HTTPSTATUS.CREATED).json({
