@@ -48,8 +48,16 @@ export const createTopupTransaction = async (
       );
     }
 
-    const checkout = await polar.checkouts.create({
-      products: [config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID as string],
+    // Fetch product to find the USD price ID to avoid IP-based currency mismatch
+    const product = await polar.products.get({ 
+      id: config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID as string 
+    });
+    
+    const usdPrice = (product as any).prices?.find(
+      (p: any) => p.priceCurrency === "usd" && p.amountType === "pay_what_you_want"
+    );
+
+    const checkoutPayload: any = {
       amount: Math.round(amountUsd * 100), // in cents
       customerEmail: user.email,
       customerName: user.name,
@@ -58,7 +66,15 @@ export const createTopupTransaction = async (
       metadata: {
         transactionId: transaction.id,
       },
-    });
+    };
+
+    if (usdPrice) {
+      checkoutPayload.productPriceId = usdPrice.id;
+    } else {
+      checkoutPayload.products = [config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID as string];
+    }
+
+    const checkout = await polar.checkouts.create(checkoutPayload);
 
     await prisma.transaction.update({
       where: { id: transaction.id },
@@ -1386,8 +1402,16 @@ export const createPolarDonationCheckout = async (
     throw new Error("POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID is not configured");
   }
 
-  const checkout = await polar.checkouts.create({
-    products: [config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID as string],
+  // Fetch product to find the USD price ID to avoid IP-based currency mismatch
+  const product = await polar.products.get({ 
+    id: config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID as string 
+  });
+  
+  const usdPrice = (product as any).prices?.find(
+    (p: any) => p.priceCurrency === "usd" && p.amountType === "pay_what_you_want"
+  );
+
+  const checkoutPayload: any = {
     amount: Math.round(amountInUsd * 100), // in cents
     customerEmail: user.email,
     customerName: user.name,
@@ -1398,7 +1422,15 @@ export const createPolarDonationCheckout = async (
     metadata: {
       transactionId: transaction.id,
     },
-  });
+  };
+
+  if (usdPrice) {
+    checkoutPayload.productPriceId = usdPrice.id;
+  } else {
+    checkoutPayload.products = [config.POLAR_VECTOLIO_EXTRA_CREDIT_PRODUCT_ID as string];
+  }
+
+  const checkout = await polar.checkouts.create(checkoutPayload);
 
   await prisma.transaction.update({
     where: { id: transaction.id },
