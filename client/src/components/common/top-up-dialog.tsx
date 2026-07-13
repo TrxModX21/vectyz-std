@@ -5,7 +5,6 @@ import {
   Loader2,
   Smartphone,
   Sparkles,
-  Wallet,
   Zap,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
@@ -22,7 +21,6 @@ import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Input } from "../ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { useTopupCredit } from "../../hooks/use-transactions";
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import { toast } from "sonner";
 import Script from "next/script";
@@ -30,6 +28,10 @@ import { cn, launchConfettiFrame } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatPrice } from "@/lib/helpers";
 import { useCurrency } from "@/store/use-currency";
+import {
+  useTopUpMidtransGateway,
+  useTopUpPolarGateway,
+} from "@/hooks/use-topup";
 
 declare global {
   interface Window {
@@ -77,7 +79,10 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
 
   const queryClient = useQueryClient();
 
-  const { mutate: topupCredit, isPending } = useTopupCredit();
+  const { mutate: apiMidtransGateway, isPending: apiMidtransGatewayPending } =
+    useTopUpMidtransGateway();
+  const { mutate: apiPolarGateway, isPending: apiPolarGatewayPending } =
+    useTopUpPolarGateway();
 
   useEffect(() => {
     if (!isOpen) {
@@ -100,7 +105,7 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
   };
 
   const { credits: selectedCredits } = getSelectedDetails();
-  const isValidCustomAmount = isCustom ? selectedCredits >= 10 : true;
+  const isValidCustomAmount = isCustom ? selectedCredits >= 15 : true;
 
   const handleCustomCreditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow numbers
@@ -108,45 +113,23 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
     setCustomCredits(value);
   };
 
-  const handlePayment = () => {
+  const handleMidtransPayment = () => {
     if (!isValidCustomAmount) {
-      toast.error("Minimum custom top up is 10 Credits");
+      toast.error("Minimum custom top up is 15 Credits");
       return;
     }
 
-    const gateway = currency === "IDR" ? "midtrans" : "polar";
-
-    topupCredit(
-      { creditAmount: selectedCredits, currency, gateway },
+    apiMidtransGateway(
+      { creditAmount: selectedCredits },
       {
         onSuccess: (data) => {
-          if (gateway === "polar" && data.data?.polarCheckoutUrl) {
-            setIsOpen(false);
-            PolarEmbedCheckout.create(data.data.polarCheckoutUrl, {
-              theme: "dark",
-            }).then((checkout) => {
-              checkout.addEventListener("success", () => {
-                setIsOpen(true);
-                setIsSuccess(true);
-                const duration = 1.5 * 1000;
-                const end = Date.now() + duration;
-                launchConfettiFrame(end);
-                queryClient.invalidateQueries({ queryKey: ["authUser"] });
-              });
-            });
-            return;
-          }
-
-          const snapToken = data.data?.snapToken || data.snapToken;
-
+          const snapToken = data.data?.snapToken;
           if (!snapToken) {
             toast.error("Failed to get payment token from server.");
             return;
           }
 
           setIsOpen(false);
-
-          // Midtrans Snap Popup
           window.snap.pay(snapToken, {
             onSuccess: function (result: any) {
               setTimeout(() => {
@@ -169,6 +152,46 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
               toast.error("Payment cancelled or not completed.");
             },
           });
+        },
+        onError: (error: any) => {
+          toast.error(
+            error.response?.data?.message || "Failed to create transaction",
+          );
+        },
+      },
+    );
+  };
+
+  const handlePolarPayment = () => {
+    if (!isValidCustomAmount) {
+      toast.error("Minimum custom top up is 15 Credits");
+      return;
+    }
+
+    apiPolarGateway(
+      { creditAmount: selectedCredits },
+      {
+        onSuccess: (data) => {
+          const polarCheckoutUrl = data.data?.polarCheckoutUrl;
+          if (!polarCheckoutUrl) {
+            toast.error("Failed to get payment token from server.");
+            return;
+          }
+
+          setIsOpen(false);
+          PolarEmbedCheckout.create(data.data.polarCheckoutUrl, {
+            theme: "light",
+          }).then((checkout) => {
+            checkout.addEventListener("success", () => {
+              setIsOpen(true);
+              setIsSuccess(true);
+              const duration = 1.5 * 1000;
+              const end = Date.now() + duration;
+              launchConfettiFrame(end);
+              queryClient.invalidateQueries({ queryKey: ["authUser"] });
+            });
+          });
+          return;
         },
         onError: (error: any) => {
           toast.error(
@@ -335,9 +358,9 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                           )}
                         </span>
                       </div>
-                      {isCustom && parseInt(customCredits || "0") < 10 && (
+                      {isCustom && parseInt(customCredits || "0") < 15 && (
                         <span className="text-xs text-destructive">
-                          Minimum custom amount is 10 Credits.
+                          Minimum custom amount is 15 Credits.
                         </span>
                       )}
                     </div>
@@ -360,11 +383,11 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                 {currency === "IDR" ? (
                   <Button
                     variant="outline"
-                    onClick={handlePayment}
-                    disabled={isPending || !isValidCustomAmount}
+                    onClick={handleMidtransPayment}
+                    disabled={apiMidtransGatewayPending || !isValidCustomAmount}
                     className="h-14 flex items-center justify-center px-4 gap-3 border-[#0079C1]/30 hover:border-[#0079C1] hover:bg-[#0079C1]/5 text-[#0079C1] rounded-xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
                   >
-                    {isPending ? (
+                    {apiMidtransGatewayPending ? (
                       <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-500" />
                     ) : (
                       <>
@@ -379,11 +402,11 @@ const TopUpDialog = ({ children }: { children: ReactNode }) => {
                   <div className="grid grid-cols-1 gap-3">
                     <Button
                       variant="outline"
-                      onClick={handlePayment}
-                      disabled={isPending || !isValidCustomAmount}
+                      onClick={handlePolarPayment}
+                      disabled={apiPolarGatewayPending || !isValidCustomAmount}
                       className="h-14 flex items-center justify-center px-4 gap-3 border-slate-200 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl shadow-sm transition-all"
                     >
-                      {isPending ? (
+                      {apiPolarGatewayPending ? (
                         <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-500" />
                       ) : (
                         <>

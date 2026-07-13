@@ -14,6 +14,11 @@ import profileRoutes from "./profile.routes";
 import userStocksRoutes from "./user-stock.routes";
 import dashboardRoutes from "./dashboard.routes";
 import notificationRoutes from "./notification.routes";
+import topUpRoutes from "./topup.routes";
+import webhooksRoutes from "./webhooks.routes";
+import subscribeRoutes from "./subscribe.routes";
+import donateRoutes from "./donate.routes";
+import purchaseStockRoutes from "./purchase-stock.route";
 
 const router = Router();
 
@@ -29,8 +34,13 @@ router.use("/collections", collectionRoutes);
 router.use("/plans", planRoutes);
 router.use("/downloads", downloadRoutes);
 router.use("/transactions", transactionRoutes);
+router.use("/transactions/topup", topUpRoutes);
+router.use("/transactions/subscribe", subscribeRoutes);
+router.use("/transactions/donate", donateRoutes);
+router.use("/transactions/purchase-stock", purchaseStockRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/webhooks", webhooksRoutes);
 router.use("/test", testRoutes);
 
 export default router;

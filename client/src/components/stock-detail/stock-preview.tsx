@@ -36,10 +36,10 @@ const StockPreview = ({ stock, setIsZoomOpen }: Props) => {
           </div>
 
           <div
-            className="absolute inset-0 bg-black/10 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center cursor-pointer group-hover:scale-105 rounded-lg"
+            className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center cursor-pointer group-hover:scale-105 rounded-lg"
             onClick={() => setIsZoomOpen(true)}
           >
-            <div className="bg-white/20 backdrop-blur-md p-3 rounded-full shadow-lg border border-white/30 text-white">
+            <div className="bg-white/20 p-3 rounded-full shadow-lg border border-white/30 text-white">
               <ZoomIn className="w-6 h-6" />
             </div>
           </div>

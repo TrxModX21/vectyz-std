@@ -110,7 +110,9 @@ const ReceiptPage = () => {
                 <td className="py-4 text-right font-medium text-black">
                   {transaction.creditAmount && Number(transaction.creditAmount) < 0
                     ? `${Math.abs(Number(transaction.creditAmount)).toFixed(2)} CR`
-                    : `Rp ${Number(transaction.amount).toLocaleString("id-ID")}`}
+                    : transaction.amountCurrency === "USD"
+                      ? `$${(Number(transaction.amount) / 100).toFixed(2)}`
+                      : `Rp ${Number(transaction.amount).toLocaleString("id-ID")}`}
                 </td>
               </tr>
             </tbody>
@@ -125,7 +127,9 @@ const ReceiptPage = () => {
               <span>
                 {transaction.creditAmount && Number(transaction.creditAmount) < 0
                   ? `${Math.abs(Number(transaction.creditAmount)).toFixed(2)} CR`
-                  : `Rp ${Number(transaction.amount).toLocaleString("id-ID")}`}
+                  : transaction.amountCurrency === "USD"
+                    ? `$${(Number(transaction.amount) / 100).toFixed(2)}`
+                    : `Rp ${Number(transaction.amount).toLocaleString("id-ID")}`}
               </span>
             </div>
           </div>

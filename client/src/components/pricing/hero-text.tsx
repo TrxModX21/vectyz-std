@@ -1,6 +1,4 @@
 import { cn } from "@/lib/utils";
-import { useCurrency } from "@/store/use-currency";
-import { useEffect } from "react";
 
 interface HeroTextPricingProps {
   billingCycle: "monthly" | "yearly";
@@ -11,14 +9,6 @@ const HeroTextPricing = ({
   billingCycle,
   setBillingCycle,
 }: HeroTextPricingProps) => {
-  const { currency } = useCurrency();
-
-  useEffect(() => {
-    if (currency === "IDR" && billingCycle === "yearly") {
-      setBillingCycle("monthly");
-    }
-  }, [currency, billingCycle, setBillingCycle]);
-
   return (
     <div className="text-center space-y-4 mb-24">
       <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-800">
@@ -43,19 +33,18 @@ const HeroTextPricing = ({
           >
             Monthly
           </button>
-          {currency === "USD" && (
-            <button
-              onClick={() => setBillingCycle("yearly")}
-              className={cn(
-                "px-6 py-2 rounded-md text-sm font-semibold transition-all duration-200",
-                billingCycle === "yearly"
-                  ? "bg-primary text-white shadow-sm dark:bg-white dark:text-black"
-                  : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100",
-              )}
-            >
-              Yearly
-            </button>
-          )}
+
+          <button
+            onClick={() => setBillingCycle("yearly")}
+            className={cn(
+              "px-6 py-2 rounded-md text-sm font-semibold transition-all duration-200",
+              billingCycle === "yearly"
+                ? "bg-primary text-white shadow-sm dark:bg-white dark:text-black"
+                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100",
+            )}
+          >
+            Yearly
+          </button>
         </div>
       </div>
     </div>

@@ -17,6 +17,7 @@ export interface TransactionItem {
   type: TransactionType;
   status: PaymentStatus;
   amount: number;
+  amountCurrency?: string;
   creditAmount?: number | null;
   paymentMethod?: string | null;
   externalId?: string | null;

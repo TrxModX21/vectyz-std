@@ -166,9 +166,14 @@ const TransactionsPage = () => {
       value = Number(txn.creditAmount).toFixed(2);
       return { text: `${sign} ${value} CR`, isCredit: true, sign };
     } else {
-      // Transaction using IDR
-      prefix = "Rp ";
-      value = Number(txn.amount).toLocaleString("id-ID");
+      // Transaction using real currency
+      if (txn.amountCurrency === "USD") {
+        prefix = "$";
+        value = (Number(txn.amount) / 100).toFixed(2);
+      } else {
+        prefix = "Rp ";
+        value = Number(txn.amount).toLocaleString("id-ID");
+      }
       return { text: `${sign} ${prefix}${value}`, isCredit: false, sign };
     }
   };

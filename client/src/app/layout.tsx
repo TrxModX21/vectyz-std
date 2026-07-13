@@ -7,6 +7,7 @@ import ReactQueryProvider from "@/providers/react-query-provider";
 import DisableInspect from "@/components/common/disable-inspect";
 import { SocketProvider } from "@/providers/socket-provider";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const montserrat = Montserrat({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -93,14 +94,14 @@ export default function RootLayout({
         <ReactQueryProvider>
           <SocketProvider>
             <DisableInspect />
-            {children}
+            <TooltipProvider>{children}</TooltipProvider>
             {process.env.NODE_ENV === "production" && (
               <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID as string} />
             )}
           </SocketProvider>
         </ReactQueryProvider>
 
-        <Toaster position="top-center" theme="dark" />
+        <Toaster position="top-center" theme="light" />
       </body>
     </html>
   );

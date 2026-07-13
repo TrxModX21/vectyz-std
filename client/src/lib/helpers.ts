@@ -115,8 +115,7 @@ export const priceToCredit = (amount: number) => {
   return Math.ceil(amount / 1000);
 };
 
-// Getting raw number from credit convertion
-export const getCreditValue = (
+export const convertCreditToRealCurrency = (
   creditAmount: number,
   currency: "IDR" | "USD",
 ) => {
