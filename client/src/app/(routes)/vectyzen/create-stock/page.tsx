@@ -45,6 +45,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import imageCompression from "browser-image-compression";
 
 const CreateStockPage = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -495,7 +496,7 @@ const ImagePicker = ({
   useEffect(() => {
     if (typeof value === "string") {
       setPreview(value);
-    } else if (value instanceof File) {
+    } else if (value) {
       const objectUrl = URL.createObjectURL(value as any);
       setPreview(objectUrl);
       return () => URL.revokeObjectURL(objectUrl);
@@ -507,10 +508,18 @@ const ImagePicker = ({
   const processFile = async (file: File) => {
     try {
       setIsProcessing(true);
-      // const watermarkedFile = await addWatermark(file, username);
-      onChange?.(file);
+      
+      const options = {
+        maxSizeMB: 0.5, // 500KB max size
+        maxWidthOrHeight: 1200, // max width/height
+        useWebWorker: true,
+      };
+
+      const compressedFile = await imageCompression(file, options);
+      
+      onChange?.(compressedFile);
     } catch (error) {
-      toast.error("Failed to process image watermark");
+      toast.error("Failed to compress image");
     } finally {
       setIsProcessing(false);
     }

@@ -15,19 +15,21 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
-  donationSchema,
-  DonationFormInputs,
-} from "@/validators/transaction.validation";
+  donateCreditGatewaySchema,
+  DonateCreditGatewayType,
+} from "@/validators/donate.validation";
 import {
-  useCreateDonationGateway,
-  useCreateDonationCredit,
-} from "@/hooks/use-transactions";
+  useDonateCredit,
+  useDonateMidtransGateway,
+  useDonatePolarGateway,
+} from "@/hooks/use-donate";
 import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { Field, FieldError } from "../ui/field";
 import { launchConfettiFrame } from "@/lib/utils";
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import { useCurrency } from "@/store/use-currency";
+import { formatPrice } from "@/lib/helpers";
 
 declare global {
   interface Window {
@@ -66,8 +68,9 @@ const GiveCoffeeDialog = ({
   }, [isOpen]);
 
   const queryClient = useQueryClient();
-  const { mutateAsync: createDonation } = useCreateDonationGateway();
-  const { mutateAsync: createDonationCredit } = useCreateDonationCredit();
+  const { mutateAsync: donateMidtrans } = useDonateMidtransGateway();
+  const { mutateAsync: donatePolar } = useDonatePolarGateway();
+  const { mutateAsync: donateCredit } = useDonateCredit();
 
   const {
     register,
@@ -75,17 +78,17 @@ const GiveCoffeeDialog = ({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<DonationFormInputs>({
-    resolver: zodResolver(donationSchema) as any,
-    defaultValues: { amount: 15000 },
+  } = useForm<DonateCreditGatewayType>({
+    resolver: zodResolver(donateCreditGatewaySchema) as any,
+    defaultValues: { creditAmount: 15 },
   });
-  const amountValue = watch("amount");
+  const creditAmountValue = watch("creditAmount");
 
   useEffect(() => {
-    setValue("amount", currency === "IDR" ? 15000 : 3, {
+    setValue("creditAmount", 15, {
       shouldValidate: true,
     });
-  }, [currency, setValue]);
+  }, [setValue]);
 
   const handleAnonymousAccount = async () => {
     try {
@@ -98,13 +101,9 @@ const GiveCoffeeDialog = ({
     }
   };
 
-  const validateAmount = (data: DonationFormInputs) => {
-    if (currency === "IDR" && data.amount < 11000) {
-      toast.error("Minimum donation is Rp 11.000");
-      return false;
-    }
-    if (currency === "USD" && data.amount < 1) {
-      toast.error("Minimum donation is $1.00 USD");
+  const validateAmount = (data: DonateCreditGatewayType) => {
+    if (data.creditAmount < 15) {
+      toast.error("Minimum donation is 15 Credits");
       return false;
     }
     return true;
@@ -148,11 +147,12 @@ const GiveCoffeeDialog = ({
     });
   };
 
-  const handleCreditGateway = async (data: DonationFormInputs) => {
-    await createDonationCredit({
+  const handleCreditGateway = async (data: DonateCreditGatewayType) => {
+    await donateCredit({
       targetUserId,
       stockId,
-      amount: data.amount,
+      creditAmount: data.creditAmount,
+      currency,
     });
 
     setIsSuccess(true);
@@ -164,7 +164,7 @@ const GiveCoffeeDialog = ({
   };
 
   const onSubmit = async (
-    data: DonationFormInputs,
+    data: DonateCreditGatewayType,
     method: "gateway" | "credit",
   ) => {
     try {
@@ -181,29 +181,44 @@ const GiveCoffeeDialog = ({
       }
 
       if (method === "gateway") {
-        const response = await createDonation({
-          targetUserId,
-          stockId,
-          amount: data.amount,
-          currency: currency,
-        });
+        if (currency === "IDR") {
+          const response = await donateMidtrans({
+            targetUserId,
+            stockId,
+            creditAmount: data.creditAmount,
+          });
 
-        if (currency === "IDR" && response?.data?.snapToken && window.snap) {
-          // Tutup dialog utama agar tidak menimpa / memblock Midtrans iframe
-          setIsOpen(false);
-          handleMidtransGateway(response);
-        } else if (currency === "USD" && response?.data?.checkoutUrl) {
-          setIsOpen(false);
-          handlePolarGateway(response);
-        } else {
-          toast.error("Failed to load payment gateway.");
-          setLoadingMethod(null);
+          if (response?.data?.snapToken && window.snap) {
+            setIsOpen(false);
+            handleMidtransGateway(response);
+          } else {
+            toast.error("Failed to load Midtrans gateway.");
+            setLoadingMethod(null);
+          }
+        } else if (currency === "USD") {
+          const response = await donatePolar({
+            targetUserId,
+            stockId,
+            creditAmount: data.creditAmount,
+          });
+
+          if (response?.data?.checkoutUrl) {
+            setIsOpen(false);
+            handlePolarGateway(response);
+          } else {
+            toast.error("Failed to load Polar gateway.");
+            setLoadingMethod(null);
+          }
         }
       } else if (method === "credit") {
         handleCreditGateway(data);
       }
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message || "Something went wrong.");
+      toast.error(
+        error?.response?.data?.message ||
+          error.message ||
+          "Something went wrong.",
+      );
       setLoadingMethod(null);
     } finally {
       if (method === "credit") {
@@ -297,91 +312,67 @@ const GiveCoffeeDialog = ({
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      type="button"
-                      variant={
-                        amountValue === (currency === "IDR" ? 15000 : 1)
-                          ? "default"
-                          : "outline"
-                      }
-                      className={
-                        amountValue === (currency === "IDR" ? 15000 : 1)
-                          ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm"
-                          : "text-muted-foreground font-bold active:scale-95 transition-all"
-                      }
-                      onClick={() =>
-                        setValue("amount", currency === "IDR" ? 15000 : 1, {
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      <Coffee className="w-4 h-4 mr-1.5 opacity-80" />{" "}
-                      {currency === "IDR" ? "15k" : "$1"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={
-                        amountValue === (currency === "IDR" ? 30000 : 3)
-                          ? "default"
-                          : "outline"
-                      }
-                      className={
-                        amountValue === (currency === "IDR" ? 30000 : 3)
-                          ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm"
-                          : "text-muted-foreground font-bold active:scale-95 transition-all"
-                      }
-                      onClick={() =>
-                        setValue("amount", currency === "IDR" ? 30000 : 3, {
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      {currency === "IDR" ? "Rp 30k" : "$3"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={
-                        amountValue === (currency === "IDR" ? 50000 : 5)
-                          ? "default"
-                          : "outline"
-                      }
-                      className={
-                        amountValue === (currency === "IDR" ? 50000 : 5)
-                          ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm"
-                          : "text-muted-foreground font-bold active:scale-95 transition-all"
-                      }
-                      onClick={() =>
-                        setValue("amount", currency === "IDR" ? 50000 : 5, {
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      {currency === "IDR" ? "Rp 50k" : "$5"}
-                    </Button>
+                    {[15, 30, 50].map((val) => (
+                      <Button
+                        key={val}
+                        type="button"
+                        variant={
+                          creditAmountValue === val ? "default" : "outline"
+                        }
+                        className={
+                          creditAmountValue === val
+                            ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm flex flex-col items-center h-[52px] justify-center"
+                            : "text-muted-foreground font-bold active:scale-95 transition-all flex flex-col items-center h-[52px] justify-center"
+                        }
+                        onClick={() =>
+                          setValue("creditAmount", val, {
+                            shouldValidate: true,
+                          })
+                        }
+                      >
+                        <div className="flex items-center">
+                          <Coffee className="w-4 h-4 mr-1.5 opacity-80" />
+                          <span>{val} Credits</span>
+                        </div>
+                        <span className="text-[10px] font-normal opacity-70 mt-0.5 leading-none">
+                          ~{formatPrice(val, currency)}
+                        </span>
+                      </Button>
+                    ))}
                   </div>
 
-                  <Field>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-600">
-                        {currency === "IDR" ? "Rp" : "$"}
-                      </span>
-                      <Input
-                        type="number"
-                        placeholder={
-                          currency === "IDR"
-                            ? "Manual input (min. 11000)"
-                            : "Manual input (min. 1)"
-                        }
-                        className={`pl-11 h-12 font-medium bg-background shadow-xs transition-colors ${errors.amount ? "border-red-500 focus-visible:ring-red-500" : "border-amber-500 ring-1 ring-amber-500/30"}`}
-                        {...register("amount")}
-                      />
-                    </div>
-                    {errors.amount && (
-                      <FieldError className="text-xs text-red-500 mt-1.5 font-medium ml-1">
-                        {errors.amount.message}
-                      </FieldError>
+                  <div className="space-y-2">
+                    <Field>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-600">
+                          <Layers className="w-4 h-4" />
+                        </span>
+                        <Input
+                          type="number"
+                          placeholder="Manual input (min. 15 Credits)"
+                          className={`pl-11 h-12 font-medium bg-background shadow-xs transition-colors ${errors.creditAmount ? "border-red-500 focus-visible:ring-red-500" : "border-amber-500 ring-1 ring-amber-500/30"}`}
+                          {...register("creditAmount")}
+                        />
+                      </div>
+                      {errors.creditAmount && (
+                        <FieldError className="text-xs text-red-500 mt-1.5 font-medium ml-1">
+                          {errors.creditAmount.message}
+                        </FieldError>
+                      )}
+                    </Field>
+
+                    {creditAmountValue >= 15 && !errors.creditAmount && (
+                      <div className="text-[11px] text-center text-muted-foreground font-medium animate-in fade-in">
+                        Estimated equivalent:{" "}
+                        <span className="font-bold text-foreground">
+                          {formatPrice(
+                            creditAmountValue || 0,
+                            currency,
+                          )}
+                        </span>
+                      </div>
                     )}
-                  </Field>
+                  </div>
                 </div>
 
                 <div className="relative py-2 pt-2">
@@ -435,6 +426,11 @@ const GiveCoffeeDialog = ({
                         <span className="font-semibold text-xs text-center leading-none">
                           Credit Balance
                         </span>
+                        {user && user.creditBalance !== undefined && (
+                          <span className="text-[10px] opacity-70 font-medium">
+                            Available: {user.creditBalance} Credits
+                          </span>
+                        )}
                       </>
                     )}
                   </Button>

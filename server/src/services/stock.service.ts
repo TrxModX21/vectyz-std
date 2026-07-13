@@ -1,4 +1,3 @@
-import { StockWhereInput } from "./../generated/prisma/models/Stock";
 import prisma from "../lib/prisma";
 import { Prisma, NotificationType } from "../generated/prisma/client";
 import { config } from "../utils/app.config";
@@ -746,7 +745,9 @@ export const toggleLike = async (userId: string, stockId: string) => {
 
     // Send notification
     const liker = await prisma.user.findUnique({ where: { id: userId } });
-    const stockCreator = await prisma.user.findUnique({ where: { id: stock.userId } });
+    const stockCreator = await prisma.user.findUnique({
+      where: { id: stock.userId },
+    });
 
     if (liker && stockCreator && liker.id !== stockCreator.id) {
       await createNotification({

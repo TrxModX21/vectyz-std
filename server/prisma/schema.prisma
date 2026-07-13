@@ -223,8 +223,9 @@ model Transaction {
   status PaymentStatus   @default(PENDING) // PENDING, PAID, FAILED, REFUNDED
 
   // Detail Pembayaran
-  amount       Int // Total nominal uang asli (Rupiah || USD || etc) yang dibayar ke Payment Gateway
-  creditAmount Decimal? // Jumlah credit yang bertambah/berkurang (jika transaksi credit)
+  amount         Int // Total nominal uang asli (Rupiah || USD(in cents) || etc) yang dibayar ke Payment Gateway
+  amountCurrency Currency @default(SYSTEM)
+  creditAmount   Decimal? // Jumlah credit yang bertambah/berkurang (jika transaksi credit)
 
   // Provider Info (Midtrans/Xendit/Stripe)
   paymentMethod String? // "gopay", "credit_card", "balance"
@@ -390,11 +391,12 @@ model Plan {
   isBestValue  Boolean @default(false)
 
   // Konfigurasi Fitur
-  durationDays    Int // 2 untuk Ngecer, 30 untuk Bulanan
-  premiumQuota    Int // 5, 20, 100, 350
-  dailyFreeLimit  Int      @default(9999) // Unlimited (-1 atau 9999)
-  features        String[] @default([]) // Daftar poin fitur (ex: ["Akses 2 Hari", "5 Premium Download", "Unlimited Free Download"])
-  isSupportYearly Boolean  @default(false)
+  durationDays     Int // 2 untuk Ngecer, 30 untuk Bulanan
+  premiumQuota     Int // 5, 20, 100, 350
+  dailyFreeLimit   Int      @default(9999) // Unlimited (-1 atau 9999)
+  features         String[] @default([]) // Daftar poin fitur (ex: ["Akses 2 Hari", "5 Premium Download", "Unlimited Free Download"])
+  isSupportMonthly Boolean  @default(true)
+  isSupportYearly  Boolean  @default(false)
 
   // Licensing & Access
   licenseType   LicenseType @default(STANDARD) // STANDARD / EXTENDED
@@ -525,6 +527,12 @@ enum TransactionType {
   POOL_EARNING // Hasil bagi hasil bulanan (Premium & Free)
   DONATION // Berikan kontributor donasi
   EARNING_DONATION
+}
+
+enum Currency {
+  IDR
+  USD
+  SYSTEM
 }
 
 enum PaymentStatus {

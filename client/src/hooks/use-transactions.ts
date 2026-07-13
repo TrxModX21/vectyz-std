@@ -1,6 +1,5 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/axios";
-import { toast } from "sonner";
 
 export const useCheckAccess = (
   stockId: string | undefined,
@@ -15,84 +14,6 @@ export const useCheckAccess = (
     },
     enabled: !!stockId && enabled,
     retry: false,
-  });
-};
-
-export const useBuyAssetDirect = () => {
-  return useMutation({
-    mutationFn: async ({ stockId, gateway = "midtrans" }: { stockId: string; gateway?: "midtrans" | "polar" }) => {
-      const { data } = await api.post("/transactions/buy-asset/gateway", {
-        stockId,
-        gateway,
-      });
-      return data;
-    },
-  });
-};
-
-export const useBuyAssetCredit = () => {
-  return useMutation({
-    mutationFn: async (stockId: string) => {
-      const { data } = await api.post("/transactions/buy-asset/credit", {
-        stockId,
-      });
-      return data;
-    },
-    onSuccess: () => {
-      toast.success("Asset purchased successfully!");
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to purchase asset");
-    },
-  });
-};
-
-export const useCreateSubscription = () => {
-  return useMutation({
-    mutationFn: async (payload: any) => {
-      const { data } = await api.post("/transactions/subscribe", payload);
-      return data;
-    },
-  });
-};
-
-export const useCreateDonationGateway = () => {
-  return useMutation({
-    mutationFn: async (payload: {
-      targetUserId: string;
-      stockId: string;
-      amount: number;
-      currency?: string;
-    }) => {
-      const { data } = await api.post("/transactions/donate/gateway", payload);
-      return data;
-    },
-  });
-};
-
-export const useCreateDonationCredit = () => {
-  return useMutation({
-    mutationFn: async (payload: {
-      targetUserId: string;
-      stockId: string;
-      amount: number;
-    }) => {
-      const { data } = await api.post("/transactions/donate/credit", payload);
-      return data;
-    },
-  });
-};
-
-export const useTopupCredit = () => {
-  return useMutation({
-    mutationFn: async (payload: {
-      creditAmount: number;
-      currency?: string;
-      gateway?: string;
-    }) => {
-      const { data } = await api.post("/transactions/topup", payload);
-      return data;
-    },
   });
 };
 

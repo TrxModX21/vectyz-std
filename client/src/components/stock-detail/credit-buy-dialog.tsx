@@ -13,9 +13,10 @@ import { BadgeCheck, Check, Layers, Zap, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import Image from "next/image";
 import { useQueryClient } from "@tanstack/react-query";
-import { useBuyAssetCredit } from "@/hooks/use-transactions";
+import { usePurchaseStockCreditGateway } from "@/hooks/use-purchase-stock";
 import TopUpDialog from "../common/top-up-dialog";
 import { launchConfettiFrame } from "@/lib/utils";
+import { useCurrency } from "@/store/use-currency";
 
 const CreditPayDialog = ({
   stock,
@@ -28,9 +29,10 @@ const CreditPayDialog = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const { currency } = useCurrency();
 
   const queryClient = useQueryClient();
-  const { mutate: buyWithCredit, isPending } = useBuyAssetCredit();
+  const { mutate: buyWithCredit, isPending } = usePurchaseStockCreditGateway();
 
   useEffect(() => {
     if (!isOpen) {
@@ -47,20 +49,23 @@ const CreditPayDialog = ({
 
   const handlePay = () => {
     if (!stock?.id) return;
-    buyWithCredit(stock.id, {
-      onSuccess: () => {
-        setIsSuccess(true);
-        const duration = 1.5 * 1000;
-        const end = Date.now() + duration;
-        launchConfettiFrame(end);
+    buyWithCredit(
+      { stockId: stock.id, currency },
+      {
+        onSuccess: () => {
+          setIsSuccess(true);
+          const duration = 1.5 * 1000;
+          const end = Date.now() + duration;
+          launchConfettiFrame(end);
 
-        queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        queryClient.invalidateQueries({ queryKey: ["stock"] });
-        queryClient.invalidateQueries({ queryKey: ["checkAccess", stock.id] });
+          queryClient.invalidateQueries({ queryKey: ["authUser"] });
+          queryClient.invalidateQueries({ queryKey: ["stock"] });
+          queryClient.invalidateQueries({ queryKey: ["checkAccess", stock.id] });
 
-        handleAutoDownload();
+          handleAutoDownload();
+        },
       },
-    });
+    );
   };
 
   const handleAutoDownload = async () => {

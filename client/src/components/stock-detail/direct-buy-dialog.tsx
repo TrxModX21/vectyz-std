@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import Image from "next/image";
-import { useBuyAssetDirect } from "@/hooks/use-transactions";
+import { usePurchaseStockDirectGateway } from "@/hooks/use-purchase-stock";
 import { toast } from "sonner";
 import { launchConfettiFrame } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -63,7 +63,7 @@ const DirectBuyDialog = ({
     }
   }, [isOpen]);
 
-  const { mutateAsync: purchaseAsset } = useBuyAssetDirect();
+  const { mutateAsync: purchaseAsset } = usePurchaseStockDirectGateway();
 
   const previewFile = stock?.files.find((f) => f.purpose === "PREVIEW");
 
@@ -105,6 +105,7 @@ const DirectBuyDialog = ({
       const response = await purchaseAsset({
         stockId: stock?.id || "",
         gateway: activeGateway,
+        currency,
       });
 
       if (activeGateway === "midtrans") {

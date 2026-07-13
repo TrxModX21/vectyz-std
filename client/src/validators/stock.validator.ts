@@ -21,7 +21,9 @@ export const createStockSchema = z.object({
 });
 
 export const addStockSchema = createStockSchema.extend({
-  preview: z.instanceof(File, { message: "Need 1 valid file" }),
+  preview: z.custom<File>((val) => val instanceof File || val instanceof Blob, {
+    message: "Need 1 valid file",
+  }),
   files: z
     .array(z.instanceof(File, { message: "Need a valid file" }), {
       message: "Fix your input, this is not valid",

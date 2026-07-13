@@ -22,15 +22,15 @@ import { Textarea } from "../ui/textarea";
 import OrderSummary from "./order-summary";
 import { Skeleton } from "../ui/skeleton";
 import { addDays, format } from "date-fns";
-import { useCreateSubscription } from "@/hooks/use-transactions";
+import { useCreateSubscriptionGateway } from "@/hooks/use-subscribe";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { getCreditValue } from "@/lib/helpers";
 import { useCurrency } from "@/store/use-currency";
 import {
-  subscriptionSchema,
+  subscriptionFormSchema,
   SubscriptionFormInputs,
-} from "@/validators/transaction.validation";
+  SubscriptionPayload,
+} from "@/validators/subscribe.validation";
 
 declare global {
   interface Window {
@@ -44,10 +44,14 @@ interface SubscriptionDialogProps {
   children?: ReactNode;
 }
 
-const SubscriptionDialog = ({ planId, initialIsAnnual = false, children }: SubscriptionDialogProps) => {
+const SubscriptionDialog = ({
+  planId,
+  initialIsAnnual = false,
+  children,
+}: SubscriptionDialogProps) => {
   const { data, isLoading } = useGetPlanDetail(planId);
-  const { mutateAsync: createSubscription, isPending: isSubmitting } =
-    useCreateSubscription();
+  const { mutateAsync: createSubscriptionGateway, isPending: isSubmitting } =
+    useCreateSubscriptionGateway();
   const { data: userProfileResponse } = useAuth(); // Hook to get current user data
   const user = userProfileResponse?.user;
   const { currency } = useCurrency();
@@ -83,7 +87,7 @@ const SubscriptionDialog = ({ planId, initialIsAnnual = false, children }: Subsc
 
   // Form Hook
   const form = useForm<SubscriptionFormInputs>({
-    resolver: zodResolver(subscriptionSchema),
+    resolver: zodResolver(subscriptionFormSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -132,7 +136,7 @@ const SubscriptionDialog = ({ planId, initialIsAnnual = false, children }: Subsc
 
   // Logic Date
   const today = new Date();
-  const daysToAdd = isAnnual ? 365 : (plan?.durationDays || 30);
+  const daysToAdd = isAnnual ? 365 : plan?.durationDays || 30;
   const expireDate = addDays(today, daysToAdd);
   const formattedExpireDate = format(expireDate, "dd/MM/yyyy");
   const durationLabel =
@@ -147,34 +151,29 @@ const SubscriptionDialog = ({ planId, initialIsAnnual = false, children }: Subsc
       const billingCycle =
         plan?.durationDays! < 30 ? "ONE_TIME" : isAnnual ? "YEARLY" : "MONTHLY";
 
-      const paymentAmount = getCreditValue(finalPrice, currency);
       const gateway = currency === "USD" ? "polar" : "midtrans";
 
-      const payload = {
+      const payload: SubscriptionPayload = {
         planId,
         billingCycle,
-        amount: paymentAmount,
-        currency: currency,
-        gateway: gateway,
-        phone: formData.phone,
         billingAddress: {
-          first_name: formData.name.split(" ")[0],
+          name: formData.name,
           email: formData.email,
           phone: formData.phone,
           address: formData.address,
           city: formData.city,
-          postal_code: formData.postalCode,
-          country_code: formData?.country?.substring(0, 3).toUpperCase(), // Basic normalization
+          postalCode: formData.postalCode,
+          country: formData.country,
         },
-      } as any;
+      };
 
-      const result = await createSubscription(payload);
+      const result = await createSubscriptionGateway({ gateway, payload });
 
       // Handle Polar Checkout
       if (gateway === "polar" && result?.data?.polarCheckoutUrl) {
         setIsOpen(false);
         PolarEmbedCheckout.create(result.data.polarCheckoutUrl, {
-          theme: "dark",
+          theme: "light",
         }).then((checkout) => {
           checkout.addEventListener("success", () => {
             setIsOpen(true);
