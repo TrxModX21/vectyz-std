@@ -6,6 +6,7 @@ import FadeIn from "../common/fade-in";
 import StockCard from "../common/stock-card";
 import { ColumnsPhotoAlbum, RenderImageProps } from "react-photo-album";
 import "react-photo-album/columns.css";
+import { cn } from "@/lib/utils";
 
 const PopularLandingSection = () => {
   const { data, isLoading } = useGetPopularFreeVector();
@@ -39,7 +40,13 @@ const PopularLandingSection = () => {
         </h2>
       </div>
 
-      <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+      <div
+        className={cn(
+          isLoading
+            ? "columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4"
+            : "min-h-screen",
+        )}
+      >
         {isLoading ? (
           Array.from({ length: 12 }).map((_, i) => (
             <PopularLandingSkeleton key={i} />
@@ -65,7 +72,7 @@ const PopularLandingSection = () => {
 
 const PopularLandingSkeleton = () => {
   return (
-    <div className="relative rounded-xl overflow-hidden bg-gray-200 flex-auto h-[240px] md:h-[280px] min-w-[300px]">
+    <div className="relative rounded-xl overflow-hidden bg-gray-200 flex-auto h-60 md:h-70 min-w-75">
       <Skeleton className="h-full w-full" />
       <div className="absolute inset-x-0 bottom-0 p-3 md:p-4">
         <Skeleton className="h-4 w-3/4 mb-2 bg-gray-300" />

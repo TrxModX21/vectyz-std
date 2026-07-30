@@ -15,10 +15,10 @@ const HomePage = () => {
       <FadeIn>
         <HeroSection />
       </FadeIn>
-      {/* <FadeIn>
-        <SectionSeparator />
+      <FadeIn>
+        {/* <SectionSeparator /> */}
         <PopularLandingSection />
-      </FadeIn> */}
+      </FadeIn>
       <FadeIn className="py-10">
         {/* <SectionSeparator /> */}
         <TrendingLandingSection />

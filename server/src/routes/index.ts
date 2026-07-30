@@ -19,9 +19,14 @@ import webhooksRoutes from "./webhooks.routes";
 import subscribeRoutes from "./subscribe.routes";
 import donateRoutes from "./donate.routes";
 import purchaseStockRoutes from "./purchase-stock.route";
+import sessionRoutes from "./session.routes";
+import analyticsRoutes from "./admin-access/analytics .routes";
+import manageCategoriesRoutes from "./admin-access/manage-categories.routes";
+import manageFiletypesRoutes from "./admin-access/manage-filetypes.routes";
 
 const router = Router();
 
+router.use("/sessions", sessionRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/colors", colorRoutes);
 router.use("/file-types", fileTypeRoutes);
@@ -42,5 +47,9 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/webhooks", webhooksRoutes);
 router.use("/test", testRoutes);
+
+router.use("/admin/analytics", analyticsRoutes);
+router.use("/admin/manage-categories", manageCategoriesRoutes);
+router.use("/admin/manage-filetypes", manageFiletypesRoutes);
 
 export default router;

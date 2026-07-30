@@ -37,7 +37,7 @@ const TrendingLandingSection = () => {
     <div className="container mx-auto px-4 lg:px-6 py-8">
       <div className="flex flex-col items-center justify-center mb-10 gap-2">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-center">
-          Trending Stock <br className="md:hidden" /> This Month
+          Trending Stock <br className="md:hidden" />
         </h2>
       </div>
 
@@ -73,7 +73,7 @@ const TrendingLandingSection = () => {
 
 const TrendingLandingSkeleton = () => {
   return (
-    <div className="relative rounded-xl overflow-hidden bg-gray-200 flex-auto h-[240px] md:h-[280px] min-w-[300px]">
+    <div className="relative rounded-xl overflow-hidden bg-gray-200 flex-auto h-60 md:h-70 min-w-75">
       <Skeleton className="h-full w-full" />
       <div className="absolute inset-x-0 bottom-0 p-3 md:p-4">
         <Skeleton className="h-4 w-3/4 mb-2 bg-gray-300" />

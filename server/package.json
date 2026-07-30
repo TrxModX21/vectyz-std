@@ -21,6 +21,7 @@
     "@aws-sdk/client-s3": "^3.985.0",
     "@aws-sdk/s3-request-presigner": "^3.985.0",
     "@better-auth/infra": "^0.2.6",
+    "@google-analytics/data": "^6.1.0",
     "@polar-sh/express": "^0.6.6",
     "@polar-sh/sdk": "^0.48.1",
     "@prisma/adapter-pg": "7.0.0",
