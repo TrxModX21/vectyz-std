@@ -292,22 +292,40 @@ export const getTrendingStocks = async (
   let stocksRaw: Array<{ id: string }>;
 
   if (filterByFileType) {
+    // stocksRaw = await prisma.$queryRaw<Array<{ id: string }>>`
+    //   SELECT s.id
+    //   FROM stock s
+    //   JOIN file_type ft ON s."fileTypeId" = ft.id
+    //   WHERE s.status = 'APPROVED'
+    //   AND s."createdAt" >= ${oneMonthAgo}
+    //   AND ft.slug = ${fileType}
+    //   ORDER BY (s."totalViews" * 1 + s."totalLikes" * 3 + s."totalDownloads" * 10) DESC
+    //   LIMIT ${limit}
+    // `;
+
     stocksRaw = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT s.id
       FROM stock s
       JOIN file_type ft ON s."fileTypeId" = ft.id
-      WHERE s.status = 'APPROVED'
-      AND s."createdAt" >= ${oneMonthAgo}
+      WHERE s.status = 'APPROVED'      
       AND ft.slug = ${fileType}
       ORDER BY (s."totalViews" * 1 + s."totalLikes" * 3 + s."totalDownloads" * 10) DESC
       LIMIT ${limit}
     `;
   } else {
+    // stocksRaw = await prisma.$queryRaw<Array<{ id: string }>>`
+    //   SELECT s.id
+    //   FROM stock s
+    //   WHERE s.status = 'APPROVED'
+    //   AND s."createdAt" >= ${oneMonthAgo}
+    //   ORDER BY (s."totalViews" * 1 + s."totalLikes" * 3 + s."totalDownloads" * 10) DESC
+    //   LIMIT ${limit}
+    // `;
+
     stocksRaw = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT s.id
       FROM stock s
-      WHERE s.status = 'APPROVED'
-      AND s."createdAt" >= ${oneMonthAgo}
+      WHERE s.status = 'APPROVED'      
       ORDER BY (s."totalViews" * 1 + s."totalLikes" * 3 + s."totalDownloads" * 10) DESC
       LIMIT ${limit}
     `;
