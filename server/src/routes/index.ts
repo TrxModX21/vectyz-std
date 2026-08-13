@@ -20,9 +20,11 @@ import subscribeRoutes from "./subscribe.routes";
 import donateRoutes from "./donate.routes";
 import purchaseStockRoutes from "./purchase-stock.route";
 import sessionRoutes from "./session.routes";
-import analyticsRoutes from "./admin-access/analytics .routes";
+import analyticsRoutes from "./admin-access/analytics.routes";
 import manageCategoriesRoutes from "./admin-access/manage-categories.routes";
 import manageFiletypesRoutes from "./admin-access/manage-filetypes.routes";
+import manageVectyzenRoutes from "./admin-access/manage-vectyzen.routes";
+import manageStocksRoutes from "./admin-access/manage-stock.routes";
 
 const router = Router();
 
@@ -51,5 +53,7 @@ router.use("/test", testRoutes);
 router.use("/admin/analytics", analyticsRoutes);
 router.use("/admin/manage-categories", manageCategoriesRoutes);
 router.use("/admin/manage-filetypes", manageFiletypesRoutes);
+router.use("/admin/manage-vectyzen", manageVectyzenRoutes);
+router.use("/admin/manage-stocks", manageStocksRoutes);
 
 export default router;

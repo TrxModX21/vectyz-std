@@ -24,7 +24,7 @@ module.exports = {
       name: "admin-dashboard",
       script: "pnpm",
       args: "start",
-      cwd: "./admin",
+      cwd: "./dashboard",
       env: {
         NODE_ENV: "production",
         PORT: 3001,
