@@ -53,7 +53,7 @@ jobs:
             # --- ADMIN DASHBOARD ---
             echo "🚀 Building Admin Dashboard..."
             # GANTI 'admin-dashboard' sesuai nama folder admin kamu
-            cd admin
+            cd dashboard
             pnpm install --frozen-lockfile
             pnpm build
             cd ..
