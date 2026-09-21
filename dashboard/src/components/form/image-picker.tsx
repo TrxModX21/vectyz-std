@@ -15,7 +15,15 @@ interface ImagePickerProps {
   defaultPreviewUrl?: string;
 }
 
-export function ImagePicker({ label, value, onChange, onRemove, error, className, defaultPreviewUrl }: ImagePickerProps) {
+export function ImagePicker({
+  label,
+  value,
+  onChange,
+  onRemove,
+  error,
+  className,
+  defaultPreviewUrl,
+}: ImagePickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -106,15 +114,17 @@ export function ImagePicker({ label, value, onChange, onRemove, error, className
           error && !isDragActive
             ? "border-[#FF003C] hover:border-[#FF003C]"
             : !isDragActive && "border-cyber-border hover:border-neon",
-          preview ? "py-4" : "py-8"
+          preview ? "py-4" : "py-8",
         )}
       >
         {preview ? (
-          <div className="relative w-full aspect-video max-h-[200px] rounded-sm overflow-hidden border border-cyber-border">
+          <div className="relative w-full aspect-video max-h-50 rounded-sm overflow-hidden border border-cyber-border">
             <Image
               src={preview}
               alt="Preview"
               fill
+              sizes="(max-width: 768px) 100vw, 600px"
+              priority
               className="object-contain"
             />
             <button
@@ -134,7 +144,10 @@ export function ImagePicker({ label, value, onChange, onRemove, error, className
           </div>
         ) : (
           <>
-            <UploadCloud size={32} className={cn("mb-3", error ? "text-[#FF003C]" : "text-neon")} />
+            <UploadCloud
+              size={32}
+              className={cn("mb-3", error ? "text-[#FF003C]" : "text-neon")}
+            />
             <p className="text-[14px] font-medium text-cyber-heading mb-1">
               Drag and drop your image here
             </p>
@@ -151,7 +164,7 @@ export function ImagePicker({ label, value, onChange, onRemove, error, className
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="rounded-cyber border border-neon bg-[rgba(84,234,253,0.1)] px-4 py-[10px] text-[13px] font-medium text-neon transition-colors hover:bg-[rgba(84,234,253,0.2)]"
+              className="rounded-cyber border border-neon bg-[rgba(84,234,253,0.1)] px-4 py-2.5 text-[13px] font-medium text-neon transition-colors hover:bg-[rgba(84,234,253,0.2)]"
             >
               Browse file
             </button>

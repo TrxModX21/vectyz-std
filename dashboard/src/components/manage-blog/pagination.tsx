@@ -1,21 +1,23 @@
+"use client";
+
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
-interface ManageFiletypesPaginationProps {
+interface PostsPaginationProps {
   queryState: { page: number; limit: number };
   setQueryState: (state: Partial<{ page: number; limit: number }>) => void;
   meta?: {
     totalItems: number;
-    totalPages: number;
     currentPage: number;
+    totalPages: number;
     limit: number;
   };
 }
 
-const FiletypePagination = ({
+const PostsPagination = ({
   queryState,
   setQueryState,
   meta,
-}: ManageFiletypesPaginationProps) => {
+}: PostsPaginationProps) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4 pt-4 border-t border-cyber-border">
       <div className="flex items-center gap-3 text-[13px] text-cyber-body">
@@ -70,4 +72,4 @@ const FiletypePagination = ({
   );
 };
 
-export default FiletypePagination;
+export default PostsPagination;

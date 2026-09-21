@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { BlogPostsTable } from "@/components/dashboard/blog/posts-table";
+import { BlogPostsTable } from "@/components/manage-blog/posts-table";
+import { Suspense } from "react";
 
 export default function BlogPostsPage() {
   return (
@@ -13,7 +14,9 @@ export default function BlogPostsPage() {
         </div>
       </div>
       <div className="w-full">
-        <BlogPostsTable />
+        <Suspense fallback={<div className="p-4 text-center text-cyber-body-subtle">Loading posts data...</div>}>
+          <BlogPostsTable />
+        </Suspense>
       </div>
     </DashboardLayout>
   );

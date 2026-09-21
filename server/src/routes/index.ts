@@ -25,6 +25,9 @@ import manageCategoriesRoutes from "./admin-access/manage-categories.routes";
 import manageFiletypesRoutes from "./admin-access/manage-filetypes.routes";
 import manageVectyzenRoutes from "./admin-access/manage-vectyzen.routes";
 import manageStocksRoutes from "./admin-access/manage-stock.routes";
+import manageBlogSettingsRoutes from "./admin-access/manage-blog/settings.routes";
+import manageBlogTaxonomyRoutes from "./admin-access/manage-blog/taxonomy.routes";
+import manageBlogPostsRoutes from "./admin-access/manage-blog/posts.routes";
 
 const router = Router();
 
@@ -55,5 +58,8 @@ router.use("/admin/manage-categories", manageCategoriesRoutes);
 router.use("/admin/manage-filetypes", manageFiletypesRoutes);
 router.use("/admin/manage-vectyzen", manageVectyzenRoutes);
 router.use("/admin/manage-stocks", manageStocksRoutes);
+router.use("/admin/manage-blog", manageBlogSettingsRoutes);
+router.use("/admin/manage-blog", manageBlogTaxonomyRoutes);
+router.use("/admin/manage-blog", manageBlogPostsRoutes);
 
 export default router;

@@ -98,3 +98,11 @@ export const BillingCycle = {
 } as const
 
 export type BillingCycle = (typeof BillingCycle)[keyof typeof BillingCycle]
+
+
+export const BlogPostStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED'
+} as const
+
+export type BlogPostStatus = (typeof BlogPostStatus)[keyof typeof BlogPostStatus]
