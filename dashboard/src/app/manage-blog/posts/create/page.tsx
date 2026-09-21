@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { PostEditorView } from "@/components/dashboard/blog/post-editor-view";
+import { PostEditorView } from "@/components/manage-blog/post-editor-view";
 
 export default function CreatePostPage() {
   return (

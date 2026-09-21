@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { SeoSettingsView } from "@/components/dashboard/blog/seo-settings-view";
+import { SeoSettingsView } from "@/components/manage-blog/seo-settings-view";
 
 export default function BlogSettingsPage() {
   return (

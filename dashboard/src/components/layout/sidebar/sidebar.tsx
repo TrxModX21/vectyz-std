@@ -103,7 +103,9 @@ const PrimaryNavigation = () => {
     // Automatically expand the parent menu if a child is the active route
     const activeParent = navItems.find((item) =>
       item.children?.some(
-        (child) => child.href !== "#" && pathname === child.href,
+        (child) =>
+          child.href !== "#" &&
+          (pathname === child.href || pathname.startsWith(child.href + "/")),
       ),
     );
     if (activeParent) {
@@ -118,7 +120,10 @@ const PrimaryNavigation = () => {
           const hasChildren = !!item.children;
           const isExpanded = expandedItem === item.label;
           const isChildActive = item.children?.some(
-            (child) => child.href !== "#" && pathname === child.href,
+            (child) =>
+              child.href !== "#" &&
+              (pathname === child.href ||
+                pathname.startsWith(child.href + "/")),
           );
           const isActive =
             item.href === "/"
@@ -173,7 +178,9 @@ const PrimaryNavigation = () => {
                 <ul className="ml-5 mt-1 flex flex-col gap-0.5 border-l pl-4 py-1 border-cyber-border">
                   {item.children!.map((child) => {
                     const childActive =
-                      child.href !== "#" && pathname === child.href;
+                      child.href !== "#" &&
+                      (pathname === child.href ||
+                        pathname.startsWith(child.href + "/"));
                     return (
                       <li key={child.label}>
                         <Link

@@ -149,3 +149,23 @@ export type MonthlyPool = Prisma.MonthlyPoolModel
  * 
  */
 export type Notification = Prisma.NotificationModel
+/**
+ * Model BlogCategory
+ * 
+ */
+export type BlogCategory = Prisma.BlogCategoryModel
+/**
+ * Model BlogTag
+ * 
+ */
+export type BlogTag = Prisma.BlogTagModel
+/**
+ * Model BlogPost
+ * 
+ */
+export type BlogPost = Prisma.BlogPostModel
+/**
+ * Model BlogSetting
+ * 
+ */
+export type BlogSetting = Prisma.BlogSettingModel

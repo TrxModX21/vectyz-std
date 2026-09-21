@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { AuthorsTable } from "@/components/dashboard/blog/authors-table";
+import { AuthorsTable } from "@/components/manage-blog/authors-table";
 
 export default function AuthorsPage() {
   return (

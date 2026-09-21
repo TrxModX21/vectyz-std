@@ -96,7 +96,7 @@ const UserProfileBlockSkeleton = () => {
       <div className="mt-2 h-3 w-36 bg-cyber-body/20 animate-pulse" />
 
       {/* Button Skeleton */}
-      <div className="mt-3 w-full h-[34px] border border-cyber-border bg-cyber-border/20 animate-pulse clip-button" />
+      <div className="mt-3 w-full h-8.5 border border-cyber-border bg-cyber-border/20 animate-pulse clip-button" />
     </div>
   );
 };

@@ -51,14 +51,14 @@ export default function RootLayout({
           </NuqsAdapter>
           <Toaster />
 
-          <Crosshair
+          {/* <Crosshair
             color="green"
             arcGap={0.15}
             outerSpeed={1.5}
             innerSpeed={1}
             crosshairSize={4}
             glowIntensity="low"
-          />
+          /> */}
         </ThemeProvider>
       </body>
     </html>

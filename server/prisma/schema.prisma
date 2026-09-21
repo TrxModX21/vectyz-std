@@ -14,6 +14,9 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+
+  // for dashboard
+  // output   = "../../dashboard/src/generated/prisma"
 }
 
 datasource db {
@@ -79,6 +82,7 @@ model User {
   payouts              Payout[]
   notifications        Notification[]    @relation("UserNotifications")
   sentNotifications    Notification[]    @relation("NotificationSourceUser")
+  blogPosts            BlogPost[]
 
   @@unique([email])
   @@map("user")
@@ -503,6 +507,70 @@ model Notification {
   @@map("notification")
 }
 
+// ==========================================
+// MANAGE BLOG MODELS
+// ==========================================
+model BlogCategory {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  // 1 Category bisa memiliki banyak Post (1-to-N)
+  posts       BlogPost[]
+}
+
+model BlogTag {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  // Relasi Many-to-Many dengan BlogPost
+  posts     BlogPost[]
+}
+
+model BlogPost {
+  id             String         @id @default(cuid())
+  title          String
+  slug           String         @unique
+  content        String         @db.Text // Format Markdown
+  excerpt        String?        @db.Text
+  coverImage     String?
+  status         BlogPostStatus @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+
+  // Timestamps
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  // Relasi ke User (Author)
+  authorId   String
+  author     User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  // Relasi ke Kategori (1-to-N)
+  categoryId String?
+  category   BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  // Relasi ke Tags (Many-to-Many)
+  tags       BlogTag[]
+}
+
+model BlogSetting {
+  id                    String  @id @default("global") // Hanya akan ada 1 row dengan id 'global'
+  defaultSeoTitle       String?
+  defaultSeoDescription String? @db.Text
+  defaultSocialImage    String?
+  facebookUrl           String?
+  twitterUrl            String?
+  instagramUrl          String?
+  linkedinUrl           String?
+  youtubeUrl            String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum NotificationType {
   DONATION_RECEIVED
   ASSET_SOLD
@@ -566,4 +634,9 @@ enum BillingCycle {
   MONTHLY
   YEARLY
   ONE_TIME
+}
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
 }
