@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "@/components/ui/sonner";
 import ReactQueryProvider from "@/providers/react-query-provider";
 import DisableInspect from "@/components/common/disable-inspect";
@@ -91,15 +92,19 @@ export default function RootLayout({
         )}
       </head>
       <body className={`${montserrat.className} antialiased`}>
-        <ReactQueryProvider>
-          <SocketProvider>
-            <DisableInspect />
-            <TooltipProvider>{children}</TooltipProvider>
-            {process.env.NODE_ENV === "production" && (
-              <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID as string} />
-            )}
-          </SocketProvider>
-        </ReactQueryProvider>
+        <NuqsAdapter>
+          <ReactQueryProvider>
+            <SocketProvider>
+              <DisableInspect />
+              <TooltipProvider>{children}</TooltipProvider>
+              {process.env.NODE_ENV === "production" && (
+                <GoogleAnalytics
+                  gaId={process.env.NEXT_PUBLIC_GA_ID as string}
+                />
+              )}
+            </SocketProvider>
+          </ReactQueryProvider>
+        </NuqsAdapter>
 
         <Toaster position="top-center" theme="light" />
       </body>

@@ -28,6 +28,7 @@ import manageStocksRoutes from "./admin-access/manage-stock.routes";
 import manageBlogSettingsRoutes from "./admin-access/manage-blog/settings.routes";
 import manageBlogTaxonomyRoutes from "./admin-access/manage-blog/taxonomy.routes";
 import manageBlogPostsRoutes from "./admin-access/manage-blog/posts.routes";
+import blogRoutes from "./blog.routes";
 
 const router = Router();
 
@@ -51,6 +52,7 @@ router.use("/transactions/purchase-stock", purchaseStockRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/webhooks", webhooksRoutes);
+router.use("/blog", blogRoutes);
 router.use("/test", testRoutes);
 
 router.use("/admin/analytics", analyticsRoutes);

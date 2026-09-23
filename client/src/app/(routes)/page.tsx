@@ -7,6 +7,7 @@ import WhyChooseUsSection from "@/components/landing/why-choose-us-section";
 import LandingCTASection from "@/components/landing/landing-cta-section";
 import Footer from "../../components/common/footer";
 import FadeIn from "@/components/common/fade-in";
+import LatestArticeSection from "@/components/landing/latest-article";
 
 const HomePage = () => {
   return (
@@ -28,6 +29,9 @@ const HomePage = () => {
       </FadeIn>
       <FadeIn>
         <LandingCTASection />
+      </FadeIn>
+      <FadeIn>
+        <LatestArticeSection />
       </FadeIn>
       <Footer />
     </section>

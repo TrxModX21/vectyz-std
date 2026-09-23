@@ -301,6 +301,22 @@ export function PostEditorView() {
             </p>
           )}
 
+          {/* Post Excerpt Input */}
+          <textarea
+            placeholder="Write a brief excerpt... (Optional)"
+            {...form.register("excerpt")}
+            rows={2}
+            className={cn(
+              montserrat.className,
+              "w-full bg-transparent text-sm text-cyber-body placeholder:text-cyber-body-subtle focus:outline-none mb-4 resize-none border-b border-cyber-border-subtle pb-4",
+            )}
+          />
+          {form.formState.errors.excerpt && (
+            <p className="text-xs font-medium text-[#FF003C] mb-4">
+              {form.formState.errors.excerpt.message}
+            </p>
+          )}
+
           {/* Tiptap Editor */}
           <MainEditor
             editor={editor}
