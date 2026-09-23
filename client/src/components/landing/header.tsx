@@ -186,7 +186,7 @@ const Header = () => {
                               router.refresh();
                             }}
                           >
-                            <SelectTrigger className="w-[70px] h-[26px] px-2 py-1 text-xs">
+                            <SelectTrigger className="w-17.5 h-6.5 px-2 py-1 text-xs">
                               <SelectValue placeholder="Currency" />
                             </SelectTrigger>
                             <SelectContent>
@@ -202,7 +202,7 @@ const Header = () => {
                             Language
                           </div>
                           <Select value="EN" disabled={true}>
-                            <SelectTrigger className="w-[100px] h-[26px] px-2 py-1 text-xs">
+                            <SelectTrigger className="w-25 h-6.5 px-2 py-1 text-xs">
                               <SelectValue placeholder="Language" />
                             </SelectTrigger>
                             <SelectContent>
@@ -293,14 +293,14 @@ const HeaderSkeleton = () => {
             <Skeleton className="h-6 w-6 xl:hidden animate-pulse" />
 
             {/* Logo */}
-            <Skeleton className="h-8 w-[120px] lg:w-[140px] animate-pulse" />
+            <Skeleton className="h-8 w-30 lg:w-35 animate-pulse" />
 
             {/* Desktop navigation */}
             <div className="hidden xl:flex items-center gap-6 ml-6">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton
                   key={i}
-                  className="h-4 w-[70px] rounded-md animate-pulse"
+                  className="h-4 w-17.5 rounded-md animate-pulse"
                 />
               ))}
             </div>
@@ -312,13 +312,13 @@ const HeaderSkeleton = () => {
             <Skeleton className="animate-pulse h-10 w-10 hidden xl:block rounded-full" />
 
             {/* Plans */}
-            <Skeleton className="animate-pulse h-9 w-[70px] lg:h-10 lg:w-[90px]" />
+            <Skeleton className="animate-pulse h-9 w-17.5 lg:h-10 lg:w-22.5" />
 
             {/* Sign up */}
-            <Skeleton className="animate-pulse h-9 w-[110px] hidden xl:block" />
+            <Skeleton className="animate-pulse h-9 w-27.5 hidden xl:block" />
 
             {/* Sign in */}
-            <Skeleton className="animate-pulse h-9 w-[70px] lg:h-10 lg:w-[90px]" />
+            <Skeleton className="animate-pulse h-9 w-17.5 lg:h-10 lg:w-22.5" />
           </div>
         </div>
       </div>

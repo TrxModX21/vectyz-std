@@ -25,7 +25,7 @@ const CreditTopUp = ({
             >
               <Zap className="h-4 w-4 text-primary fill-primary/20" />
               <span className="font-semibold">
-                {Number(user?.creditBalance || 0)}
+                {Number(user?.creditBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </span>
               <Plus className="h-3 w-3 ml-1 opacity-50" />
             </Button>

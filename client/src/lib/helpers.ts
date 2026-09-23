@@ -173,3 +173,35 @@ export function extractDomain(website?: string) {
     return website;
   }
 }
+
+/**
+ * Strips basic Markdown formatting characters from a string.
+ * Useful for displaying plain text excerpts from Markdown content.
+ */
+export const stripMarkdown = (markdown?: string | null): string => {
+  if (!markdown) return "";
+  
+  return markdown
+    // Remove headers (## Header)
+    .replace(/^#+\s+/gm, "")
+    // Remove bold/italic (**bold**, *italic*, __bold__, _italic_)
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1")
+    // Remove blockquotes (> quote)
+    .replace(/^>\s+/gm, "")
+    // Remove inline code (`code`)
+    .replace(/`([^`]+)`/g, "$1")
+    // Remove images (![alt](url))
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "")
+    // Replace links with just their text ([text](url) -> text)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    // Remove strikethrough (~~text~~)
+    .replace(/~~([^~]+)~~/g, "$1")
+    // Remove unordered list bullets (- item, * item, + item)
+    .replace(/^[-*+]\s+/gm, "")
+    // Remove ordered list numbers (1. item)
+    .replace(/^\d+\.\s+/gm, "")
+    // Replace multiple newlines with a single space
+    .replace(/\n+/g, " ")
+    .trim();
+};
+

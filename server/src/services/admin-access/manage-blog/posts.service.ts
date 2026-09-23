@@ -1,6 +1,6 @@
 import prisma from "../../../lib/prisma";
 import { AppError } from "../../../utils/app-error";
-import { generateSlugFromName } from "../../../utils/helper";
+import { generateSlugFromName, stripMarkdown } from "../../../utils/helper";
 import { HTTPSTATUS } from "../../../utils/http.config";
 import {
   CreateBlogPostSchema,
@@ -86,7 +86,7 @@ export const createBlogPostService = async (
     slug = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
   }
 
-  const { categoryId, tags, ...restData } = data;
+  const { categoryId, tags, excerpt, ...restData } = data;
   const categoryConnect = categoryId
     ? { connect: { id: categoryId } }
     : undefined;
@@ -96,9 +96,16 @@ export const createBlogPostService = async (
       : undefined;
   const publishedAt = restData.status === "PUBLISHED" ? new Date() : null;
 
+  // Set default excerpt from content if empty
+  const finalExcerpt =
+    excerpt && excerpt.trim() !== ""
+      ? excerpt
+      : stripMarkdown(restData.content).substring(0, 150) + "...";
+
   return await prisma.blogPost.create({
     data: {
       ...restData,
+      excerpt: finalExcerpt,
       slug,
       publishedAt,
       author: { connect: { id: authorId } },
@@ -112,12 +119,31 @@ export const updateBlogPostService = async (
   id: string,
   data: UpdateBlogPostSchema,
 ) => {
-  const { categoryId, tags, status, ...restData } = data;
+  const { categoryId, tags, status, excerpt, ...restData } = data;
   let updateData: any = { ...restData };
 
   const existing = await prisma.blogPost.findUnique({ where: { id } });
   if (!existing)
     throw new AppError("Blog post not found", HTTPSTATUS.NOT_FOUND);
+
+  // Set default excerpt from content if empty
+  if (excerpt !== undefined) {
+    if (excerpt.trim() === "" && restData.content) {
+      updateData.excerpt =
+        stripMarkdown(restData.content).substring(0, 150) + "...";
+    } else if (excerpt.trim() === "" && existing.content) {
+      updateData.excerpt =
+        stripMarkdown(existing.content).substring(0, 150) + "...";
+    } else {
+      updateData.excerpt = excerpt;
+    }
+  } else if (restData.content) {
+    // Content changed but excerpt not provided, regenerate if existing excerpt was likely auto-generated or empty
+    if (!existing.excerpt) {
+      updateData.excerpt =
+        stripMarkdown(restData.content).substring(0, 150) + "...";
+    }
+  }
 
   // Handle Slug Update jika slug atau title dikirim
   if (restData.slug !== undefined || restData.title !== undefined) {
