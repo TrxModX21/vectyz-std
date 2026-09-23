@@ -7,7 +7,7 @@ import { toast } from "@/components/uitripled/notification-center-shadcnui";
 
 interface ImagePickerProps {
   label?: string;
-  value: File | null;
+  value: File | string | null;
   onChange: (file: File | null) => void;
   onRemove?: () => void;
   error?: string;
@@ -30,10 +30,12 @@ export function ImagePicker({
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (value) {
+    if (value instanceof Blob) {
       const objectUrl = URL.createObjectURL(value);
       setPreview(objectUrl);
       return () => URL.revokeObjectURL(objectUrl);
+    } else if (typeof value === "string") {
+      setPreview(value);
     } else if (defaultPreviewUrl) {
       setPreview(defaultPreviewUrl);
     } else {

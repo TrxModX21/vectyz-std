@@ -3,22 +3,24 @@
 import { Calendar, Image as ImageIcon, ArrowRight, User } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useBlogPosts } from "../../hooks/use-blog";
+import { useBlogPosts, useBlogSettings } from "../../hooks/use-blog";
 import { format } from "date-fns";
 import { stripMarkdown } from "@/lib/helpers";
 
 const LatestArticeSection = () => {
   const { data: blogPostsResponse, isLoading, isError } = useBlogPosts({ limit: 6 });
+  const { data: blogSettingsResponse } = useBlogSettings();
+  const settings = blogSettingsResponse?.data;
 
   return (
     <div className="container mx-auto px-4 lg:px-32 py-12 lg:py-20">
       {/* Header Block */}
       <div className="flex flex-col items-center text-center space-y-4 mb-12">
         <h2 className="text-3xl md:text-4xl font-bold text-gray-700">
-          Latest on the Blog
+          {settings?.defaultSeoTitle || "Latest on the Blog"}
         </h2>
         <p className="text-gray-500 text-sm md:text-base max-w-2xl leading-relaxed">
-          Stay up to date with our most recent insights, tutorials, and inspiration for your next big project.
+          {settings?.defaultSeoDescription || "Stay up to date with our most recent insights, tutorials, and inspiration for your next big project."}
         </p>
       </div>
 

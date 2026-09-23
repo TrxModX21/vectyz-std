@@ -7,6 +7,7 @@ import {
   getBlogPostByIdService,
   getBlogPostsService,
   updateBlogPostService,
+  bulkDeleteBlogPostService,
 } from "../../../services/admin-access/manage-blog/posts.service";
 import {
   createBlogPostSchema,
@@ -88,6 +89,18 @@ export const deleteBlogPostController = asyncHandler(
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Blog post deleted successfully",
+      timestamp: new Date().toISOString(),
+    });
+  },
+);
+
+export const bulkDeleteBlogPostController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { ids } = req.body;
+    await bulkDeleteBlogPostService(ids);
+    
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Blog posts deleted successfully",
       timestamp: new Date().toISOString(),
     });
   },

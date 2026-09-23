@@ -15,10 +15,15 @@ import {
   useBlogCategories,
   useBlogTags,
 } from "@/features/manage-blogs/queries";
-import { useCreateBlogPostMutation } from "@/features/manage-blogs/mutations";
+import {
+  useCreateBlogPostMutation,
+  useUpdateBlogPostMutation,
+} from "@/features/manage-blogs/mutations";
 import {
   CreateBlogPostSchema,
   createBlogPostSchema,
+  UpdateBlogPostSchema,
+  updateBlogPostSchema,
 } from "@/validators/manage-blogs.validator";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,7 +52,11 @@ const initialContent = `
 <blockquote>"Elevate your visual storytelling with precision-crafted vectors."</blockquote>
 `;
 
-export function PostEditorView() {
+interface PostEditorViewProps {
+  postData?: any;
+}
+
+export function PostEditorView({ postData }: PostEditorViewProps) {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
@@ -59,23 +68,25 @@ export function PostEditorView() {
   const { data: categoriesRes } = useBlogCategories();
   const { data: tagsRes } = useBlogTags();
   const createPostMutation = useCreateBlogPostMutation();
+  const updatePostMutation = useUpdateBlogPostMutation();
   const categories = categoriesRes?.data || [];
   const availableTags = tagsRes?.data || [];
 
   // 2. React Hook Form Setup
-  const form = useForm<CreateBlogPostSchema>({
-    resolver: zodResolver(createBlogPostSchema),
+  const isEdit = !!postData;
+  const form = useForm<CreateBlogPostSchema | UpdateBlogPostSchema>({
+    resolver: zodResolver(isEdit ? updateBlogPostSchema : createBlogPostSchema),
     defaultValues: {
-      title: "",
-      slug: "",
-      content: "",
-      excerpt: "",
-      coverImage: undefined,
-      status: "DRAFT",
-      categoryId: null,
-      tags: [],
-      seoTitle: "",
-      seoDescription: "",
+      title: postData?.title || "",
+      slug: postData?.slug || "",
+      content: postData?.content || initialContent,
+      excerpt: postData?.excerpt || "",
+      coverImage: postData?.coverImage || undefined,
+      status: postData?.status || "DRAFT",
+      categoryId: postData?.categoryId || null,
+      tags: postData?.tags?.map((t: any) => t.id) || [],
+      seoTitle: postData?.seoTitle || "",
+      seoDescription: postData?.seoDescription || "",
     },
   });
 
@@ -84,7 +95,9 @@ export function PostEditorView() {
   // 3. Setup Tiptap Editor dengan Font Montserrat
   const editor = useEditor({
     extensions: [StarterKit, Markdown, Image],
-    content: initialContent,
+    content: postData?.content || initialContent,
+    // @ts-ignore - tiptap-markdown extension adds support for contentType
+    contentType: postData ? "markdown" : "html",
     immediatelyRender: true,
     onUpdate: ({ editor }) => {
       const md = (editor as any).getMarkdown();
@@ -172,7 +185,7 @@ export function PostEditorView() {
         // ✅ AKHIR LOGIKA SAPU BERSIH
         // ==========================================
 
-        let coverImageUrl = "";
+        let coverImageUrl = typeof payload.coverImage === "string" ? payload.coverImage : "";
         // Upload cover image jika ada file baru yang dipilih
         if (payload.coverImage && typeof payload.coverImage === "object") {
           toast.update(toastId, "Uploading cover image... 0%", "info");
@@ -189,17 +202,29 @@ export function PostEditorView() {
           );
           coverImageUrl = uploadResult.url;
         }
-        toast.update(toastId, "Creating article...", "info");
-        await createPostMutation.mutateAsync({
+        
+        toast.update(toastId, isEdit ? "Updating article..." : "Creating article...", "info");
+        
+        const mutationPayload = {
           ...payload,
           coverImage: coverImageUrl,
           status: targetStatus,
           categoryId: payload.categoryId || null,
-        });
+        };
+
+        if (isEdit) {
+          await updatePostMutation.mutateAsync({
+            id: postData.id,
+            data: mutationPayload,
+          });
+        } else {
+          await createPostMutation.mutateAsync(mutationPayload);
+        }
+        
         toast.update(
           toastId,
           targetStatus === "PUBLISHED"
-            ? "Article published successfully!"
+            ? (isEdit ? "Article updated successfully!" : "Article published successfully!")
             : "Draft saved successfully!",
           "success",
         );

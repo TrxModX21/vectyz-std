@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { useManageBlogPosts } from "@/features/manage-blogs/queries";
+import { useDeleteBlogPostMutation, useBulkDeleteBlogPostMutation } from "@/features/manage-blogs/mutations";
 import { BlogPostData } from "../../../types/manage-blogs";
 import { toast } from "../uitripled/notification-center-shadcnui";
 import { getBlogColumns } from "./columns";
@@ -65,32 +66,36 @@ export function BlogPostsTable() {
     setSearchValue(e.target.value);
   };
 
+  const deleteMutation = useDeleteBlogPostMutation();
+  const bulkDeleteMutation = useBulkDeleteBlogPostMutation();
+
   const handleDeletePost = async () => {
     if (!postToDelete) return;
     try {
-      // NOTE: Gunakan mutation delete jika API sudah siap
-      toast.success(
-        `Post "${postToDelete.title}" marked for deletion (Mockup)`,
-      );
+      await deleteMutation.mutateAsync(postToDelete.id);
+      toast.success(`Post "${postToDelete.title}" has been deleted`);
       setPostToDelete(null);
       setRowSelection({});
       refetch();
     } catch (error: any) {
-      toast.error("Failed to delete post");
+      toast.error(
+        error.response?.data?.message || "Failed to delete post",
+      );
     }
   };
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
     try {
-      toast.success(
-        `${selectedIds.length} posts marked for bulk deletion (Mockup)`,
-      );
+      await bulkDeleteMutation.mutateAsync(selectedIds);
+      toast.success(`${selectedIds.length} posts have been deleted`);
       setIsBulkDeleteDialogOpen(false);
       setRowSelection({});
       refetch();
     } catch (error: any) {
-      toast.error("Failed to delete posts");
+      toast.error(
+        error.response?.data?.message || "Failed to delete posts",
+      );
     }
   };
 

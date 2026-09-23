@@ -75,3 +75,15 @@ export const useManageBlogPosts = (params: {
     staleTime: 60 * 1000,
   });
 };
+
+// Query untuk mengambil detail Postingan Blog
+export const useBlogPost = (id: string) => {
+  return useQuery<ApiResponse<BlogPostData>>({
+    queryKey: ["manage-blog-post", id],
+    queryFn: async () => {
+      const res = await api.get(`/admin/manage-blog/posts/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+  });
+};
