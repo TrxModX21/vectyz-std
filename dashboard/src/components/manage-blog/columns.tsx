@@ -5,6 +5,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Image from "next/image";
 import { MoreHorizontal, Edit2, Trash2, Eye, CalendarDays } from "lucide-react";
 import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { BlogPostData } from "../../../types/manage-blogs";
 import dayjs from "dayjs";
 
@@ -156,59 +162,58 @@ export const getBlogColumns = ({
 
       return (
         <div className="text-center relative">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenMenuId(isMenuOpen ? null : post.id);
-            }}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-cyber text-cyber-body hover:bg-cyber-surface-hover hover:text-cyber-heading transition-colors"
+          <DropdownMenu
+            open={isMenuOpen}
+            onOpenChange={(open) => setOpenMenuId(open ? post.id : null)}
           >
-            <MoreHorizontal size={16} />
-          </button>
-
-          {isMenuOpen && (
-            <>
-              {/* Overlay untuk menutup menu jika klik di luar */}
-              <div
-                className="fixed inset-0 z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenMenuId(null);
-                }}
-              />
-              <div className="absolute right-8 top-8 z-20 w-44 rounded-cyber border border-cyber-border bg-[#0a0a0f] p-2 shadow-lg glow-neon">
+            <DropdownMenuTrigger asChild>
+              <button
+                className="inline-flex h-9 w-9 items-center justify-center rounded-cyber text-cyber-body hover:bg-cyber-surface-hover hover:text-cyber-heading transition-colors"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-44 rounded-cyber border border-cyber-border bg-[#0a0a0f] p-2 shadow-lg glow-neon"
+            >
+              <DropdownMenuItem asChild>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-sm p-2 text-[14px] font-medium text-cyber-body hover:bg-cyber-surface-hover hover:text-cyber-heading transition-colors"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm p-2 text-[14px] font-medium text-cyber-body hover:bg-cyber-surface-hover hover:text-cyber-heading transition-colors focus:bg-cyber-surface-hover focus:text-cyber-heading"
                 >
                   <Eye size={16} />
                   Preview
                 </button>
+              </DropdownMenuItem>
 
+              <DropdownMenuItem asChild>
                 <Link
                   href={`/manage-blog/posts/edit/${post.id}`}
-                  className="flex w-full items-center gap-2 rounded-sm p-2 text-[14px] font-medium text-cyber-body hover:bg-cyber-surface-hover hover:text-cyber-heading transition-colors"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm p-2 text-[14px] font-medium text-cyber-body hover:bg-cyber-surface-hover hover:text-cyber-heading transition-colors focus:bg-cyber-surface-hover focus:text-cyber-heading"
                 >
                   <Edit2 size={16} />
                   Edit Post
                 </Link>
+              </DropdownMenuItem>
 
-                <div className="my-1 border-t border-cyber-border" />
+              <div className="my-1 border-t border-cyber-border" />
 
+              <DropdownMenuItem asChild>
                 <button
                   type="button"
                   onClick={() => {
                     setPostToDelete(post);
                     setOpenMenuId(null);
                   }}
-                  className="flex w-full items-center gap-2 rounded-sm p-2 text-[14px] font-medium text-[#FF3366] hover:bg-[#FF3366]/10 transition-colors"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm p-2 text-[14px] font-medium text-[#FF3366] hover:bg-[#FF3366]/10 transition-colors focus:bg-[#FF3366]/10 focus:text-[#FF3366]"
                 >
                   <Trash2 size={16} />
                   Delete Post
                 </button>
-              </div>
-            </>
-          )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       );
     },

@@ -2,6 +2,8 @@ import prisma from "../../../lib/prisma";
 import { AppError } from "../../../utils/app-error";
 import { generateSlugFromName, stripMarkdown } from "../../../utils/helper";
 import { HTTPSTATUS } from "../../../utils/http.config";
+import { deleteFromCloudinary } from "../../../lib/cloudinary";
+import { extractPublicIdFromUrl } from "../../../utils/cloudinary.utils";
 import {
   CreateBlogPostSchema,
   UpdateBlogPostSchema,
@@ -126,6 +128,18 @@ export const updateBlogPostService = async (
   if (!existing)
     throw new AppError("Blog post not found", HTTPSTATUS.NOT_FOUND);
 
+  // Jika coverImage diubah, hapus coverImage lama dari Cloudinary
+  if (restData.coverImage && restData.coverImage !== existing.coverImage && existing.coverImage) {
+    const oldPublicId = extractPublicIdFromUrl(existing.coverImage);
+    if (oldPublicId) {
+      try {
+        await deleteFromCloudinary(oldPublicId);
+      } catch (err) {
+        console.error("Failed to delete old cover image on update", err);
+      }
+    }
+  }
+
   // Set default excerpt from content if empty
   if (excerpt !== undefined) {
     if (excerpt.trim() === "" && restData.content) {
@@ -204,5 +218,46 @@ export const deleteBlogPostService = async (id: string) => {
   if (!existing)
     throw new AppError("Blog post not found", HTTPSTATUS.NOT_FOUND);
 
+  if (existing.coverImage) {
+    const publicId = extractPublicIdFromUrl(existing.coverImage);
+    if (publicId) {
+      try {
+        await deleteFromCloudinary(publicId);
+      } catch (err) {
+        console.error("Failed to delete image on blog post delete", err);
+      }
+    }
+  }
+
   return await prisma.blogPost.delete({ where: { id } });
+};
+
+export const bulkDeleteBlogPostService = async (ids: string[]) => {
+  if (!ids || ids.length === 0) return true;
+
+  const posts = await prisma.blogPost.findMany({
+    where: { id: { in: ids } },
+    select: { coverImage: true },
+  });
+
+  const deletePromises = posts
+    .filter((post) => post.coverImage)
+    .map(async (post) => {
+      const publicId = extractPublicIdFromUrl(post.coverImage as string);
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+        } catch (err) {
+          console.error("Failed to delete image during bulk delete", err);
+        }
+      }
+    });
+
+  await Promise.all(deletePromises);
+
+  await prisma.blogPost.deleteMany({
+    where: { id: { in: ids } },
+  });
+
+  return true;
 };

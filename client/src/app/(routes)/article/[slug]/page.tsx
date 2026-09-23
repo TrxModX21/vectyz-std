@@ -26,11 +26,18 @@ export async function generateMetadata(
     const json = await res.json();
     const post = json.data;
 
-    const imageUrl = post.coverImage || "/logo.png";
+    const settingsRes = await fetch(`${baseUrl}/blog/settings`, {
+      next: { revalidate: 300 },
+    });
+    const settingsJson = settingsRes.ok ? await settingsRes.json() : null;
+    const settings = settingsJson?.data;
+
+    const imageUrl = post.coverImage || settings?.defaultSocialImage || "/logo.png";
     const description =
       post.seoDescription ||
       post.excerpt ||
       post.content?.substring(0, 160) ||
+      settings?.defaultSeoDescription ||
       "Read the latest articles on Vectolio.";
 
     return {

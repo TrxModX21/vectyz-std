@@ -43,7 +43,10 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full">
-      <div className="overflow-x-auto rounded-cyber border border-cyber-border bg-cyber-surface shadow-sm">
+      <div 
+        className="overflow-x-auto rounded-cyber border border-cyber-border bg-cyber-surface shadow-sm"
+        style={{ minHeight: data.length < 4 ? "280px" : undefined }}
+      >
         <table className="w-full text-left text-[13px] text-cyber-body">
           <thead className="bg-cyber-surface-raised border-b border-cyber-border">
             {table.getHeaderGroups().map((headerGroup) => (

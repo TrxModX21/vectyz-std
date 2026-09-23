@@ -134,3 +134,44 @@ export const useCreateBlogPostMutation = () => {
     },
   });
 };
+
+export const useUpdateBlogPostMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await api.patch(`/admin/manage-blog/posts/${id}`, data);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["manage-blog-posts"] });
+    },
+  });
+};
+
+export const useDeleteBlogPostMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/admin/manage-blog/posts/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["manage-blog-posts"] });
+    },
+  });
+};
+
+export const useBulkDeleteBlogPostMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const res = await api.post(`/admin/manage-blog/posts/bulk-delete`, {
+        ids,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["manage-blog-posts"] });
+    },
+  });
+};
