@@ -15,6 +15,7 @@ import {
   getStockById,
   updateStock,
   getPopularFreeVectorStocks,
+  getLatestStocks,
   getTrendingStocks,
   getRelatedStocks,
   toggleLike,
@@ -174,6 +175,21 @@ export const getPopularFreeVectorStocksController = asyncHandler(
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Popular stocks fetched successfully",
+      timestamp: new Date().toISOString(),
+      stocks,
+    });
+  },
+);
+
+export const getLatestStocksController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const viewer = res.locals.user;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 12;
+
+    const stocks = await getLatestStocks(viewer?.id, limit);
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Latest stocks fetched successfully",
       timestamp: new Date().toISOString(),
       stocks,
     });
