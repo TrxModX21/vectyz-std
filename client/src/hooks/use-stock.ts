@@ -18,6 +18,20 @@ export const useGetPopularFreeVector = () => {
   });
 };
 
+export const useGetLatestStocks = (limit?: number) => {
+  return useQuery<PopularFreeVectorResponse>({
+    queryKey: ["latestStocks", limit],
+    queryFn: async () => {
+      const paramsUrl = new URLSearchParams();
+      if (limit) paramsUrl.append("limit", limit.toString());
+      const queryStr = paramsUrl.toString() ? `?${paramsUrl.toString()}` : "";
+      const res = await api.get(`/stocks/latest${queryStr}`);
+      return res.data;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
 export const useGetTrendingStocks = (params: {
   fileType?: string;
   limit?: number;

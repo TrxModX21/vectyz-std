@@ -275,6 +275,40 @@ export const getPopularFreeVectorStocks = async (viewerId?: string) => {
   return mappedStocks;
 };
 
+export const getLatestStocks = async (viewerId?: string, limit = 12) => {
+  const stocks = await prisma.stock.findMany({
+    where: {
+      status: "APPROVED",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: limit,
+    include: selectField,
+  });
+
+  const stockIds = stocks.map((s) => s.id);
+  let likedStockIds = new Set<string>();
+  if (viewerId && stockIds.length > 0) {
+    const userLikes = await prisma.like.findMany({
+      where: {
+        userId: viewerId,
+        stockId: { in: stockIds },
+      },
+      select: { stockId: true },
+    });
+
+    likedStockIds = new Set(userLikes.map((l) => l.stockId));
+  }
+
+  const mappedStocks = stocks.map((stock) => ({
+    ...stock,
+    isLiked: likedStockIds.has(stock.id),
+  }));
+
+  return mappedStocks;
+};
+
 export const getTrendingStocks = async (
   viewerId?: string,
   fileType?: string,

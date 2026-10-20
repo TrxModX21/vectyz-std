@@ -2,6 +2,7 @@ import HeroSection from "@/components/landing/hero-section";
 import Header from "../../components/landing/header";
 import SectionSeparator from "@/components/common/section-separator";
 import PopularLandingSection from "@/components/landing/popular-landing-section";
+import LatestLandingSection from "@/components/landing/latest-landing-section";
 import TrendingLandingSection from "@/components/landing/trending-landing-section";
 import WhyChooseUsSection from "@/components/landing/why-choose-us-section";
 import LandingCTASection from "@/components/landing/landing-cta-section";
@@ -19,6 +20,9 @@ const HomePage = () => {
       <FadeIn>
         {/* <SectionSeparator /> */}
         <PopularLandingSection />
+      </FadeIn>
+       <FadeIn>
+        <LatestLandingSection />
       </FadeIn>
       <FadeIn className="py-10">
         {/* <SectionSeparator /> */}

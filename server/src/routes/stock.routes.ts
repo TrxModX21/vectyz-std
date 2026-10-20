@@ -12,6 +12,7 @@ import {
   getStockByIdController,
   updateStockController,
   getPopularFreeVectorStocksController,
+  getLatestStocksController,
   getTrendingStocksController,
   getRelatedStocksController,
   toggleLikeController,
@@ -29,6 +30,7 @@ stockRoutes.get(
   optionalAuth,
   getPopularFreeVectorStocksController,
 );
+stockRoutes.get("/latest", optionalAuth, getLatestStocksController);
 stockRoutes.get("/:id/related", optionalAuth, getRelatedStocksController);
 stockRoutes.get("/sitemap/all", getStocksSitemapController);
 stockRoutes.get("/:slug", optionalAuth, getStockByIdController);
